@@ -6,7 +6,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as AuthUs
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -36,21 +36,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (authUser) {
         setUser(authUser);
         try {
-          const q = query(collection(db, 'users'), where('email', '==', authUser.email), limit(1));
+          const usersCollectionRef = collection(db, 'users');
+          const q = query(usersCollectionRef, where('email', '==', authUser.email), limit(1));
           const querySnapshot = await getDocs(q);
 
           if (!querySnapshot.empty) {
             const userDoc = querySnapshot.docs[0];
             setCurrentUser({ id: userDoc.id, ...userDoc.data() } as User);
           } else {
-            // User exists in Auth, but not in our 'users' collection
-            toast({
-              variant: 'destructive',
-              title: 'Perfil não encontrado',
-              description: 'Sua conta de login existe, mas não há um perfil de usuário associado. Contate um administrador.',
-            });
-            await signOut(auth); // Log them out
-            setCurrentUser(null);
+            // User exists in Auth, but no profile in 'users' collection.
+            // Let's check if this is the VERY first user.
+            const allUsersSnapshot = await getDocs(query(usersCollectionRef, limit(1)));
+            
+            if (allUsersSnapshot.empty) {
+              // This is the first user ever! Let's make them an Admin.
+              toast({
+                title: 'Bem-vindo, Administrador!',
+                description: 'Detectamos que este é o primeiro login. Seu perfil de administrador foi criado automaticamente.',
+              });
+
+              const newUserDocRef = await addDoc(usersCollectionRef, {
+                name: authUser.email?.split('@')[0] || 'Admin',
+                email: authUser.email,
+                role: 'Admin',
+                status: 'Active',
+                avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
+                createdAt: serverTimestamp()
+              });
+
+              // Set the current user in state immediately so they don't get logged out
+              setCurrentUser({
+                id: newUserDocRef.id,
+                name: authUser.email?.split('@')[0] || 'Admin',
+                email: authUser.email!,
+                role: 'Admin',
+                status: 'Active',
+                avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
+              });
+
+            } else {
+              // Not the first user, and profile is missing. This is the intended error.
+              toast({
+                variant: 'destructive',
+                title: 'Perfil não encontrado',
+                description: 'Sua conta de login existe, mas não há um perfil de usuário associado. Contate um administrador.',
+              });
+              await signOut(auth); // Log them out
+              setCurrentUser(null);
+            }
           }
         } catch (error) {
           console.error("Error fetching user profile:", error);
