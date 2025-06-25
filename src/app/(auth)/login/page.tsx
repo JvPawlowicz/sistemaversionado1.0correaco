@@ -8,16 +8,19 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import * as React from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = React.useState('evelyn.reed@clinicflow.com');
-  const [password, setPassword] = React.useState('password');
+  const [password, setPassword] = React.useState('password123');
+  const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd validate credentials here
-    login();
+    setIsLoggingIn(true);
+    await login(email, password);
+    setIsLoggingIn(false);
   };
 
   return (
@@ -32,7 +35,7 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoggingIn} />
             </div>
             <div className="space-y-2">
               <div className="flex items-center">
@@ -41,9 +44,10 @@ export default function LoginPage() {
                   Esqueceu sua senha?
                 </Link>
               </div>
-              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoggingIn} />
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoggingIn}>
+              {isLoggingIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Entrar
             </Button>
           </div>

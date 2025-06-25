@@ -1,12 +1,6 @@
 import type { Patient, User, Appointment, EvolutionRecord, Report } from '@/lib/types';
 
-export const patients: Patient[] = [
-  { id: 'CF001', name: 'Alice Johnson', email: 'alice@example.com', phone: '(11) 98765-4321', lastVisit: '2024-07-20', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e29026704d`, dob: '1990-05-15', gender: 'Female' },
-  { id: 'CF002', name: 'Bob Williams', email: 'bob@example.com', phone: '(21) 91234-5678', lastVisit: '2024-07-18', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e29026705d`, dob: '1985-08-22', gender: 'Male' },
-  { id: 'CF003', name: 'Charlie Brown', email: 'charlie@example.com', phone: '(31) 95555-8888', lastVisit: '2024-06-30', status: 'Inactive', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e29026706d`, dob: '2002-01-10', gender: 'Male' },
-  { id: 'CF004', name: 'Diana Miller', email: 'diana@example.com', phone: '(41) 94444-7777', lastVisit: '2024-07-21', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e29026707d`, dob: '1998-11-30', gender: 'Female' },
-  { id: 'CF005', name: 'Ethan Davis', email: 'ethan@example.com', phone: '(51) 93333-6666', lastVisit: '2024-07-15', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e29026708d`, dob: '1976-03-25', gender: 'Male' },
-];
+export const patients: Patient[] = [];
 
 export const users: User[] = [
   { id: 'U001', name: 'Dr. Evelyn Reed', email: 'evelyn.reed@clinicflow.com', role: 'Admin', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e29026709d` },

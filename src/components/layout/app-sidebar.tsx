@@ -62,7 +62,7 @@ export function AppSidebar() {
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Sair" onClick={logout}>
+            <SidebarMenuButton tooltip="Sair" onClick={logout} className="cursor-pointer">
                 <LogOut />
                 <span>Sair</span>
             </SidebarMenuButton>

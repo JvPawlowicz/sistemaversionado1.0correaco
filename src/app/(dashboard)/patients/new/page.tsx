@@ -9,29 +9,29 @@ import * as React from 'react';
 import { usePatient } from '@/contexts/PatientContext';
 import { useRouter } from 'next/navigation';
 import type { Patient } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
 
 export default function NewPatientPage() {
   const [name, setName] = React.useState('');
+  const [isSaving, setIsSaving] = React.useState(false);
   const { addPatient } = usePatient();
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    setIsSaving(true);
 
-    const newPatient: Patient = {
-      id: `CF${String(Date.now()).slice(-4)}`,
+    const newPatientData: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'> = {
       name: name.trim(),
       email: `${name.trim().split(' ')[0].toLowerCase()}@example.com`,
       phone: '(00) 00000-0000',
-      lastVisit: new Date().toISOString().split('T')[0],
-      status: 'Active',
-      avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
       dob: 'N/A',
       gender: 'Other',
     };
     
-    addPatient(newPatient);
+    await addPatient(newPatientData);
+    setIsSaving(false);
     router.push('/patients');
   };
 
@@ -58,6 +58,7 @@ export default function NewPatientPage() {
                   required 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -67,7 +68,10 @@ export default function NewPatientPage() {
                 <Button variant="outline" asChild>
                   <Link href="/patients">Cancelar</Link>
                 </Button>
-                <Button type="submit">Salvar</Button>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar
+                </Button>
               </div>
           </CardFooter>
         </Card>

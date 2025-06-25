@@ -5,9 +5,10 @@ import { PatientTable } from '@/components/patients/patient-table';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { usePatient } from '@/contexts/PatientContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PatientsPage() {
-  const { patients } = usePatient();
+  const { patients, loading } = usePatient();
   
   return (
     <div className="space-y-6">
@@ -22,7 +23,16 @@ export default function PatientsPage() {
           </Link>
         </Button>
       </div>
-      <PatientTable patients={patients} />
+      {loading ? (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+        </div>
+      ) : (
+        <PatientTable patients={patients} />
+      )}
     </div>
   );
 }

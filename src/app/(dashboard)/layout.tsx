@@ -7,46 +7,35 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, ReactNode } from 'react';
 import { PatientProvider } from '@/contexts/PatientContext';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // A small delay to allow the auth state to be read from sessionStorage
-    const timer = setTimeout(() => {
-        if (isAuthenticated === false) {
-            router.push('/login');
-        }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [isAuthenticated, router]);
-
-  if (isAuthenticated === false) {
+    if (!loading && !isAuthenticated) {
+        router.push('/login');
+    }
+  }, [isAuthenticated, loading, router]);
+  
+  if (loading) {
     return (
         <div className="flex min-h-screen w-full items-center justify-center p-4">
             <div className="flex flex-col items-center space-y-4">
-                <p>Redirecionando para a página de login...</p>
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p>Carregando...</p>
             </div>
         </div>
     );
   }
 
-  if (isAuthenticated === undefined) {
-     return (
-        <div className="flex min-h-screen w-full p-4">
-            <Skeleton className="hidden md:block w-16" />
-            <div className="flex-1 space-y-4">
-                <Skeleton className="h-16" />
-                <Skeleton className="h-[calc(100vh-8rem)]" />
-            </div>
-        </div>
-    )
+  if (!isAuthenticated) {
+    return null; // The useEffect handles the redirect
   }
 
   return (

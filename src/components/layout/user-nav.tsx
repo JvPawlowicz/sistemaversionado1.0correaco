@@ -1,3 +1,5 @@
+'use client';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,24 +12,42 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function UserNav() {
+  const { user, logout } = useAuth();
+
+  if (!user) {
+    return null;
+  }
+
+  const getInitials = (name: string) => {
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
+  const displayEmail = user.email || 'Nenhum e-mail';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026709d" alt="@user" />
-            <AvatarFallback>ER</AvatarFallback>
+            <AvatarImage src={user.photoURL || ''} alt={displayName} />
+            <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Dr. Evelyn Reed</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              evelyn.reed@clinicflow.com
+              {displayEmail}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -44,8 +64,8 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/login">Sair</Link>
+        <DropdownMenuItem onClick={logout} className="cursor-pointer">
+          Sair
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

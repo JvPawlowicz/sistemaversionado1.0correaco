@@ -8,6 +8,7 @@ export type Patient = {
   avatarUrl: string;
   dob: string;
   gender: 'Male' | 'Female' | 'Other';
+  createdAt?: any; // For Firestore serverTimestamp
 };
 
 export type User = {
