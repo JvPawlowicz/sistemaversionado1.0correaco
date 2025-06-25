@@ -82,3 +82,37 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .has-appointment {
+    position: relative;
+  }
+  .has-appointment .rdp-button:focus-visible:not([aria-disabled]) {
+    outline: none;
+    box-shadow: none;
+    border: none;
+  }
+
+  .has-appointment::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: hsl(var(--primary));
+  }
+  .dark .has-appointment::after {
+    background-color: hsl(var(--primary));
+  }
+  .rdp-day_selected.has-appointment::after,
+  .rdp-day_today.has-appointment::after {
+    background-color: hsl(var(--primary-foreground));
+  }
+  .dark .rdp-day_selected.has-appointment::after,
+  .dark .rdp-day_today.has-appointment::after {
+    background-color: hsl(var(--primary-foreground));
+  }
+}

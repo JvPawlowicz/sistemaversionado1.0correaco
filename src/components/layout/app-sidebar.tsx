@@ -12,13 +12,14 @@ import {
   SidebarSeparator
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { LayoutDashboard, Users, HeartPulse, Bot, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, HeartPulse, Bot, Settings, LogOut, Calendar } from 'lucide-react';
 
 export function AppSidebar() {
   const pathname = usePathname();
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/schedule', label: 'Schedule', icon: Calendar },
     { href: '/patients', label: 'Patients', icon: HeartPulse },
     { href: '/ai-notes', label: 'AI Notes', icon: Bot },
     { href: '/users', label: 'Users', icon: Users },

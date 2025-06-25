@@ -15,12 +15,28 @@ export const users: User[] = [
   { id: 'U004', name: 'Carlos Santos', email: 'carlos.santos@clinicflow.com', role: 'Therapist', status: 'Inactive', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e2902670cd` },
 ];
 
+const today = new Date();
+const tomorrow = new Date();
+tomorrow.setDate(today.getDate() + 1);
+const yesterday = new Date();
+yesterday.setDate(today.getDate() - 1);
+const nextMonth = new Date();
+nextMonth.setMonth(today.getMonth() + 1, 5);
+
+
 export const appointments: Appointment[] = [
-  { id: 'A001', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '09:00', date: new Date() },
-  { id: 'A002', patientName: 'Bob Williams', discipline: 'Psychology', time: '10:00', date: new Date() },
-  { id: 'A003', patientName: 'Diana Miller', discipline: 'Nutrition', time: '11:00', date: new Date() },
-  { id: 'A004', patientName: 'Ethan Davis', discipline: 'Physiotherapy', time: '14:00', date: new Date() },
+  { id: 'A001', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '09:00', date: today },
+  { id: 'A002', patientName: 'Bob Williams', discipline: 'Psychology', time: '10:00', date: today },
+  { id: 'A003', patientName: 'Diana Miller', discipline: 'Nutrition', time: '11:00', date: today },
+  { id: 'A004', patientName: 'Ethan Davis', discipline: 'Physiotherapy', time: '14:00', date: today },
+  { id: 'A005', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '09:00', date: tomorrow },
+  { id: 'A006', patientName: 'Charlie Brown', discipline: 'Psychology', time: '15:00', date: tomorrow },
+  { id: 'A007', patientName: 'Bob Williams', discipline: 'Physiotherapy', time: '10:00', date: yesterday },
+  { id: 'A008', patientName: 'Diana Miller', discipline: 'Nutrition', time: '11:00', date: yesterday },
+  { id: 'A009', patientName: 'Ethan Davis', discipline: 'Physiotherapy', time: '16:00', date: yesterday },
+  { id: 'A010', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '10:00', date: nextMonth },
 ];
+
 
 export const evolutionRecords: EvolutionRecord[] = [
     { id: 'E001', date: '2024-07-20', title: 'Initial Assessment', details: 'Patient presents with lower back pain. ROM limited. Plan to start with light exercises.', author: 'Marco Silva'},
