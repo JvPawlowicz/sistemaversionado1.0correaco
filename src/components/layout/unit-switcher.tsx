@@ -22,16 +22,12 @@ import { Skeleton } from '../ui/skeleton';
 
 export function UnitSwitcher() {
   const [open, setOpen] = React.useState(false);
-  const { units, loading } = useUnit();
-  const [selectedUnitId, setSelectedUnitId] = React.useState<string | null>(null);
+  const { units, loading, selectedUnitId, setSelectedUnitId } = useUnit();
 
-  React.useEffect(() => {
-    if (!loading && units.length > 0 && !selectedUnitId) {
-      setSelectedUnitId(units[0].id);
-    }
-  }, [loading, units, selectedUnitId]);
+  const selectedUnit = React.useMemo(() => {
+    return units.find((u) => u.id === selectedUnitId);
+  }, [units, selectedUnitId]);
 
-  const selectedUnit = units.find((u) => u.id === selectedUnitId);
 
   if (loading) {
     return <Skeleton className="h-10 w-[200px]" />;
@@ -45,9 +41,9 @@ export function UnitSwitcher() {
           role="combobox"
           aria-expanded={open}
           className="w-[200px] justify-between"
-          disabled={units.length === 0}
+          disabled={units.length === 0 || loading}
         >
-          {selectedUnit ? selectedUnit.name : 'Nenhuma unidade'}
+          {selectedUnit ? selectedUnit.name : 'Selecione a unidade'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -61,13 +57,8 @@ export function UnitSwitcher() {
                 <CommandItem
                   key={unit.id}
                   value={unit.name}
-                  onSelect={(currentValue) => {
-                    const selected = units.find(
-                      (u) => u.name.toLowerCase() === currentValue.toLowerCase()
-                    );
-                    if (selected) {
-                      setSelectedUnitId(selected.id);
-                    }
+                  onSelect={() => {
+                    setSelectedUnitId(unit.id);
                     setOpen(false);
                   }}
                 >

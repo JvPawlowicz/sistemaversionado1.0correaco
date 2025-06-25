@@ -10,16 +10,18 @@ import { usePatient } from '@/contexts/PatientContext';
 import { useRouter } from 'next/navigation';
 import type { Patient } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { useUnit } from '@/contexts/UnitContext';
 
 export default function NewPatientPage() {
   const [name, setName] = React.useState('');
   const [isSaving, setIsSaving] = React.useState(false);
   const { addPatient } = usePatient();
+  const { selectedUnitId } = useUnit();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !selectedUnitId) return;
     setIsSaving(true);
 
     const newPatientData: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'> = {
@@ -28,6 +30,7 @@ export default function NewPatientPage() {
       phone: '(00) 00000-0000',
       dob: 'N/A',
       gender: 'Other',
+      unitIds: [selectedUnitId],
     };
     
     await addPatient(newPatientData);
@@ -68,7 +71,7 @@ export default function NewPatientPage() {
                 <Button variant="outline" asChild>
                   <Link href="/patients">Cancelar</Link>
                 </Button>
-                <Button type="submit" disabled={isSaving}>
+                <Button type="submit" disabled={isSaving || !selectedUnitId}>
                   {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Salvar
                 </Button>

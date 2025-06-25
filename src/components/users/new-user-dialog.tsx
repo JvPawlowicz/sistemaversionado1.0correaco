@@ -18,6 +18,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
+import { useUnit } from '@/contexts/UnitContext';
 
 interface NewUserDialogProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ interface NewUserDialogProps {
 export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
   const [mounted, setMounted] = React.useState(false);
   const { addUser } = useUser();
+  const { selectedUnitId } = useUnit();
   const [isSaving, setIsSaving] = React.useState(false);
   const { toast } = useToast();
 
@@ -40,11 +42,11 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !role) {
+    if (!name || !email || !role || !selectedUnitId) {
       toast({
         variant: "destructive",
         title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos.",
+        description: "Por favor, preencha todos os campos e selecione uma unidade.",
       });
       return;
     }
@@ -55,6 +57,7 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
       name,
       email,
       role,
+      unitIds: [selectedUnitId],
     };
 
     await addUser(newUserData);
@@ -111,7 +114,7 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
                    setRole('Therapist');
                 }}>Cancelar</Button>
             </DialogClose>
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" disabled={isSaving || !selectedUnitId}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Usuário
             </Button>

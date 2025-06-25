@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useSchedule } from '@/contexts/ScheduleContext';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const HOUR_HEIGHT = 60; // height of one hour in pixels
 
@@ -18,10 +20,12 @@ const timeToMinutes = (time: string) => {
 
 export function DailyView({ appointments, currentDate, setCurrentDate }: { appointments: Appointment[], currentDate: Date, setCurrentDate: (date: Date) => void }) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday
-
   const hours = Array.from({ length: 13 }, (_, i) => i + 7); // 7 AM to 7 PM
-
   const days = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)); // Mon to Fri
+
+  const { deleteAppointment } = useSchedule();
+  const [isAlertOpen, setIsAlertOpen] = React.useState(false);
+  const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
 
   const handleNextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
   const handlePrevWeek = () => setCurrentDate(subWeeks(currentDate, 1));
@@ -31,73 +35,106 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
     return appointments.filter(appointment => isSameDay(new Date(appointment.date + 'T00:00:00'), day));
   };
 
+  const handleDeleteClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsAlertOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedAppointment) {
+      await deleteAppointment(selectedAppointment.id);
+    }
+    setIsAlertOpen(false);
+    setSelectedAppointment(null);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle>
-            {format(weekStart, "d 'de' MMMM", { locale: ptBR })} - {format(addDays(weekStart, 4), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={handlePrevWeek}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" onClick={handleToday}>Hoje</Button>
-            <Button variant="outline" size="icon" onClick={handleNextWeek}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+    <>
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você tem certeza que deseja excluir o agendamento para <span className="font-bold">{selectedAppointment?.patientName}</span> às <span className="font-bold">{selectedAppointment?.time}</span>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle>
+              {format(weekStart, "d 'de' MMMM", { locale: ptBR })} - {format(addDays(weekStart, 4), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handlePrevWeek}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" onClick={handleToday}>Hoje</Button>
+              <Button variant="outline" size="icon" onClick={handleNextWeek}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <div className="flex">
-          <div className="w-16 flex-shrink-0">
-            <div className="h-10"></div>
-            {hours.map(hour => (
-              <div key={hour} className="h-[60px] text-right pr-2 text-xs text-muted-foreground border-t border-border pt-1">
-                {`${hour.toString().padStart(2, '0')}:00`}
-              </div>
-            ))}
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <div className="flex">
+            <div className="w-16 flex-shrink-0">
+              <div className="h-10"></div>
+              {hours.map(hour => (
+                <div key={hour} className="h-[60px] text-right pr-2 text-xs text-muted-foreground border-t border-border pt-1">
+                  {`${hour.toString().padStart(2, '0')}:00`}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-5 flex-grow min-w-[800px]">
+              {days.map(day => (
+                <div key={day.toISOString()} className="text-center font-semibold p-2 border-b border-border">
+                  <p className="text-sm uppercase">{format(day, 'EEE', { locale: ptBR })}</p>
+                  <p className="text-lg font-normal text-muted-foreground">{format(day, 'dd')}</p>
+                </div>
+              ))}
+              {days.map(day => (
+                <div key={day.toISOString()} className="relative border-r border-border bg-background">
+                  {hours.map((hour, index) => (
+                      <div key={hour} className={`h-[60px] ${index > 0 ? 'border-t border-border/70' : ''}`}></div>
+                  ))}
+                  {getAppointmentsForDay(day).map(app => {
+                    const top = ((timeToMinutes(app.time) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
+                    const height = ((timeToMinutes(app.endTime) - timeToMinutes(app.time)) / 60) * HOUR_HEIGHT - 2;
+                    
+                    return (
+                      <div
+                        key={app.id}
+                        onClick={() => handleDeleteClick(app)}
+                        className="absolute w-full p-2 rounded-lg text-white overflow-hidden text-xs shadow-md cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{
+                          top: `${top}px`,
+                          height: `${height}px`,
+                          backgroundColor: app.color,
+                          left: '4px',
+                          width: 'calc(100% - 8px)'
+                        }}
+                      >
+                        <p className="font-bold whitespace-nowrap overflow-hidden text-ellipsis">{app.patientName}</p>
+                        <p className="whitespace-nowrap overflow-hidden text-ellipsis">{app.professionalName}</p>
+                        <p className="opacity-80 mt-1">{app.time} - {app.endTime}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-5 flex-grow min-w-[800px]">
-            {days.map(day => (
-              <div key={day.toISOString()} className="text-center font-semibold p-2 border-b border-border">
-                <p className="text-sm uppercase">{format(day, 'EEE', { locale: ptBR })}</p>
-                <p className="text-lg font-normal text-muted-foreground">{format(day, 'dd')}</p>
-              </div>
-            ))}
-            {days.map(day => (
-              <div key={day.toISOString()} className="relative border-r border-border bg-background">
-                {hours.map((hour, index) => (
-                    <div key={hour} className={`h-[60px] ${index > 0 ? 'border-t border-border/70' : ''}`}></div>
-                ))}
-                {getAppointmentsForDay(day).map(app => {
-                  const top = ((timeToMinutes(app.time) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
-                  const height = ((timeToMinutes(app.endTime) - timeToMinutes(app.time)) / 60) * HOUR_HEIGHT - 2;
-                  
-                  return (
-                    <div
-                      key={app.id}
-                      className="absolute w-full p-2 rounded-lg text-white overflow-hidden text-xs shadow-md"
-                      style={{
-                        top: `${top}px`,
-                        height: `${height}px`,
-                        backgroundColor: app.color,
-                        left: '4px',
-                        width: 'calc(100% - 8px)'
-                      }}
-                    >
-                      <p className="font-bold whitespace-nowrap overflow-hidden text-ellipsis">{app.patientName}</p>
-                      <p className="whitespace-nowrap overflow-hidden text-ellipsis">{app.professionalName}</p>
-                      <p className="opacity-80 mt-1">{app.time} - {app.endTime}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </>
   );
 }

@@ -10,6 +10,8 @@ interface UnitContextType {
   units: Unit[];
   loading: boolean;
   error: string | null;
+  selectedUnitId: string | null;
+  setSelectedUnitId: (id: string | null) => void;
   addUnit: (unitName: string) => Promise<void>;
   addRoomToUnit: (unitId: string, roomName: string) => Promise<void>;
 }
@@ -20,6 +22,7 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchUnits = useCallback(async () => {
@@ -38,7 +41,6 @@ export function UnitProvider({ children }: { children: ReactNode }) {
         ...doc.data()
       } as Unit));
 
-      // Sort client-side to avoid index dependency
       unitList.sort((a, b) => {
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
@@ -46,6 +48,14 @@ export function UnitProvider({ children }: { children: ReactNode }) {
       });
 
       setUnits(unitList);
+
+      // Set the first unit as selected by default if none is selected
+      if (unitList.length > 0 && !selectedUnitId) {
+        setSelectedUnitId(unitList[0].id);
+      } else if (unitList.length === 0) {
+        setSelectedUnitId(null);
+      }
+
     } catch (err: any) {
       console.error("Error fetching units: ", err);
       const userFriendlyError = "Falha ao buscar unidades. Verifique se a coleção 'units' existe e se as regras de segurança estão corretas.";
@@ -59,7 +69,7 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, selectedUnitId]);
 
   useEffect(() => {
     fetchUnits();
@@ -97,7 +107,7 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UnitContext.Provider value={{ units, loading, error, addUnit, addRoomToUnit }}>
+    <UnitContext.Provider value={{ units, loading, error, addUnit, addRoomToUnit, selectedUnitId, setSelectedUnitId }}>
       {children}
     </UnitContext.Provider>
   );

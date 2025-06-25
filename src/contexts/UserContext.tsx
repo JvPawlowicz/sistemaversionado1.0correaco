@@ -31,6 +31,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       const usersCollection = collection(db, 'users');
+      // In a real app with many users, you might filter by selectedUnitId here too
+      // For now, we fetch all to allow admins to see everyone.
       const q = query(usersCollection);
       const userSnapshot = await getDocs(q);
       const userList = userSnapshot.docs.map(doc => ({

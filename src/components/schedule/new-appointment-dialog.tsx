@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { usePatient } from '@/contexts/PatientContext';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Loader2 } from 'lucide-react';
 import type { Appointment } from '@/lib/types';
@@ -30,39 +29,36 @@ interface NewAppointmentDialogProps {
 
 export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDialogProps) {
   const [mounted, setMounted] = React.useState(false);
-  const { patients, loading: patientsLoading } = usePatient();
   const { users, loading: usersLoading } = useUser();
-  const { units, loading: unitsLoading } = useUnit();
+  const { units, selectedUnitId, loading: unitsLoading } = useUnit();
   const { addAppointment } = useSchedule();
   const [isSaving, setIsSaving] = React.useState(false);
   const { toast } = useToast();
 
-  const [patientId, setPatientId] = React.useState('');
+  const [patientName, setPatientName] = React.useState('');
   const [professionalName, setProfessionalName] = React.useState('');
   const [discipline, setDiscipline] = React.useState('');
   const [date, setDate] = React.useState(format(new Date(), 'yyyy-MM-dd'));
   const [time, setTime] = React.useState('09:00');
   const [endTime, setEndTime] = React.useState('10:00');
-  const [unitId, setUnitId] = React.useState('');
   const [room, setRoom] = React.useState('');
   
   React.useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Admin');
-  const selectedUnit = units.find(u => u.id === unitId);
+  const selectedUnit = units.find(u => u.id === selectedUnitId);
   const availableRooms = selectedUnit ? selectedUnit.rooms : [];
 
-  const handleUnitChange = (newUnitId: string) => {
-    setUnitId(newUnitId);
-    setRoom(''); // Reset room selection when unit changes
-  }
+  React.useEffect(() => {
+    // Reset room selection when unit changes
+    setRoom('');
+  }, [selectedUnitId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const selectedPatient = patients.find(p => p.id === patientId);
-    if (!selectedPatient || !professionalName || !discipline || !date || !time || !endTime || !room || !unitId) {
+    if (!patientName || !professionalName || !discipline || !date || !time || !endTime || !room || !selectedUnitId) {
         toast({
             variant: "destructive",
             title: "Campos obrigatórios",
@@ -74,14 +70,14 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     setIsSaving(true);
     
     const newAppointmentData: Omit<Appointment, 'id' | 'createdAt' | 'color'> = {
-        patientId,
-        patientName: selectedPatient.name,
+        patientName,
         professionalName,
         discipline,
         date,
         time,
         endTime,
-        room
+        room,
+        unitId: selectedUnitId,
     };
 
     await addAppointment(newAppointmentData);
@@ -93,7 +89,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     return null;
   }
   
-  const isLoading = patientsLoading || usersLoading || unitsLoading;
+  const isLoading = usersLoading || unitsLoading;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -107,19 +103,8 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="patient" className="text-right">Paciente</Label>
-              <Select onValueChange={setPatientId} value={patientId} required disabled={isLoading}>
-                 <SelectTrigger className="col-span-3">
-                   <SelectValue placeholder="Selecione um paciente" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   {patientsLoading ? (
-                     <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                   ) : (
-                     patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
-                   )}
-                 </SelectContent>
-               </Select>
+              <Label htmlFor="patientName" className="text-right">Paciente/Evento</Label>
+              <Input id="patientName" value={patientName} onChange={e => setPatientName(e.target.value)} className="col-span-3" required placeholder="Digite o nome"/>
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="professional" className="text-right">Profissional</Label>
@@ -153,22 +138,15 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="unit" className="text-right">Unidade</Label>
-              <Select onValueChange={handleUnitChange} value={unitId} required disabled={isLoading}>
+               <Select value={selectedUnitId ?? ""} disabled>
                  <SelectTrigger className="col-span-3">
-                   <SelectValue placeholder="Selecione uma unidade" />
+                   <SelectValue placeholder="Unidade selecionada no cabeçalho" />
                  </SelectTrigger>
-                 <SelectContent>
-                    {unitsLoading ? (
-                     <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                   ) : (
-                     units.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)
-                   )}
-                 </SelectContent>
                </Select>
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="room" className="text-right">Sala</Label>
-              <Select onValueChange={setRoom} value={room} required disabled={!unitId || availableRooms.length === 0 || isLoading}>
+              <Select onValueChange={setRoom} value={room} required disabled={!selectedUnitId || availableRooms.length === 0 || isLoading}>
                  <SelectTrigger className="col-span-3">
                    <SelectValue placeholder="Selecione uma sala" />
                  </SelectTrigger>

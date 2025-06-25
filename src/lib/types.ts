@@ -8,6 +8,7 @@ export type Patient = {
   avatarUrl: string;
   dob: string;
   gender: 'Male' | 'Female' | 'Other';
+  unitIds: string[];
   createdAt?: any; // For Firestore serverTimestamp
 };
 
@@ -18,12 +19,13 @@ export type User = {
   role: 'Admin' | 'Therapist' | 'Receptionist';
   status: 'Active' | 'Inactive';
   avatarUrl: string;
+  unitIds: string[];
   createdAt?: any; // For Firestore serverTimestamp
 };
 
 export type Appointment = {
   id: string;
-  patientId: string;
+  patientId?: string; // Optional now
   patientName: string;
   professionalName: string;
   discipline: string;
@@ -31,6 +33,7 @@ export type Appointment = {
   endTime: string;
   date: string; // ISO String 'YYYY-MM-DD'
   room: string;
+  unitId: string;
   color: string;
   createdAt?: any; // For Firestore serverTimestamp
 };
