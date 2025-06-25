@@ -10,9 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@genkit-ai/firebase": "^1.0.0",
-    "@genkit-ai/googleai": "^1.0.0",
-    "@genkit-ai/google-cloud": "^1.0.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -39,7 +36,6 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "firebase": "^11.9.1",
-    "genkit": "^1.0.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "lucide-react": "^0.475.0",
