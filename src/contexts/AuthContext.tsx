@@ -23,14 +23,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    if (auth) {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+        setLoading(false);
+      });
+      return () => unsubscribe();
+    } else {
       setLoading(false);
-    });
-    return () => unsubscribe();
+    }
   }, []);
 
   const login = async (email: string, pass: string) => {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro de Configuração',
+        description: 'A configuração do Firebase está ausente. Verifique o console para mais detalhes.',
+      });
+      return;
+    }
     try {
       await signInWithEmailAndPassword(auth, email, pass);
       router.push('/dashboard');
@@ -45,6 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    if (!auth) {
+       toast({
+        variant: 'destructive',
+        title: 'Erro de Configuração',
+        description: 'A configuração do Firebase está ausente. Verifique o console para mais detalhes.',
+      });
+      return;
+    }
     try {
       await signOut(auth);
       router.push('/login');

@@ -20,6 +20,10 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const fetchPatients = async () => {
+    if (!db) {
+        setLoading(false);
+        return;
+    }
     try {
       setLoading(true);
       const patientsCollection = collection(db, 'patients');
@@ -35,7 +39,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       toast({
         variant: "destructive",
         title: "Erro ao buscar pacientes",
-        description: "Não foi possível carregar a lista de pacientes.",
+        description: "Não foi possível carregar a lista de pacientes. Verifique a configuração e as regras de segurança do Firestore.",
       });
     } finally {
       setLoading(false);
@@ -47,6 +51,14 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addPatient = async (patientData: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'>) => {
+    if (!db) {
+        toast({
+            variant: "destructive",
+            title: "Erro de Configuração",
+            description: "A configuração do Firebase está ausente. Não é possível adicionar pacientes.",
+        });
+        return;
+    }
     try {
       const patientsCollection = collection(db, 'patients');
       await addDoc(patientsCollection, {
