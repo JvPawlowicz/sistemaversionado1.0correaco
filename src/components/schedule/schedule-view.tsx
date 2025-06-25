@@ -11,19 +11,19 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export function ScheduleView() {
-  const dayViewRef = React.useRef<HTMLDivElement>(null);
+  const weekViewRef = React.useRef<HTMLDivElement>(null);
   const monthViewRef = React.useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = React.useState('day');
+  const [activeTab, setActiveTab] = React.useState('week');
   const [isExporting, setIsExporting] = React.useState(false);
 
   const handleExportPdf = () => {
     setIsExporting(true);
-    const inputRef = activeTab === 'day' ? dayViewRef : monthViewRef;
+    const inputRef = activeTab === 'week' ? weekViewRef : monthViewRef;
     const input = inputRef.current;
 
     if (input) {
-      const orientation = activeTab === 'day' ? 'l' : 'p';
-      html2canvas(input, { scale: 2, useCORS: true }).then((canvas) => {
+      const orientation = activeTab === 'week' ? 'l' : 'p';
+      html2canvas(input, { scale: 2, useCORS: true, backgroundColor: null }).then((canvas) => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF(orientation, 'mm', 'a4', true);
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -32,10 +32,10 @@ export function ScheduleView() {
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
         
-        let imgWidth = pdfWidth;
-        let imgHeight = pdfWidth / ratio;
+        let imgWidth = pdfWidth - 20; // with margin
+        let imgHeight = imgWidth / ratio;
         
-        if (imgHeight > pdfHeight - 20) { // add some margin
+        if (imgHeight > pdfHeight - 20) {
             imgHeight = pdfHeight - 20;
             imgWidth = imgHeight * ratio;
         }
@@ -44,7 +44,7 @@ export function ScheduleView() {
         const y = 10;
 
         pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-        pdf.save('schedule.pdf');
+        pdf.save('agenda.pdf');
       }).finally(() => {
         setIsExporting(false);
       });
@@ -55,10 +55,10 @@ export function ScheduleView() {
 
   return (
     <div className="space-y-4">
-        <Tabs defaultValue="day" className="w-full" onValueChange={setActiveTab}>
+        <Tabs defaultValue="week" className="w-full" onValueChange={setActiveTab}>
             <div className="flex items-center justify-between pb-4">
                 <TabsList>
-                    <TabsTrigger value="day">Dia</TabsTrigger>
+                    <TabsTrigger value="week">Semana</TabsTrigger>
                     <TabsTrigger value="month">Mês</TabsTrigger>
                 </TabsList>
                  <Button onClick={handleExportPdf} disabled={isExporting}>
@@ -66,8 +66,8 @@ export function ScheduleView() {
                     Exportar PDF
                 </Button>
             </div>
-            <TabsContent value="day" >
-                <div ref={dayViewRef}>
+            <TabsContent value="week" >
+                <div ref={weekViewRef}>
                     <DailyView appointments={appointments} />
                 </div>
             </TabsContent>

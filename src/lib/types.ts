@@ -22,10 +22,13 @@ export type User = {
 export type Appointment = {
   id: string;
   patientName: string;
+  professionalName: string;
   discipline: string;
   time: string;
+  endTime: string;
   date: Date;
   room: string;
+  color: string;
 };
 
 export type EvolutionRecord = {

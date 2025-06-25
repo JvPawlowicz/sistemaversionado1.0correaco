@@ -15,26 +15,42 @@ export const users: User[] = [
   { id: 'U004', name: 'Carlos Santos', email: 'carlos.santos@clinicflow.com', role: 'Therapist', status: 'Inactive', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e2902670cd` },
 ];
 
-const today = new Date();
-const tomorrow = new Date();
-tomorrow.setDate(today.getDate() + 1);
-const yesterday = new Date();
-yesterday.setDate(today.getDate() - 1);
-const nextMonth = new Date();
-nextMonth.setMonth(today.getMonth() + 1, 5);
+function getDayOfWeek(date: Date, dayOfWeek: number) { // 1=Monday, ... 7=Sunday
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : dayOfWeek);
+  return new Date(d.setDate(diff));
+}
 
+const colors = [
+    '#34D399',
+    '#60A5FA',
+    '#F472B6',
+    '#FBBF24',
+    '#F97316',
+];
 
 export const appointments: Appointment[] = [
-  { id: 'A001', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '09:00', date: today, room: '1' },
-  { id: 'A002', patientName: 'Bob Williams', discipline: 'Psychology', time: '10:00', date: today, room: '2' },
-  { id: 'A003', patientName: 'Diana Miller', discipline: 'Nutrition', time: '11:00', date: today, room: '3' },
-  { id: 'A004', patientName: 'Ethan Davis', discipline: 'Physiotherapy', time: '14:00', date: today, room: '1' },
-  { id: 'A005', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '09:00', date: tomorrow, room: '1' },
-  { id: 'A006', patientName: 'Charlie Brown', discipline: 'Psychology', time: '15:00', date: tomorrow, room: '2' },
-  { id: 'A007', patientName: 'Bob Williams', discipline: 'Physiotherapy', time: '10:00', date: yesterday, room: '1' },
-  { id: 'A008', patientName: 'Diana Miller', discipline: 'Nutrition', time: '11:00', date: yesterday, room: '3' },
-  { id: 'A009', patientName: 'Ethan Davis', discipline: 'Physiotherapy', time: '16:00', date: yesterday, room: '1' },
-  { id: 'A010', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '10:00', date: nextMonth, room: '1' },
+  // Monday of current week
+  { id: 'A001', date: getDayOfWeek(new Date(), 1), patientName: 'Alice Johnson', professionalName: 'Marco Silva', discipline: 'Physiotherapy', time: '08:00', endTime: '09:00', room: '1', color: colors[0] },
+  { id: 'A002', date: getDayOfWeek(new Date(), 1), patientName: 'Bob Williams', professionalName: 'Carlos Santos', discipline: 'Physiotherapy', time: '10:00', endTime: '11:00', room: '1', color: colors[1] },
+  { id: 'A003', date: getDayOfWeek(new Date(), 1), patientName: 'Charlie Brown', professionalName: 'Marco Silva', discipline: 'Physiotherapy', time: '14:00', endTime: '15:00', room: '2', color: colors[0] },
+  
+  // Tuesday
+  { id: 'A004', date: getDayOfWeek(new Date(), 2), patientName: 'Diana Miller', professionalName: 'Dr. Evelyn Reed', discipline: 'Psychology', time: '09:00', endTime: '10:00', room: '3', color: colors[2] },
+  { id: 'A005', date: getDayOfWeek(new Date(), 2), patientName: 'Ethan Davis', professionalName: 'Carlos Santos', discipline: 'Physiotherapy', time: '11:00', endTime: '12:30', room: '1', color: colors[1] },
+
+  // Wednesday
+  { id: 'A006', date: getDayOfWeek(new Date(), 3), patientName: 'Alice Johnson', professionalName: 'Marco Silva', discipline: 'Physiotherapy', time: '08:30', endTime: '09:30', room: '1', color: colors[0] },
+  { id: 'A007', date: getDayOfWeek(new Date(), 3), patientName: 'Fiona Green', professionalName: 'Dr. Evelyn Reed', discipline: 'Psychology', time: '13:00', endTime: '14:00', room: '3', color: colors[2] },
+
+  // Thursday
+  { id: 'A008', date: getDayOfWeek(new Date(), 4), patientName: 'George King', professionalName: 'Carlos Santos', discipline: 'Physiotherapy', time: '10:00', endTime: '11:00', room: '1', color: colors[1] },
+  { id: 'A009', date: getDayOfWeek(new Date(), 4), patientName: 'Bob Williams', professionalName: 'Marco Silva', discipline: 'Physiotherapy', time: '15:00', endTime: '16:00', room: '2', color: colors[0] },
+
+  // Friday
+  { id: 'A010', date: getDayOfWeek(new Date(), 5), patientName: 'Hannah White', professionalName: 'Dr. Evelyn Reed', discipline: 'Psychology', time: '09:00', endTime: '10:00', room: '3', color: colors[2] },
+  { id: 'A011', date: getDayOfWeek(new Date(), 5), patientName: 'Ian Black', professionalName: 'Carlos Santos', discipline: 'Physiotherapy', time: '11:00', endTime: '12:00', room: '1', color: colors[1] },
 ];
 
 
