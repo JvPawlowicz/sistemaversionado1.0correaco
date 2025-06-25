@@ -50,7 +50,7 @@ export default function DashboardPage() {
            {currentUser ? `Bem-vindo(a) de volta, ${currentUser.name}!` : 'Bem-vindo(a)!'}
         </h1>
         <p className="text-muted-foreground">
-          Aqui está um resumo da sua clínica.
+          Tudo pronto para um dia produtivo. Aqui está o resumo da sua clínica.
         </p>
       </div>
 
