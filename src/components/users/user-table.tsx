@@ -13,13 +13,18 @@ import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import type { User } from '@/lib/types';
 
-export function UserTable({ users }: { users: User[] }) {
+interface UserTableProps {
+  users: User[];
+  onAddUser: () => void;
+}
+
+export function UserTable({ users, onAddUser }: UserTableProps) {
   if (users.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center">
         <h3 className="text-xl font-semibold mb-2">Nenhum usuário encontrado</h3>
         <p className="text-muted-foreground mb-4">Comece adicionando um novo usuário ao sistema.</p>
-        <Button>
+        <Button onClick={onAddUser}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Adicionar Novo Usuário
         </Button>

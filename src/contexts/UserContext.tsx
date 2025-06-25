@@ -3,13 +3,14 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { User } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface UserContextType {
   users: User[];
   loading: boolean;
   error: string | null;
+  addUser: (userData: Omit<User, 'id' | 'status' | 'avatarUrl' | 'createdAt'>) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -55,8 +56,40 @@ export function UserProvider({ children }: { children: ReactNode }) {
     fetchUsers();
   }, []);
 
+  const addUser = async (userData: Omit<User, 'id' | 'status' | 'avatarUrl' | 'createdAt'>) => {
+    if (!db) {
+        toast({
+            variant: "destructive",
+            title: "Erro de Configuração",
+            description: "A configuração do Firebase está ausente.",
+        });
+        return;
+    }
+    try {
+      const usersCollection = collection(db, 'users');
+      await addDoc(usersCollection, {
+        ...userData,
+        status: 'Active',
+        avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
+        createdAt: serverTimestamp()
+      });
+      toast({
+        title: "Sucesso",
+        description: "Perfil de usuário adicionado ao banco de dados.",
+      });
+      await fetchUsers(); // Refresh the list
+    } catch (error) {
+      console.error("Error adding user: ", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao adicionar usuário",
+        description: "Ocorreu um erro ao tentar salvar o perfil do usuário.",
+      });
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ users, loading, error }}>
+    <UserContext.Provider value={{ users, loading, error, addUser }}>
       {children}
     </UserContext.Provider>
   );

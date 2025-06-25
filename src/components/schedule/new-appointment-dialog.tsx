@@ -28,6 +28,7 @@ interface NewAppointmentDialogProps {
 }
 
 export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDialogProps) {
+  const [mounted, setMounted] = React.useState(false);
   const { patients, loading: patientsLoading } = usePatient();
   const { users, loading: usersLoading } = useUser();
   const { addAppointment } = useSchedule();
@@ -41,6 +42,10 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   const [time, setTime] = React.useState('09:00');
   const [endTime, setEndTime] = React.useState('10:00');
   const [room, setRoom] = React.useState('');
+  
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Admin');
 
@@ -73,6 +78,10 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     setIsSaving(false);
     onOpenChange(false);
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
