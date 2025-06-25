@@ -8,49 +8,74 @@ import { DailyView } from './daily-view';
 import { MonthlyView } from './monthly-view';
 import { appointments } from '@/lib/placeholder-data';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable';
+import { format, startOfWeek, endOfWeek, isWithinInterval, isSameDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export function ScheduleView() {
-  const weekViewRef = React.useRef<HTMLDivElement>(null);
-  const monthViewRef = React.useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = React.useState('week');
   const [isExporting, setIsExporting] = React.useState(false);
+  const [currentDate, setCurrentDate] = React.useState<Date>(new Date());
 
   const handleExportPdf = () => {
     setIsExporting(true);
-    const inputRef = activeTab === 'week' ? weekViewRef : monthViewRef;
-    const input = inputRef.current;
+    
+    const doc = new jsPDF();
+    const primaryColor = [63, 76, 181];
 
-    if (input) {
-      const orientation = activeTab === 'week' ? 'l' : 'p';
-      html2canvas(input, { scale: 2, useCORS: true, backgroundColor: null }).then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF(orientation, 'mm', 'a4', true);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const ratio = canvasWidth / canvasHeight;
+    if (activeTab === 'week') {
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
         
-        let imgWidth = pdfWidth - 20; // with margin
-        let imgHeight = imgWidth / ratio;
+        const title = `Agenda da Semana: ${format(weekStart, 'dd/MM/yyyy')} a ${format(weekEnd, 'dd/MM/yyyy')}`;
         
-        if (imgHeight > pdfHeight - 20) {
-            imgHeight = pdfHeight - 20;
-            imgWidth = imgHeight * ratio;
-        }
-        
-        const x = (pdfWidth - imgWidth) / 2;
-        const y = 10;
+        const weekAppointments = appointments
+            .filter(app => isWithinInterval(app.date, { start: weekStart, end: weekEnd }))
+            .sort((a, b) => a.date.getTime() - b.date.getTime() || a.time.localeCompare(b.time));
 
-        pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-        pdf.save('agenda.pdf');
-      }).finally(() => {
-        setIsExporting(false);
-      });
+        const body = weekAppointments.map(app => [
+            format(app.date, 'eeee, dd/MM', { locale: ptBR }),
+            `${app.time} - ${app.endTime}`,
+            app.patientName,
+            app.professionalName,
+            `Sala ${app.room}`
+        ]);
+        
+        doc.text(title, 14, 16);
+        (doc as any).autoTable({
+            startY: 22,
+            head: [['Data', 'Horário', 'Paciente', 'Profissional', 'Sala']],
+            body: body,
+            headStyles: { fillColor: primaryColor },
+            theme: 'grid',
+        });
+
     } else {
-        setIsExporting(false);
+        const title = `Agenda do Dia: ${format(currentDate, 'dd/MM/yyyy', { locale: ptBR })}`;
+
+        const dayAppointments = appointments
+            .filter(app => isSameDay(app.date, currentDate))
+            .sort((a, b) => a.time.localeCompare(b.time));
+
+        const body = dayAppointments.map(app => [
+            `${app.time} - ${app.endTime}`,
+            app.patientName,
+            app.professionalName,
+            `Sala ${app.room}`
+        ]);
+        
+        doc.text(title, 14, 16);
+        (doc as any).autoTable({
+            startY: 22,
+            head: [['Horário', 'Paciente', 'Profissional', 'Sala']],
+            body: body,
+            headStyles: { fillColor: primaryColor },
+            theme: 'grid',
+        });
     }
+
+    doc.save('agenda.pdf');
+    setIsExporting(false);
   };
 
   return (
@@ -67,14 +92,10 @@ export function ScheduleView() {
                 </Button>
             </div>
             <TabsContent value="week" >
-                <div ref={weekViewRef}>
-                    <DailyView appointments={appointments} />
-                </div>
+                <DailyView appointments={appointments} currentDate={currentDate} setCurrentDate={setCurrentDate} />
             </TabsContent>
             <TabsContent value="month">
-                <div ref={monthViewRef}>
-                    <MonthlyView appointments={appointments} />
-                </div>
+                <MonthlyView appointments={appointments} date={currentDate} setDate={setCurrentDate} />
             </TabsContent>
         </Tabs>
     </div>

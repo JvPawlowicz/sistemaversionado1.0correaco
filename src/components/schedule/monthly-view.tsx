@@ -7,11 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { isSameDay } from 'date-fns';
 
-export function MonthlyView({ appointments }: { appointments: Appointment[] }) {
-    const [date, setDate] = React.useState<Date | undefined>(new Date());
+export function MonthlyView({ appointments, date, setDate }: { appointments: Appointment[], date: Date, setDate: (date: Date) => void }) {
     
     const selectedDayAppointments = React.useMemo(() => {
-        if (!date) return [];
         return appointments.filter(app => isSameDay(app.date, date));
     }, [date, appointments]);
     
@@ -24,15 +22,16 @@ export function MonthlyView({ appointments }: { appointments: Appointment[] }) {
             <CardContent className="grid gap-6 md:grid-cols-2 p-4 md:p-6">
                  <Calendar
                     mode="single"
+                    required
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={(d) => d && setDate(d)}
                     className="rounded-md border self-start"
                     modifiers={{ withAppointments: daysWithAppointments }}
                     modifiersClassNames={{ withAppointments: 'has-appointment' }}
                 />
                  <div className="space-y-4">
                     <CardHeader className="p-0">
-                        <CardTitle>Agendamentos para {date ? date.toLocaleDateString('pt-BR') : 'hoje'}</CardTitle>
+                        <CardTitle>Agendamentos para {date.toLocaleDateString('pt-BR')}</CardTitle>
                         <CardDescription>{selectedDayAppointments.length} agendamento(s) marcados.</CardDescription>
                     </CardHeader>
                     <div className="space-y-4 max-h-96 overflow-y-auto p-1">

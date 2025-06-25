@@ -16,8 +16,7 @@ const timeToMinutes = (time: string) => {
   return hours * 60 + minutes;
 };
 
-export function DailyView({ appointments }: { appointments: Appointment[] }) {
-  const [currentDate, setCurrentDate] = React.useState(new Date());
+export function DailyView({ appointments, currentDate, setCurrentDate }: { appointments: Appointment[], currentDate: Date, setCurrentDate: (date: Date) => void }) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday
 
   const hours = Array.from({ length: 13 }, (_, i) => i + 7); // 7 AM to 7 PM
