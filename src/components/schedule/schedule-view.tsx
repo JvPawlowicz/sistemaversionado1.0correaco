@@ -7,8 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DailyView } from './daily-view';
 import { MonthlyView } from './monthly-view';
 import { appointments } from '@/lib/placeholder-data';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { format, startOfWeek, endOfWeek, isWithinInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -17,9 +15,12 @@ export function ScheduleView() {
   const [isExporting, setIsExporting] = React.useState(false);
   const [currentDate, setCurrentDate] = React.useState<Date>(new Date());
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     setIsExporting(true);
     
+    const { default: jsPDF } = await import('jspdf');
+    await import('jspdf-autotable');
+
     const doc = new jsPDF();
     const primaryColor = [63, 76, 181];
 
