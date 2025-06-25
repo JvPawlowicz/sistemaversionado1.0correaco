@@ -36,6 +36,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "firebase": "^11.9.1",
+    "firebase-admin": "^12.2.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "lucide-react": "^0.475.0",

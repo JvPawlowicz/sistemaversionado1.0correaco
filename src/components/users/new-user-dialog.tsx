@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import {
   Dialog,
   DialogContent,
@@ -8,191 +9,184 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useUser } from '@/contexts/UserContext';
-import { Loader2, ChevronsUpDown, Check } from 'lucide-react';
+import { Loader2, ChevronsUpDown, Check, CircleAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { User, Unit } from '@/lib/types';
 import { useUnit } from '@/contexts/UnitContext';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-
+import { createUserAction } from '@/lib/actions';
 
 interface NewUserDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }
 
-export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
-  const [mounted, setMounted] = React.useState(false);
-  const { addUser } = useUser();
-  const { units, loading: unitsLoading } = useUnit();
-  const [isSaving, setIsSaving] = React.useState(false);
-  const { toast } = useToast();
+const initialState = {
+  success: false,
+  message: '',
+  errors: null,
+};
 
-  const [name, setName] = React.useState('');
-  const [email, setEmail] = React.useState('');
-  const [role, setRole] = React.useState<'Admin' | 'Therapist' | 'Receptionist' | 'Coordinator'>('Therapist');
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      Salvar Usuário
+    </Button>
+  );
+}
+
+export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
+  const [state, formAction] = useFormState(createUserAction, initialState);
+  const { toast } = useToast();
+  const { units, loading: unitsLoading } = useUnit();
+
   const [selectedUnitIds, setSelectedUnitIds] = React.useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
-  
+  const formRef = React.useRef<HTMLFormElement>(null);
+
   React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const resetForm = () => {
-    setName('');
-    setEmail('');
-    setRole('Therapist');
-    setSelectedUnitIds([]);
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !email || !role || selectedUnitIds.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos e selecione pelo menos uma unidade.",
-      });
-      return;
+    if (state.success) {
+      toast({ title: 'Sucesso!', description: state.message });
+      onOpenChange(false);
+    } else if (state.message && !state.errors) {
+      toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
-    
-    setIsSaving(true);
-    
-    const newUserData: Omit<User, 'id' | 'status' | 'avatarUrl' | 'createdAt'> = {
-      name,
-      email,
-      role,
-      unitIds: selectedUnitIds,
-    };
-
-    await addUser(newUserData);
-    setIsSaving(false);
-    onOpenChange(false);
-    resetForm();
-  };
+  }, [state, onOpenChange, toast]);
   
-  const selectedUnits = units.filter(unit => selectedUnitIds.includes(unit.id));
+  const resetForm = () => {
+      formRef.current?.reset();
+      setSelectedUnitIds([]);
+      // Reset form state if needed, although remounting on close/open handles this
+  };
 
-  if (!mounted) {
-    return null;
-  }
+  const selectedUnits = units.filter(unit => selectedUnitIds.includes(unit.id));
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-        if (!open) {
-          resetForm();
-        }
+        if (!open) resetForm();
         onOpenChange(open);
       }}>
       <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
+        <form ref={formRef} action={formAction}>
           <DialogHeader>
             <DialogTitle>Adicionar Novo Usuário</DialogTitle>
             <DialogDescription>
-               Preencha os detalhes para criar o perfil do usuário no sistema. <br/><br/>
-               <strong>Passo Final (Importante):</strong> Após salvar, o administrador deve ir à seção de <strong>Autenticação</strong> no Console do Firebase, criar uma conta com o <strong>mesmo e-mail</strong> e definir uma senha inicial para o usuário.
+              Preencha os detalhes para criar o perfil e a conta de acesso do usuário. A senha definida aqui será a senha inicial.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {state.message && !state.success && !state.errors && (
+                <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                    <CircleAlert className="h-4 w-4" />
+                    <p>{state.message}</p>
+                </div>
+            )}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Nome</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} className="col-span-3" required />
+              <div className="col-span-3">
+                <Input id="name" name="name" required />
+                {state.errors?.name && <p className="text-xs text-destructive mt-1">{state.errors.name[0]}</p>}
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">Email</Label>
-              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="col-span-3" required />
+              <div className="col-span-3">
+                <Input id="email" name="email" type="email" required />
+                 {state.errors?.email && <p className="text-xs text-destructive mt-1">{state.errors.email[0]}</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">Senha</Label>
+              <div className="col-span-3">
+                <Input id="password" name="password" type="password" required />
+                {state.errors?.password && <p className="text-xs text-destructive mt-1">{state.errors.password[0]}</p>}
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="role" className="text-right">Função</Label>
-              <Select onValueChange={(value) => setRole(value as any)} value={role} required>
-                 <SelectTrigger className="col-span-3">
-                   <SelectValue placeholder="Selecione uma função" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="Therapist">Terapeuta</SelectItem>
-                   <SelectItem value="Coordinator">Coordenador</SelectItem>
-                   <SelectItem value="Admin">Admin</SelectItem>
-                   <SelectItem value="Receptionist">Recepcionista</SelectItem>
-                 </SelectContent>
-               </Select>
+              <div className="col-span-3">
+                <Select name="role" defaultValue="Therapist" required>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Selecione uma função" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="Therapist">Terapeuta</SelectItem>
+                     <SelectItem value="Coordinator">Coordenador</SelectItem>
+                     <SelectItem value="Admin">Admin</SelectItem>
+                     <SelectItem value="Receptionist">Recepcionista</SelectItem>
+                   </SelectContent>
+                 </Select>
+                 {state.errors?.role && <p className="text-xs text-destructive mt-1">{state.errors.role[0]}</p>}
+              </div>
             </div>
             <div className="grid grid-cols-4 items-start gap-4 pt-2">
                <Label htmlFor="units" className="text-right pt-2">Unidades</Label>
-               <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={isPopoverOpen}
-                    className="col-span-3 justify-between h-auto min-h-10"
-                    disabled={unitsLoading}
-                  >
-                    <div className="flex gap-1 flex-wrap">
-                      {selectedUnits.length > 0 ? selectedUnits.map(unit => (
-                        <Badge
-                          variant="secondary"
-                          key={unit.id}
-                          className="mr-1"
-                        >
-                          {unit.name}
-                        </Badge>
-                      )) : "Selecione as unidades..."}
-                    </div>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar unidade..." />
-                    <CommandList>
-                      <CommandEmpty>Nenhuma unidade encontrada.</CommandEmpty>
-                      <CommandGroup>
-                        {units.map((unit) => (
-                          <CommandItem
-                            key={unit.id}
-                            value={unit.name}
-                            onSelect={() => {
-                              setSelectedUnitIds(
-                                selectedUnitIds.includes(unit.id)
-                                  ? selectedUnitIds.filter((id) => id !== unit.id)
-                                  : [...selectedUnitIds, unit.id]
-                              );
-                              setIsPopoverOpen(true);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                'mr-2 h-4 w-4',
-                                selectedUnitIds.includes(unit.id) ? 'opacity-100' : 'opacity-0'
-                              )}
-                            />
+               <div className="col-span-3">
+                 {selectedUnitIds.map(id => <input key={id} type="hidden" name="unitIds" value={id} />)}
+                 <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={isPopoverOpen}
+                      className="w-full justify-between h-auto min-h-10"
+                      disabled={unitsLoading}
+                    >
+                      <div className="flex gap-1 flex-wrap">
+                        {selectedUnits.length > 0 ? selectedUnits.map(unit => (
+                          <Badge variant="secondary" key={unit.id} className="mr-1">
                             {unit.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                          </Badge>
+                        )) : "Selecione as unidades..."}
+                      </div>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar unidade..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhuma unidade encontrada.</CommandEmpty>
+                        <CommandGroup>
+                          {units.map((unit) => (
+                            <CommandItem
+                              key={unit.id}
+                              value={unit.name}
+                              onSelect={() => {
+                                setSelectedUnitIds(
+                                  selectedUnitIds.includes(unit.id)
+                                    ? selectedUnitIds.filter((id) => id !== unit.id)
+                                    : [...selectedUnitIds, unit.id]
+                                );
+                                setIsPopoverOpen(true);
+                              }}
+                            >
+                              <Check className={cn('mr-2 h-4 w-4', selectedUnitIds.includes(unit.id) ? 'opacity-100' : 'opacity-0')} />
+                              {unit.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                 {state.errors?.unitIds && <p className="text-xs text-destructive mt-1">{state.errors.unitIds[0]}</p>}
+               </div>
             </div>
           </div>
           <DialogFooter>
-            <DialogClose asChild>
-                <Button type="button" variant="outline" onClick={resetForm}>Cancelar</Button>
-            </DialogClose>
-            <Button type="submit" disabled={isSaving || unitsLoading}>
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar Usuário
-            </Button>
+            <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
+            <SubmitButton />
           </DialogFooter>
         </form>
       </DialogContent>
