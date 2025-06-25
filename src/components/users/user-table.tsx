@@ -18,6 +18,13 @@ interface UserTableProps {
   onAddUser: () => void;
 }
 
+const roleNames: Record<User['role'], string> = {
+  Admin: 'Admin',
+  Therapist: 'Terapeuta',
+  Receptionist: 'Recepcionista',
+  Coordinator: 'Coordenador',
+};
+
 export function UserTable({ users, onAddUser }: UserTableProps) {
   if (users.length === 0) {
     return (
@@ -60,7 +67,7 @@ export function UserTable({ users, onAddUser }: UserTableProps) {
                   </div>
                 </div>
               </TableCell>
-              <TableCell>{user.role}</TableCell>
+              <TableCell>{roleNames[user.role] || user.role}</TableCell>
               <TableCell>
                 <Badge variant={user.status === 'Active' ? 'secondary' : 'outline'}>
                   {user.status === 'Active' ? 'Ativo' : 'Inativo'}

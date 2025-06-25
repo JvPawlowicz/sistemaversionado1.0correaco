@@ -39,7 +39,7 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
 
   const [name, setName] = React.useState('');
   const [email, setEmail] = React.useState('');
-  const [role, setRole] = React.useState<'Admin' | 'Therapist' | 'Receptionist'>('Therapist');
+  const [role, setRole] = React.useState<'Admin' | 'Therapist' | 'Receptionist' | 'Coordinator'>('Therapist');
   const [selectedUnitIds, setSelectedUnitIds] = React.useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
   
@@ -118,6 +118,7 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
                  </SelectTrigger>
                  <SelectContent>
                    <SelectItem value="Therapist">Terapeuta</SelectItem>
+                   <SelectItem value="Coordinator">Coordenador</SelectItem>
                    <SelectItem value="Admin">Admin</SelectItem>
                    <SelectItem value="Receptionist">Recepcionista</SelectItem>
                  </SelectContent>

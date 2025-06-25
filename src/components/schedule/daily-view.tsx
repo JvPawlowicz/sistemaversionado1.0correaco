@@ -9,6 +9,8 @@ import { format, addWeeks, subWeeks, startOfWeek, addDays, isSameDay } from 'dat
 import { ptBR } from 'date-fns/locale';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 const HOUR_HEIGHT = 60; // height of one hour in pixels
 
@@ -24,6 +26,7 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
   const days = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)); // Mon to Fri
 
   const { deleteAppointment } = useSchedule();
+  const { currentUser } = useAuth();
   const [isAlertOpen, setIsAlertOpen] = React.useState(false);
   const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
 
@@ -109,12 +112,22 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
                   {getAppointmentsForDay(day).map(app => {
                     const top = ((timeToMinutes(app.time) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
                     const height = ((timeToMinutes(app.endTime) - timeToMinutes(app.time)) / 60) * HOUR_HEIGHT - 2;
+
+                    const canDelete = currentUser && (
+                        currentUser.role === 'Admin' ||
+                        currentUser.role === 'Coordinator' ||
+                        currentUser.role === 'Receptionist' ||
+                        (currentUser.role === 'Therapist' && currentUser.name === app.professionalName)
+                    );
                     
                     return (
                       <div
                         key={app.id}
-                        onClick={() => handleDeleteClick(app)}
-                        className="absolute w-full p-2 rounded-lg text-white overflow-hidden text-xs shadow-md cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => canDelete && handleDeleteClick(app)}
+                        className={cn(
+                          "absolute w-full p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-opacity",
+                          canDelete ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed"
+                        )}
                         style={{
                           top: `${top}px`,
                           height: `${height}px`,

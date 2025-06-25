@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { useUnit } from '@/contexts/UnitContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NewAppointmentDialogProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   const { users, loading: usersLoading } = useUser();
   const { units, selectedUnitId, loading: unitsLoading } = useUnit();
   const { addAppointment } = useSchedule();
+  const { currentUser } = useAuth();
   const [isSaving, setIsSaving] = React.useState(false);
   const { toast } = useToast();
 
@@ -47,7 +49,13 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     setMounted(true);
   }, []);
 
-  const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Admin');
+  React.useEffect(() => {
+    if (currentUser?.role === 'Therapist') {
+      setProfessionalName(currentUser.name);
+    }
+  }, [currentUser]);
+
+  const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Admin' || u.role === 'Coordinator');
   const selectedUnit = units.find(u => u.id === selectedUnitId);
   const availableRooms = selectedUnit ? selectedUnit.rooms : [];
 
@@ -90,6 +98,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   }
   
   const isLoading = usersLoading || unitsLoading;
+  const isTherapist = currentUser?.role === 'Therapist';
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -108,7 +117,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="professional" className="text-right">Profissional</Label>
-              <Select onValueChange={setProfessionalName} value={professionalName} required disabled={isLoading}>
+              <Select onValueChange={setProfessionalName} value={professionalName} required disabled={isLoading || isTherapist}>
                  <SelectTrigger className="col-span-3">
                    <SelectValue placeholder="Selecione um profissional" />
                  </SelectTrigger>

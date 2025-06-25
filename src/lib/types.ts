@@ -16,7 +16,7 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Therapist' | 'Receptionist';
+  role: 'Admin' | 'Therapist' | 'Receptionist' | 'Coordinator';
   status: 'Active' | 'Inactive';
   avatarUrl: string;
   unitIds: string[];
