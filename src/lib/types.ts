@@ -44,8 +44,15 @@ export type EvolutionRecord = {
 };
 
 export type Report = {
-  id: string;
+  id:string;
   title: string;
   date: string;
   url: string;
+};
+
+export type Unit = {
+  id: string;
+  name: string;
+  rooms: string[];
+  createdAt?: any;
 };
