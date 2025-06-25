@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'ClinicFlow',
-  description: 'Um sistema de gestão para clínicas multidisciplinares.',
+  title: 'Equidade+ (versão beta)',
+  description: 'Sistema de Gestão para Clínicas Focadas em Equidade.',
 };
 
 export default function RootLayout({

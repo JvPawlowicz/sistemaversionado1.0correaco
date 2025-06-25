@@ -6,7 +6,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as AuthUs
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
-import { collection, query, where, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -15,6 +15,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
+  updateAvatar: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -148,6 +149,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout error:", error);
     }
   };
+  
+  const updateAvatar = async () => {
+    if (!auth || !db || !currentUser) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Não foi possível mudar o avatar.',
+      });
+      return;
+    }
+
+    const newAvatarUrl = `https://i.pravatar.cc/150?u=${Date.now()}`;
+    const userDocRef = doc(db, 'users', currentUser.id);
+    
+    try {
+      await updateDoc(userDocRef, {
+        avatarUrl: newAvatarUrl
+      });
+      // Update local state immediately for instant feedback
+      setCurrentUser(prevUser => prevUser ? { ...prevUser, avatarUrl: newAvatarUrl } : null);
+      toast({
+        title: 'Sucesso!',
+        description: 'Seu avatar foi atualizado.',
+      });
+    } catch (error) {
+       console.error("Avatar update error:", error);
+       toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Não foi possível atualizar o avatar no banco de dados.',
+      });
+    }
+  };
+
 
   const value = {
     user,
@@ -156,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     login,
     logout,
+    updateAvatar,
   };
 
   return (

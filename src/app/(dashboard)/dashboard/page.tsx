@@ -9,6 +9,7 @@ import { useSchedule } from '@/contexts/ScheduleContext';
 import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { isToday } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 function StatCard({ title, value, icon: Icon, loading }: { title: string; value: string | number; icon: React.ElementType; loading: boolean }) {
   return (
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const { patients, loading: patientsLoading } = usePatient();
   const { appointments, loading: scheduleLoading } = useSchedule();
   const { users, loading: usersLoading } = useUser();
+  const { currentUser } = useAuth();
 
   const totalPatients = patients.filter(p => p.status === 'Active').length;
   const todaysAppointments = appointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length;
@@ -43,7 +45,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-          Bem-vindo(a) de volta, Dr(a). Reed!
+           {currentUser ? `Bem-vindo(a) de volta, ${currentUser.name}!` : 'Bem-vindo(a)!'}
         </h1>
         <p className="text-muted-foreground">
           Aqui está um resumo da sua clínica.

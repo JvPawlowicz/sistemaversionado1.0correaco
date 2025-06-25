@@ -23,7 +23,6 @@ export function AppSidebar() {
     { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
     { href: '/schedule', label: 'Agenda', icon: Calendar },
     { href: '/patients', label: 'Pacientes', icon: HeartPulse },
-    { href: '/ai-notes', label: 'Anotações com IA', icon: Bot },
     { href: '/users', label: 'Usuários', icon: Users, adminOnly: true },
   ];
 
@@ -32,7 +31,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <Link href="/dashboard" className="flex items-center gap-2">
           <Logo className="w-8 h-8" />
-          <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">ClinicFlow</span>
+          <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">Equidade+</span>
         </Link>
       </SidebarHeader>
       <SidebarMenu className="flex-1">
