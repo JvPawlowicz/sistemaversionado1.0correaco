@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { Unit } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, arrayUnion, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, arrayUnion, serverTimestamp, query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface UnitContextType {
@@ -31,16 +31,24 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       const unitsCollection = collection(db, 'units');
-      const q = query(unitsCollection, orderBy('createdAt', 'desc'));
+      const q = query(unitsCollection);
       const unitSnapshot = await getDocs(q);
       const unitList = unitSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Unit));
+
+      // Sort client-side to avoid index dependency
+      unitList.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
       setUnits(unitList);
     } catch (err: any) {
       console.error("Error fetching units: ", err);
-      const userFriendlyError = "Falha ao buscar unidades. Verifique se a coleção 'units' existe e tem as regras de segurança e índices corretos.";
+      const userFriendlyError = "Falha ao buscar unidades. Verifique se a coleção 'units' existe e se as regras de segurança estão corretas.";
       setError(userFriendlyError);
       setUnits([]);
       toast({

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Patient } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface PatientContextType {
@@ -30,16 +30,24 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       const patientsCollection = collection(db, 'patients');
-      const q = query(patientsCollection, orderBy('createdAt', 'desc'));
+      const q = query(patientsCollection);
       const patientSnapshot = await getDocs(q);
       const patientList = patientSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Patient));
+      
+      // Sort client-side to avoid index dependency
+      patientList.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
       setPatients(patientList);
     } catch (err: any) {
       console.error("Error fetching patients: ", err);
-      const userFriendlyError = "Falha ao buscar pacientes. Verifique se a coleção 'patients' existe no Firestore e se as regras de segurança permitem a leitura. Se o problema persistir, pode ser um índice ausente. Verifique o console do navegador para mais detalhes.";
+      const userFriendlyError = "Falha ao buscar pacientes. Verifique se a coleção 'patients' existe no Firestore e se as regras de segurança permitem a leitura.";
       setError(userFriendlyError);
       setPatients([]);
       toast({

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Appointment } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { colors } from '@/lib/placeholder-data';
 
@@ -31,7 +31,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       const appointmentsCollection = collection(db, 'appointments');
-      const q = query(appointmentsCollection, orderBy('createdAt', 'desc'));
+      const q = query(appointmentsCollection);
       const appointmentSnapshot = await getDocs(q);
       const appointmentList = appointmentSnapshot.docs.map(doc => {
         const data = doc.data();
@@ -40,10 +40,18 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
             ...data
         } as Appointment
       });
+      
+      // Sort client-side to avoid index dependency
+      appointmentList.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
       setAppointments(appointmentList);
     } catch (err: any) {
       console.error("Error fetching appointments: ", err);
-      const userFriendlyError = "Falha ao buscar agendamentos. Verifique se a coleção 'appointments' existe e se as regras de segurança estão corretas. Pode ser necessário criar um índice no Firestore.";
+      const userFriendlyError = "Falha ao buscar agendamentos. Verifique se a coleção 'appointments' existe e se as regras de segurança estão corretas.";
       setError(userFriendlyError);
       setAppointments([]);
       toast({
