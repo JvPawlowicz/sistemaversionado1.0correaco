@@ -1,7 +1,5 @@
 import type { Patient, User, Appointment, EvolutionRecord, Report } from '@/lib/types';
 
-export const patients: Patient[] = [];
-
 export const users: User[] = [
   { id: 'U001', name: 'Dr. Evelyn Reed', email: 'evelyn.reed@clinicflow.com', role: 'Admin', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e29026709d` },
   { id: 'U002', name: 'Marco Silva', email: 'marco.silva@clinicflow.com', role: 'Therapist', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e2902670ad` },
