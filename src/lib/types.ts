@@ -18,6 +18,7 @@ export type User = {
   role: 'Admin' | 'Therapist' | 'Receptionist';
   status: 'Active' | 'Inactive';
   avatarUrl: string;
+  createdAt?: any; // For Firestore serverTimestamp
 };
 
 export type Appointment = {

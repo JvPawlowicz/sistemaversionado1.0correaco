@@ -1,9 +1,13 @@
+'use client';
+
 import { UserTable } from '@/components/users/user-table';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { users } from '@/lib/placeholder-data';
+import { useUser } from '@/contexts/UserContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function UsersPage() {
+  const { users, loading } = useUser();
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -15,7 +19,16 @@ export default function UsersPage() {
           Adicionar Novo Usuário
         </Button>
       </div>
-      <UserTable users={users} />
+      {loading ? (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+        </div>
+      ) : (
+        <UserTable users={users} />
+      )}
     </div>
   );
 }

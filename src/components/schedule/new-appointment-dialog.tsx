@@ -18,9 +18,9 @@ import { usePatient } from '@/contexts/PatientContext';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Loader2 } from 'lucide-react';
 import type { Appointment } from '@/lib/types';
-import { users } from '@/lib/placeholder-data';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/contexts/UserContext';
 
 interface NewAppointmentDialogProps {
   isOpen: boolean;
@@ -29,6 +29,7 @@ interface NewAppointmentDialogProps {
 
 export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDialogProps) {
   const { patients, loading: patientsLoading } = usePatient();
+  const { users, loading: usersLoading } = useUser();
   const { addAppointment } = useSchedule();
   const [isSaving, setIsSaving] = React.useState(false);
   const { toast } = useToast();
@@ -106,7 +107,11 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
                    <SelectValue placeholder="Selecione um profissional" />
                  </SelectTrigger>
                  <SelectContent>
-                   {professionals.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+                    {usersLoading ? (
+                     <SelectItem value="loading" disabled>Carregando...</SelectItem>
+                   ) : (
+                     professionals.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)
+                   )}
                  </SelectContent>
                </Select>
             </div>
@@ -134,7 +139,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
             <DialogClose asChild>
                 <Button type="button" variant="outline">Cancelar</Button>
             </DialogClose>
-            <Button type="submit" disabled={isSaving || patientsLoading}>
+            <Button type="submit" disabled={isSaving || patientsLoading || usersLoading}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar
             </Button>

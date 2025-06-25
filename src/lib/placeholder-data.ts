@@ -1,11 +1,4 @@
-import type { Patient, User, EvolutionRecord, Report } from '@/lib/types';
-
-export const users: User[] = [
-  { id: 'U001', name: 'Dr. Evelyn Reed', email: 'evelyn.reed@clinicflow.com', role: 'Admin', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e29026709d` },
-  { id: 'U002', name: 'Marco Silva', email: 'marco.silva@clinicflow.com', role: 'Therapist', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e2902670ad` },
-  { id: 'U003', name: 'Ana Pereira', email: 'ana.pereira@clinicflow.com', role: 'Receptionist', status: 'Active', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e2902670bd` },
-  { id: 'U004', name: 'Carlos Santos', email: 'carlos.santos@clinicflow.com', role: 'Therapist', status: 'Inactive', avatarUrl: `https://i.pravatar.cc/150?u=a042581f4e2902670cd` },
-];
+import type { EvolutionRecord, Report } from '@/lib/types';
 
 export const colors = [
     '#34D399', // emerald-400

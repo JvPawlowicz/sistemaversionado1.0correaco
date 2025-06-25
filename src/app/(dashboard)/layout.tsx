@@ -9,6 +9,7 @@ import { useEffect, ReactNode } from 'react';
 import { PatientProvider } from '@/contexts/PatientContext';
 import { ScheduleProvider } from '@/contexts/ScheduleContext';
 import { Loader2 } from 'lucide-react';
+import { UserProvider } from '@/contexts/UserContext';
 
 export default function DashboardLayout({
   children,
@@ -40,18 +41,20 @@ export default function DashboardLayout({
   }
 
   return (
-    <PatientProvider>
-      <ScheduleProvider>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <Header />
-            <main className="p-4 sm:p-6 lg:p-8">
-              {children}
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
-      </ScheduleProvider>
-    </PatientProvider>
+    <UserProvider>
+      <PatientProvider>
+        <ScheduleProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <Header />
+              <main className="p-4 sm:p-6 lg:p-8">
+                {children}
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+        </ScheduleProvider>
+      </PatientProvider>
+    </UserProvider>
   );
 }
