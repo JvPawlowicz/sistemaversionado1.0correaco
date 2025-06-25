@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { User } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -21,8 +21,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     if (!db) {
+        setError("A configuração do Firebase está ausente. Não é possível buscar usuários.");
         setLoading(false);
         return;
     }
@@ -37,7 +38,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         ...doc.data()
       } as User));
 
-      // Sort client-side to avoid index dependency
       userList.sort((a, b) => a.name.localeCompare(b.name));
       
       setUsers(userList);
@@ -54,11 +54,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const addUser = async (userData: Omit<User, 'id' | 'status' | 'avatarUrl' | 'createdAt'>) => {
     if (!db) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { Patient } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, serverTimestamp, query } from 'firebase/firestore';
@@ -21,8 +21,9 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchPatients = async () => {
+  const fetchPatients = useCallback(async () => {
     if (!db) {
+        setError("A configuração do Firebase está ausente. Não é possível buscar pacientes.");
         setLoading(false);
         return;
     }
@@ -58,11 +59,11 @@ export function PatientProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchPatients();
-  }, []);
+  }, [fetchPatients]);
 
   const addPatient = async (patientData: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'>) => {
     if (!db) {

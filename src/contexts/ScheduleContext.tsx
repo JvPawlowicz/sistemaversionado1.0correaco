@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { Appointment } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, serverTimestamp, query } from 'firebase/firestore';
@@ -22,8 +22,9 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     if (!db) {
+        setError("A configuração do Firebase está ausente. Não é possível buscar agendamentos.");
         setLoading(false);
         return;
     }
@@ -41,7 +42,6 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         } as Appointment
       });
       
-      // Sort client-side to avoid index dependency
       appointmentList.sort((a, b) => {
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
@@ -62,11 +62,11 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchAppointments();
-  }, []);
+  }, [fetchAppointments]);
 
   const addAppointment = async (appointmentData: Omit<Appointment, 'id' | 'createdAt' | 'color'>) => {
     if (!db) {
