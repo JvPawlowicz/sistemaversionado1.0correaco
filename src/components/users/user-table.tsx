@@ -9,11 +9,24 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import type { User } from '@/lib/types';
 
 export function UserTable({ users }: { users: User[] }) {
+  if (users.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center">
+        <h3 className="text-xl font-semibold mb-2">Nenhum usuário encontrado</h3>
+        <p className="text-muted-foreground mb-4">Comece adicionando um novo usuário ao sistema.</p>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Adicionar Novo Usuário
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
       <Table>

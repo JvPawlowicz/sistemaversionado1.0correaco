@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 interface PatientContextType {
   patients: Patient[];
   loading: boolean;
+  error: string | null;
   addPatient: (patient: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'>) => Promise<void>;
 }
 
@@ -17,6 +18,7 @@ const PatientContext = createContext<PatientContextType | undefined>(undefined);
 export function PatientProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchPatients = async () => {
@@ -26,6 +28,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
     }
     try {
       setLoading(true);
+      setError(null);
       const patientsCollection = collection(db, 'patients');
       const q = query(patientsCollection, orderBy('createdAt', 'desc'));
       const patientSnapshot = await getDocs(q);
@@ -34,12 +37,15 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         ...doc.data()
       } as Patient));
       setPatients(patientList);
-    } catch (error) {
-      console.error("Error fetching patients: ", error);
+    } catch (err: any) {
+      console.error("Error fetching patients: ", err);
+      const userFriendlyError = "Falha ao buscar pacientes. Verifique se a coleção 'patients' existe no Firestore e se as regras de segurança permitem a leitura. Se o problema persistir, pode ser um índice ausente. Verifique o console do navegador para mais detalhes.";
+      setError(userFriendlyError);
+      setPatients([]);
       toast({
         variant: "destructive",
         title: "Erro ao buscar pacientes",
-        description: "Não foi possível carregar a lista de pacientes. Verifique a configuração e as regras de segurança do Firestore.",
+        description: "Não foi possível carregar a lista de pacientes.",
       });
     } finally {
       setLoading(false);
@@ -84,7 +90,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <PatientContext.Provider value={{ patients, loading, addPatient }}>
+    <PatientContext.Provider value={{ patients, loading, error, addPatient }}>
       {children}
     </PatientContext.Provider>
   );

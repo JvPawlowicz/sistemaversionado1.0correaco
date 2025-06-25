@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { PatientTable } from '@/components/patients/patient-table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Terminal } from 'lucide-react';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function PatientsPage() {
-  const { patients, loading } = usePatient();
+  const { patients, loading, error } = usePatient();
   
   return (
     <div className="space-y-6">
@@ -30,6 +31,14 @@ export default function PatientsPage() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
         </div>
+      ) : error ? (
+        <Alert variant="destructive">
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Erro ao Carregar Dados</AlertTitle>
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
       ) : (
         <PatientTable patients={patients} />
       )}

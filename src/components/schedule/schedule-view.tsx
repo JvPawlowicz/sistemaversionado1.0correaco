@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, PlusCircle } from 'lucide-react';
+import { Download, Loader2, PlusCircle, Terminal } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DailyView } from './daily-view';
 import { MonthlyView } from './monthly-view';
@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { NewAppointmentDialog } from './new-appointment-dialog';
 import type { Appointment } from '@/lib/types';
 import { Card, CardContent } from '../ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export function ScheduleView() {
   const [activeTab, setActiveTab] = React.useState('week');
@@ -20,7 +21,7 @@ export function ScheduleView() {
   const [currentDate, setCurrentDate] = React.useState<Date>(new Date());
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const { appointments, loading } = useSchedule();
+  const { appointments, loading, error } = useSchedule();
 
   const handleExportPdf = async () => {
     setIsExporting(true);
@@ -101,7 +102,7 @@ export function ScheduleView() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Novo Agendamento
                     </Button>
-                    <Button onClick={handleExportPdf} disabled={isExporting} variant="outline">
+                    <Button onClick={handleExportPdf} disabled={isExporting || appointments.length === 0} variant="outline">
                         {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                         Exportar PDF
                     </Button>
@@ -109,6 +110,12 @@ export function ScheduleView() {
             </div>
             {loading ? (
                 <Card><CardContent className="p-6"><Skeleton className="h-[500px] w-full" /></CardContent></Card>
+            ) : error ? (
+                <Alert variant="destructive">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>Erro ao Carregar Dados</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
             ) : (
                 <>
                     <TabsContent value="week" >

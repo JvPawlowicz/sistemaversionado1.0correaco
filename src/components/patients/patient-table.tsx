@@ -10,10 +10,25 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Eye } from 'lucide-react';
+import { Eye, PlusCircle } from 'lucide-react';
 import type { Patient } from '@/lib/types';
 
 export function PatientTable({ patients }: { patients: Patient[] }) {
+  if (patients.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center">
+        <h3 className="text-xl font-semibold mb-2">Nenhum paciente encontrado</h3>
+        <p className="text-muted-foreground mb-4">Comece adicionando um novo paciente ao sistema.</p>
+        <Button asChild>
+          <Link href="/patients/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar Novo Paciente
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
       <Table>

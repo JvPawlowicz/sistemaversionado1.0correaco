@@ -10,6 +10,7 @@ import { colors } from '@/lib/placeholder-data';
 interface ScheduleContextType {
   appointments: Appointment[];
   loading: boolean;
+  error: string | null;
   addAppointment: (appointment: Omit<Appointment, 'id' | 'createdAt' | 'color'>) => Promise<void>;
 }
 
@@ -18,6 +19,7 @@ const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchAppointments = async () => {
@@ -27,6 +29,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     }
     try {
       setLoading(true);
+      setError(null);
       const appointmentsCollection = collection(db, 'appointments');
       const q = query(appointmentsCollection, orderBy('createdAt', 'desc'));
       const appointmentSnapshot = await getDocs(q);
@@ -38,8 +41,11 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         } as Appointment
       });
       setAppointments(appointmentList);
-    } catch (error) {
-      console.error("Error fetching appointments: ", error);
+    } catch (err: any) {
+      console.error("Error fetching appointments: ", err);
+      const userFriendlyError = "Falha ao buscar agendamentos. Verifique se a coleção 'appointments' existe e se as regras de segurança estão corretas. Pode ser necessário criar um índice no Firestore.";
+      setError(userFriendlyError);
+      setAppointments([]);
       toast({
         variant: "destructive",
         title: "Erro ao buscar agendamentos",
@@ -87,7 +93,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ScheduleContext.Provider value={{ appointments, loading, addAppointment }}>
+    <ScheduleContext.Provider value={{ appointments, loading, error, addAppointment }}>
       {children}
     </ScheduleContext.Provider>
   );

@@ -2,12 +2,13 @@
 
 import { UserTable } from '@/components/users/user-table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Terminal } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export default function UsersPage() {
-  const { users, loading } = useUser();
+  const { users, loading, error } = useUser();
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -26,6 +27,14 @@ export default function UsersPage() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
         </div>
+      ) : error ? (
+        <Alert variant="destructive">
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Erro ao Carregar Dados</AlertTitle>
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
       ) : (
         <UserTable users={users} />
       )}

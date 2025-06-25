@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 interface UserContextType {
   users: User[];
   loading: boolean;
-  // add function to add user in the future
+  error: string | null;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -17,6 +17,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchUsers = async () => {
@@ -26,6 +27,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
     try {
       setLoading(true);
+      setError(null);
       const usersCollection = collection(db, 'users');
       const q = query(usersCollection, orderBy('name', 'asc'));
       const userSnapshot = await getDocs(q);
@@ -34,8 +36,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         ...doc.data()
       } as User));
       setUsers(userList);
-    } catch (error) {
-      console.error("Error fetching users: ", error);
+    } catch (err: any) {
+      console.error("Error fetching users: ", err);
+      const userFriendlyError = "Falha ao buscar usuários. Verifique se a coleção 'users' existe no Firestore e se as regras de segurança permitem a leitura. Pode ser necessário criar um índice no Firestore.";
+      setError(userFriendlyError);
+      setUsers([]);
       toast({
         variant: "destructive",
         title: "Erro ao buscar usuários",
@@ -51,7 +56,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <UserContext.Provider value={{ users, loading }}>
+    <UserContext.Provider value={{ users, loading, error }}>
       {children}
     </UserContext.Provider>
   );
