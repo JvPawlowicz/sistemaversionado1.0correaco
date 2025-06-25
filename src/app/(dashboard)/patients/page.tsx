@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { PatientTable } from '@/components/patients/patient-table';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -10,9 +11,11 @@ export default function PatientsPage() {
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
           Gestão de Pacientes
         </h1>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Novo Paciente
+        <Button asChild>
+          <Link href="/patients/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar Novo Paciente
+          </Link>
         </Button>
       </div>
       <PatientTable patients={patients} />

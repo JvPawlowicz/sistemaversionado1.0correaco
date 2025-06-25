@@ -14,24 +14,26 @@ export default function LoginPage() {
         <CardDescription>Digite seu e-mail abaixo para acessar sua conta</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">E-mail</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center">
-              <Label htmlFor="password">Senha</Label>
-              <Link href="#" className="ml-auto inline-block text-sm underline">
-                Esqueceu sua senha?
-              </Link>
+        <form>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input id="email" type="email" placeholder="m@example.com" required />
             </div>
-            <Input id="password" type="password" required />
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Label htmlFor="password">Senha</Label>
+                <Link href="#" className="ml-auto inline-block text-sm underline">
+                  Esqueceu sua senha?
+                </Link>
+              </div>
+              <Input id="password" type="password" required />
+            </div>
+            <Button asChild className="w-full">
+              <Link href="/dashboard">Entrar</Link>
+            </Button>
           </div>
-          <Button type="submit" className="w-full">
-            Entrar
-          </Button>
-        </div>
+        </form>
         <div className="mt-4 text-center text-sm">
           Não tem uma conta?{' '}
           <Link href="#" className="underline">
