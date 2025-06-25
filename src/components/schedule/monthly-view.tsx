@@ -32,8 +32,8 @@ export function MonthlyView({ appointments }: { appointments: Appointment[] }) {
                 />
                  <div className="space-y-4">
                     <CardHeader className="p-0">
-                        <CardTitle>Appointments for {date ? date.toLocaleDateString() : 'today'}</CardTitle>
-                        <CardDescription>{selectedDayAppointments.length} appointment(s) scheduled.</CardDescription>
+                        <CardTitle>Agendamentos para {date ? date.toLocaleDateString('pt-BR') : 'hoje'}</CardTitle>
+                        <CardDescription>{selectedDayAppointments.length} agendamento(s) marcados.</CardDescription>
                     </CardHeader>
                     <div className="space-y-4 max-h-96 overflow-y-auto p-1">
                         {selectedDayAppointments.length > 0 ? (
@@ -41,14 +41,14 @@ export function MonthlyView({ appointments }: { appointments: Appointment[] }) {
                                 <div key={appointment.id} className="flex items-center justify-between p-2 rounded-lg bg-secondary">
                                     <div>
                                         <p className="font-semibold text-sm">{appointment.patientName}</p>
-                                        <p className="text-sm text-muted-foreground">{appointment.time}</p>
+                                        <p className="text-sm text-muted-foreground">{appointment.time} - Sala {appointment.room}</p>
                                     </div>
                                     <Badge variant={appointment.discipline === 'Physiotherapy' ? 'default' : 'secondary'}>{appointment.discipline}</Badge>
                                 </div>
                             ))
                         ) : (
                             <div className="flex items-center justify-center h-full min-h-[100px] text-center text-muted-foreground py-8">
-                                <p>No appointments for this day.</p>
+                                <p>Nenhum agendamento para este dia.</p>
                             </div>
                         )}
                     </div>

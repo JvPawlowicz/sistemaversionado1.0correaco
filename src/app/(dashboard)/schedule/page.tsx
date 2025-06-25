@@ -6,10 +6,10 @@ export default function SchedulePage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-                Schedule Management
+                Gestão de Agenda
             </h1>
             <p className="text-muted-foreground">
-                View and manage appointments by day or month.
+                Visualize e gerencie agendamentos por dia ou mês.
             </p>
         </div>
       </div>

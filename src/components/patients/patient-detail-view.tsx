@@ -24,12 +24,12 @@ export function PatientDetailView({ patient, records, reports }: { patient: Pati
           <div className="flex-1">
             <CardTitle className="text-3xl">{patient.name}</CardTitle>
             <CardDescription className="mt-2 text-base">
-              Patient ID: {patient.id}
+              ID do Paciente: {patient.id}
             </CardDescription>
             <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <span>DOB: {patient.dob}</span>
-              <span>Gender: {patient.gender}</span>
-              <span>Phone: {patient.phone}</span>
+              <span>Nasc: {patient.dob}</span>
+              <span>Gênero: {patient.gender === 'Female' ? 'Feminino' : 'Masculino'}</span>
+              <span>Telefone: {patient.phone}</span>
               <span>Email: {patient.email}</span>
             </div>
           </div>
@@ -38,20 +38,20 @@ export function PatientDetailView({ patient, records, reports }: { patient: Pati
 
       <Tabs defaultValue="evolution">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="evolution">Evolution Records</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="profile">Full Profile</TabsTrigger>
+          <TabsTrigger value="evolution">Evolução</TabsTrigger>
+          <TabsTrigger value="reports">Relatórios</TabsTrigger>
+          <TabsTrigger value="profile">Perfil Completo</TabsTrigger>
         </TabsList>
         <TabsContent value="evolution">
           <Card>
             <CardHeader>
-              <CardTitle>Evolution Records</CardTitle>
-              <CardDescription>Chronological log of patient progress and sessions.</CardDescription>
+              <CardTitle>Registros de Evolução</CardTitle>
+              <CardDescription>Registro cronológico do progresso e sessões do paciente.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                New Record
+                Novo Registro
               </Button>
               <div className="space-y-4">
                 {records.map(record => (
@@ -61,7 +61,7 @@ export function PatientDetailView({ patient, records, reports }: { patient: Pati
                         <span className="text-sm text-muted-foreground">{record.date}</span>
                     </div>
                     <p className="mt-2 text-sm">{record.details}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">By: {record.author}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">Por: {record.author}</p>
                   </div>
                 ))}
               </div>
@@ -71,13 +71,13 @@ export function PatientDetailView({ patient, records, reports }: { patient: Pati
         <TabsContent value="reports">
           <Card>
             <CardHeader>
-              <CardTitle>Reports</CardTitle>
-              <CardDescription>Official documents and reports related to the patient.</CardDescription>
+              <CardTitle>Relatórios</CardTitle>
+              <CardDescription>Documentos oficiais e relatórios relacionados ao paciente.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <Button>
                     <Plus className="mr-2 h-4 w-4" />
-                    New Report
+                    Novo Relatório
                 </Button>
                 <ul className="space-y-2">
                     {reports.map(report => (
@@ -86,11 +86,11 @@ export function PatientDetailView({ patient, records, reports }: { patient: Pati
                                 <FileText className="h-5 w-5 text-primary"/>
                                 <div>
                                     <p className="font-medium">{report.title}</p>
-                                    <p className="text-sm text-muted-foreground">Generated on {report.date}</p>
+                                    <p className="text-sm text-muted-foreground">Gerado em {report.date}</p>
                                 </div>
                             </div>
                             <Button asChild variant="outline" size="sm">
-                                <Link href={report.url}>Download</Link>
+                                <Link href={report.url}>Baixar</Link>
                             </Button>
                         </li>
                     ))}
@@ -101,11 +101,11 @@ export function PatientDetailView({ patient, records, reports }: { patient: Pati
         <TabsContent value="profile">
           <Card>
             <CardHeader>
-              <CardTitle>Full Patient Profile</CardTitle>
-              <CardDescription>All detailed information for the patient.</CardDescription>
+              <CardTitle>Perfil Completo do Paciente</CardTitle>
+              <CardDescription>Todas as informações detalhadas do paciente.</CardDescription>
             </CardHeader>
             <CardContent>
-              <p>Detailed profile information will be displayed here.</p>
+              <p>Informações detalhadas do perfil serão exibidas aqui.</p>
             </CardContent>
           </Card>
         </TabsContent>

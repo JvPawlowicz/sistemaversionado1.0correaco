@@ -19,9 +19,9 @@ import {
 import { cn } from '@/lib/utils';
 
 const units = [
-  { value: 'main-street', label: 'Main Street Unit' },
-  { value: 'downtown-center', label: 'Downtown Center' },
-  { value: 'south-branch', label: 'South Branch' },
+  { value: 'main-street', label: 'Unidade Principal' },
+  { value: 'downtown-center', label: 'Centro da Cidade' },
+  { value: 'south-branch', label: 'Filial Sul' },
 ];
 
 export function UnitSwitcher() {
@@ -43,8 +43,8 @@ export function UnitSwitcher() {
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
         <Command>
-          <CommandInput placeholder="Search unit..." />
-          <CommandEmpty>No unit found.</CommandEmpty>
+          <CommandInput placeholder="Buscar unidade..." />
+          <CommandEmpty>Nenhuma unidade encontrada.</CommandEmpty>
           <CommandList>
             <CommandGroup>
               {units.map((unit) => (

@@ -58,12 +58,12 @@ export function ScheduleView() {
         <Tabs defaultValue="day" className="w-full" onValueChange={setActiveTab}>
             <div className="flex items-center justify-between pb-4">
                 <TabsList>
-                    <TabsTrigger value="day">Day</TabsTrigger>
-                    <TabsTrigger value="month">Month</TabsTrigger>
+                    <TabsTrigger value="day">Dia</TabsTrigger>
+                    <TabsTrigger value="month">Mês</TabsTrigger>
                 </TabsList>
                  <Button onClick={handleExportPdf} disabled={isExporting}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    Export PDF
+                    Exportar PDF
                 </Button>
             </div>
             <TabsContent value="day" >

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, addDays, subDays, parse, isSameDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export function DailyView({ appointments }: { appointments: Appointment[] }) {
   const [currentDate, setCurrentDate] = React.useState(new Date());
@@ -32,12 +33,12 @@ export function DailyView({ appointments }: { appointments: Appointment[] }) {
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle>{format(currentDate, 'EEEE, MMMM d, yyyy')}</CardTitle>
+          <CardTitle>{format(currentDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}</CardTitle>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={handlePrevDay}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" onClick={handleToday}>Today</Button>
+            <Button variant="outline" onClick={handleToday}>Hoje</Button>
             <Button variant="outline" size="icon" onClick={handleNextDay}>
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -54,7 +55,7 @@ export function DailyView({ appointments }: { appointments: Appointment[] }) {
                     getAppointmentsForHour(hour).map(app => (
                         <div key={app.id} className="rounded-lg border bg-card p-3 shadow-sm">
                             <p className="font-semibold text-sm">{app.patientName}</p>
-                            <p className="text-xs text-muted-foreground">{app.time}</p>
+                            <p className="text-xs text-muted-foreground">{app.time} - Sala {app.room}</p>
                             <Badge variant={app.discipline === 'Physiotherapy' ? 'default' : 'secondary'} className="mt-1 text-xs">
                                 {app.discipline}
                             </Badge>

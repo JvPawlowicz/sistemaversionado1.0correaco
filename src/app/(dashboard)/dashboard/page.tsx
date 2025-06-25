@@ -6,16 +6,16 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-          Welcome back, Dr. Reed!
+          Bem-vindo(a) de volta, Dr(a). Reed!
         </h1>
         <p className="text-muted-foreground">
-          Here&apos;s what&apos;s happening today.
+          Aqui está o que está acontecendo hoje.
         </p>
       </div>
       <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Today's Schedule</CardTitle>
+            <CardTitle>Agenda de Hoje</CardTitle>
           </CardHeader>
           <CardContent>
             <ScheduleCalendar />

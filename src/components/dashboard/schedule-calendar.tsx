@@ -33,8 +33,8 @@ export function ScheduleCalendar() {
       />
       <Card>
         <CardHeader>
-          <CardTitle>Appointments for {date ? date.toLocaleDateString() : 'today'}</CardTitle>
-          <CardDescription>You have {todaysAppointments.length} appointments scheduled.</CardDescription>
+          <CardTitle>Agendamentos para {date ? date.toLocaleDateString('pt-BR') : 'hoje'}</CardTitle>
+          <CardDescription>Você tem {todaysAppointments.length} agendamentos.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -43,13 +43,13 @@ export function ScheduleCalendar() {
                 <div key={appointment.id} className="flex items-center justify-between p-2 rounded-lg bg-secondary">
                   <div>
                     <p className="font-semibold">{appointment.patientName}</p>
-                    <p className="text-sm text-muted-foreground">{appointment.time}</p>
+                    <p className="text-sm text-muted-foreground">{appointment.time} - Sala {appointment.room}</p>
                   </div>
                   <Badge variant={appointment.discipline === 'Physiotherapy' ? 'default' : 'secondary'}>{appointment.discipline}</Badge>
                 </div>
               ))
             ) : (
-              <p className="text-center text-muted-foreground py-8">No appointments for this day.</p>
+              <p className="text-center text-muted-foreground py-8">Nenhum agendamento para este dia.</p>
             )}
           </div>
         </CardContent>

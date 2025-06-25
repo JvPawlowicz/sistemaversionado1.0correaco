@@ -12,17 +12,16 @@ import {
   SidebarSeparator
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { LayoutDashboard, Users, HeartPulse, Bot, Settings, LogOut, Calendar } from 'lucide-react';
+import { LayoutDashboard, Users, HeartPulse, Settings, LogOut, Calendar } from 'lucide-react';
 
 export function AppSidebar() {
   const pathname = usePathname();
 
   const menuItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/schedule', label: 'Schedule', icon: Calendar },
-    { href: '/patients', label: 'Patients', icon: HeartPulse },
-    { href: '/ai-notes', label: 'AI Notes', icon: Bot },
-    { href: '/users', label: 'Users', icon: Users },
+    { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
+    { href: '/schedule', label: 'Agenda', icon: Calendar },
+    { href: '/patients', label: 'Pacientes', icon: HeartPulse },
+    { href: '/users', label: 'Usuários', icon: Users },
   ];
 
   return (
@@ -53,17 +52,17 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <Link href="/settings" passHref>
-              <SidebarMenuButton isActive={pathname.startsWith('/settings')} tooltip="Settings">
+              <SidebarMenuButton isActive={pathname.startsWith('/settings')} tooltip="Configurações">
                 <Settings />
-                <span>Settings</span>
+                <span>Configurações</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
              <Link href="/login" passHref>
-                <SidebarMenuButton tooltip="Logout">
+                <SidebarMenuButton tooltip="Sair">
                     <LogOut />
-                    <span>Logout</span>
+                    <span>Sair</span>
                 </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

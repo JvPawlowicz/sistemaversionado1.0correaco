@@ -19,12 +19,12 @@ export function PatientTable({ patients }: { patients: Patient[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Patient</TableHead>
+            <TableHead>Paciente</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="hidden md:table-cell">Last Visit</TableHead>
-            <TableHead className="hidden lg:table-cell">Contact</TableHead>
+            <TableHead className="hidden md:table-cell">Última Visita</TableHead>
+            <TableHead className="hidden lg:table-cell">Contato</TableHead>
             <TableHead>
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">Ações</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -45,7 +45,7 @@ export function PatientTable({ patients }: { patients: Patient[] }) {
               </TableCell>
               <TableCell>
                 <Badge variant={patient.status === 'Active' ? 'secondary' : 'outline'}>
-                  {patient.status}
+                  {patient.status === 'Active' ? 'Ativo' : 'Inativo'}
                 </Badge>
               </TableCell>
               <TableCell className="hidden md:table-cell">{patient.lastVisit}</TableCell>
@@ -54,7 +54,7 @@ export function PatientTable({ patients }: { patients: Patient[] }) {
                 <Button asChild variant="ghost" size="icon">
                   <Link href={`/patients/${patient.id}`}>
                     <Eye className="h-4 w-4" />
-                    <span className="sr-only">View Patient</span>
+                    <span className="sr-only">Ver Paciente</span>
                   </Link>
                 </Button>
               </TableCell>

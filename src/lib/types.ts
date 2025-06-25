@@ -25,6 +25,7 @@ export type Appointment = {
   discipline: string;
   time: string;
   date: Date;
+  room: string;
 };
 
 export type EvolutionRecord = {

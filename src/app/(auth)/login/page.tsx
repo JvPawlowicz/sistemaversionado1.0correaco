@@ -10,32 +10,32 @@ export default function LoginPage() {
     <Card className="mx-auto max-w-sm w-full">
       <CardHeader className="space-y-1 text-center">
         <Logo className="w-16 h-16 mx-auto" />
-        <CardTitle className="text-2xl font-bold">Welcome to ClinicFlow</CardTitle>
-        <CardDescription>Enter your email below to login to your account</CardDescription>
+        <CardTitle className="text-2xl font-bold">Bem-vindo ao ClinicFlow</CardTitle>
+        <CardDescription>Digite seu e-mail abaixo para acessar sua conta</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">E-mail</Label>
             <Input id="email" type="email" placeholder="m@example.com" required />
           </div>
           <div className="space-y-2">
             <div className="flex items-center">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Senha</Label>
               <Link href="#" className="ml-auto inline-block text-sm underline">
-                Forgot your password?
+                Esqueceu sua senha?
               </Link>
             </div>
             <Input id="password" type="password" required />
           </div>
           <Button type="submit" className="w-full">
-            Login
+            Entrar
           </Button>
         </div>
         <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{' '}
+          Não tem uma conta?{' '}
           <Link href="#" className="underline">
-            Sign up
+            Cadastre-se
           </Link>
         </div>
       </CardContent>

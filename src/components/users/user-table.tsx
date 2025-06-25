@@ -19,11 +19,11 @@ export function UserTable({ users }: { users: User[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Role</TableHead>
+            <TableHead>Usuário</TableHead>
+            <TableHead>Função</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">Ações</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -45,7 +45,7 @@ export function UserTable({ users }: { users: User[] }) {
               <TableCell>{user.role}</TableCell>
               <TableCell>
                 <Badge variant={user.status === 'Active' ? 'secondary' : 'outline'}>
-                  {user.status}
+                  {user.status === 'Active' ? 'Ativo' : 'Inativo'}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -53,14 +53,14 @@ export function UserTable({ users }: { users: User[] }) {
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
+                            <span className="sr-only">Ações</span>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Change Role</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
+                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                        <DropdownMenuItem>Editar</DropdownMenuItem>
+                        <DropdownMenuItem>Mudar Função</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">Desativar</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>

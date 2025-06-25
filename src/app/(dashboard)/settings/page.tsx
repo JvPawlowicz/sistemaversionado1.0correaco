@@ -5,19 +5,19 @@ export default function SettingsPage() {
     <div className="space-y-6">
        <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-            Settings
+            Configurações
           </h1>
           <p className="text-muted-foreground">
-            Manage your account and application settings.
+            Gerencie sua conta e as configurações do aplicativo.
           </p>
         </div>
         <Card>
             <CardHeader>
-                <CardTitle>Profile Settings</CardTitle>
-                <CardDescription>This is a placeholder for profile settings.</CardDescription>
+                <CardTitle>Configurações de Perfil</CardTitle>
+                <CardDescription>Este é um espaço para as configurações de perfil.</CardDescription>
             </CardHeader>
             <CardContent>
-                <p>User profile settings form will be here.</p>
+                <p>O formulário de configurações do perfil do usuário estará aqui.</p>
             </CardContent>
         </Card>
     </div>

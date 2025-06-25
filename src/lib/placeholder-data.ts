@@ -25,16 +25,16 @@ nextMonth.setMonth(today.getMonth() + 1, 5);
 
 
 export const appointments: Appointment[] = [
-  { id: 'A001', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '09:00', date: today },
-  { id: 'A002', patientName: 'Bob Williams', discipline: 'Psychology', time: '10:00', date: today },
-  { id: 'A003', patientName: 'Diana Miller', discipline: 'Nutrition', time: '11:00', date: today },
-  { id: 'A004', patientName: 'Ethan Davis', discipline: 'Physiotherapy', time: '14:00', date: today },
-  { id: 'A005', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '09:00', date: tomorrow },
-  { id: 'A006', patientName: 'Charlie Brown', discipline: 'Psychology', time: '15:00', date: tomorrow },
-  { id: 'A007', patientName: 'Bob Williams', discipline: 'Physiotherapy', time: '10:00', date: yesterday },
-  { id: 'A008', patientName: 'Diana Miller', discipline: 'Nutrition', time: '11:00', date: yesterday },
-  { id: 'A009', patientName: 'Ethan Davis', discipline: 'Physiotherapy', time: '16:00', date: yesterday },
-  { id: 'A010', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '10:00', date: nextMonth },
+  { id: 'A001', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '09:00', date: today, room: '1' },
+  { id: 'A002', patientName: 'Bob Williams', discipline: 'Psychology', time: '10:00', date: today, room: '2' },
+  { id: 'A003', patientName: 'Diana Miller', discipline: 'Nutrition', time: '11:00', date: today, room: '3' },
+  { id: 'A004', patientName: 'Ethan Davis', discipline: 'Physiotherapy', time: '14:00', date: today, room: '1' },
+  { id: 'A005', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '09:00', date: tomorrow, room: '1' },
+  { id: 'A006', patientName: 'Charlie Brown', discipline: 'Psychology', time: '15:00', date: tomorrow, room: '2' },
+  { id: 'A007', patientName: 'Bob Williams', discipline: 'Physiotherapy', time: '10:00', date: yesterday, room: '1' },
+  { id: 'A008', patientName: 'Diana Miller', discipline: 'Nutrition', time: '11:00', date: yesterday, room: '3' },
+  { id: 'A009', patientName: 'Ethan Davis', discipline: 'Physiotherapy', time: '16:00', date: yesterday, room: '1' },
+  { id: 'A010', patientName: 'Alice Johnson', discipline: 'Physiotherapy', time: '10:00', date: nextMonth, room: '1' },
 ];
 
 
