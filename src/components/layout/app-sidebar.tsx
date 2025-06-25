@@ -13,9 +13,12 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { LayoutDashboard, Users, HeartPulse, Settings, LogOut, Calendar } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '../ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   const menuItems = [
     { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
@@ -59,12 +62,10 @@ export function AppSidebar() {
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-             <Link href="/login" passHref>
-                <SidebarMenuButton tooltip="Sair">
-                    <LogOut />
-                    <span>Sair</span>
-                </SidebarMenuButton>
-            </Link>
+            <SidebarMenuButton tooltip="Sair" onClick={logout}>
+                <LogOut />
+                <span>Sair</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

@@ -1,11 +1,25 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons';
+import { useAuth } from '@/contexts/AuthContext';
+import * as React from 'react';
 
 export default function LoginPage() {
+  const { login } = useAuth();
+  const [email, setEmail] = React.useState('evelyn.reed@clinicflow.com');
+  const [password, setPassword] = React.useState('password');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real app, you'd validate credentials here
+    login();
+  };
+
   return (
     <Card className="mx-auto max-w-sm w-full">
       <CardHeader className="space-y-1 text-center">
@@ -14,11 +28,11 @@ export default function LoginPage() {
         <CardDescription>Digite seu e-mail abaixo para acessar sua conta</CardDescription>
       </CardHeader>
       <CardContent>
-        <form>
+        <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required />
+              <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
               <div className="flex items-center">
@@ -27,10 +41,10 @@ export default function LoginPage() {
                   Esqueceu sua senha?
                 </Link>
               </div>
-              <Input id="password" type="password" required />
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            <Button asChild className="w-full">
-              <Link href="/dashboard">Entrar</Link>
+            <Button type="submit" className="w-full">
+              Entrar
             </Button>
           </div>
         </form>

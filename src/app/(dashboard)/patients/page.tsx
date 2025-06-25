@@ -1,10 +1,14 @@
+'use client';
+
 import Link from 'next/link';
 import { PatientTable } from '@/components/patients/patient-table';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { patients } from '@/lib/placeholder-data';
+import { usePatient } from '@/contexts/PatientContext';
 
 export default function PatientsPage() {
+  const { patients } = usePatient();
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
