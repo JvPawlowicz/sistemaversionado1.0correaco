@@ -15,9 +15,9 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function UserNav() {
-  const { user, logout } = useAuth();
+  const { user, currentUser, logout } = useAuth();
 
-  if (!user) {
+  if (!user || !currentUser) {
     return null;
   }
 
@@ -29,15 +29,15 @@ export function UserNav() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
-  const displayEmail = user.email || 'Nenhum e-mail';
+  const displayName = currentUser.name;
+  const displayEmail = currentUser.email;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.photoURL || ''} alt={displayName} />
+            <AvatarImage src={currentUser.avatarUrl || ''} alt={displayName} />
             <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
           </Avatar>
         </Button>

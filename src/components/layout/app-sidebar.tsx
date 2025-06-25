@@ -14,17 +14,16 @@ import {
 import { Logo } from '@/components/icons';
 import { LayoutDashboard, Users, HeartPulse, Settings, LogOut, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '../ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
 
   const menuItems = [
     { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
     { href: '/schedule', label: 'Agenda', icon: Calendar },
     { href: '/patients', label: 'Pacientes', icon: HeartPulse },
-    { href: '/users', label: 'Usuários', icon: Users },
+    { href: '/users', label: 'Usuários', icon: Users, adminOnly: true },
   ];
 
   return (
@@ -37,17 +36,19 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarMenu className="flex-1">
         {menuItems.map((item) => (
-          <SidebarMenuItem key={item.href}>
-             <Link href={item.href} passHref>
-                <SidebarMenuButton
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={item.label}
-                >
-                    <item.icon />
-                    <span>{item.label}</span>
-                </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
+          (!item.adminOnly || currentUser?.role === 'Admin') && (
+            <SidebarMenuItem key={item.href}>
+               <Link href={item.href} passHref>
+                  <SidebarMenuButton
+                      isActive={pathname.startsWith(item.href)}
+                      tooltip={item.label}
+                  >
+                      <item.icon />
+                      <span>{item.label}</span>
+                  </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          )
         ))}
       </SidebarMenu>
       <SidebarSeparator />

@@ -2,12 +2,15 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as AuthUser } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import type { User } from '@/lib/types';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
+  currentUser: User | null; // Our custom user profile from Firestore
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
@@ -17,22 +20,57 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (auth) {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
-        setLoading(false);
-      });
-      return () => unsubscribe();
-    } else {
+    if (!auth || !db) {
       setLoading(false);
+      return;
     }
-  }, []);
+    
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      if (authUser) {
+        setUser(authUser);
+        try {
+          const q = query(collection(db, 'users'), where('email', '==', authUser.email), limit(1));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            setCurrentUser({ id: userDoc.id, ...userDoc.data() } as User);
+          } else {
+            // User exists in Auth, but not in our 'users' collection
+            toast({
+              variant: 'destructive',
+              title: 'Perfil não encontrado',
+              description: 'Sua conta de login existe, mas não há um perfil de usuário associado. Contate um administrador.',
+            });
+            await signOut(auth); // Log them out
+            setCurrentUser(null);
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+          toast({
+              variant: 'destructive',
+              title: 'Erro de Perfil',
+              description: 'Não foi possível carregar seu perfil de usuário.',
+            });
+          await signOut(auth);
+          setCurrentUser(null);
+        }
+      } else {
+        setUser(null);
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
 
   const login = async (email: string, pass: string) => {
     if (!auth) {
@@ -80,7 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = {
     user,
-    isAuthenticated: !!user,
+    currentUser,
+    isAuthenticated: !loading && !!user && !!currentUser,
     loading,
     login,
     logout,
