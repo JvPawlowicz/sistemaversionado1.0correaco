@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { useUnit } from '@/contexts/UnitContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { Switch } from '@/components/ui/switch';
 
 interface NewAppointmentDialogProps {
   isOpen: boolean;
@@ -44,7 +45,23 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   const [time, setTime] = React.useState('09:00');
   const [endTime, setEndTime] = React.useState('10:00');
   const [room, setRoom] = React.useState('');
+  const [repeat, setRepeat] = React.useState(false);
   
+  const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Admin' || u.role === 'Coordinator');
+  const selectedUnit = units.find(u => u.id === selectedUnitId);
+  const availableRooms = selectedUnit ? selectedUnit.rooms : [];
+
+  const resetForm = () => {
+    setPatientName('');
+    setProfessionalName(currentUser?.role === 'Therapist' ? currentUser.name : '');
+    setDiscipline('');
+    setDate(format(new Date(), 'yyyy-MM-dd'));
+    setTime('09:00');
+    setEndTime('10:00');
+    setRoom('');
+    setRepeat(false);
+  };
+
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -55,9 +72,6 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     }
   }, [currentUser]);
 
-  const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Admin' || u.role === 'Coordinator');
-  const selectedUnit = units.find(u => u.id === selectedUnitId);
-  const availableRooms = selectedUnit ? selectedUnit.rooms : [];
 
   React.useEffect(() => {
     // Reset room selection when unit changes
@@ -88,9 +102,10 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
         unitId: selectedUnitId,
     };
 
-    await addAppointment(newAppointmentData);
+    await addAppointment({ appointment: newAppointmentData, repeat });
     setIsSaving(false);
     onOpenChange(false);
+    resetForm();
   };
 
   if (!mounted) {
@@ -101,7 +116,10 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   const isTherapist = currentUser?.role === 'Therapist';
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) resetForm();
+      onOpenChange(open);
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -163,6 +181,20 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
                    {availableRooms.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                  </SelectContent>
                </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="repeat" className="text-right">Repetir</Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <Switch
+                  id="repeat"
+                  checked={repeat}
+                  onCheckedChange={setRepeat}
+                  disabled={isLoading}
+                />
+                <Label htmlFor="repeat" className="text-sm text-muted-foreground">
+                  Repetir semanalmente por 4 semanas
+                </Label>
+              </div>
             </div>
           </div>
           <DialogFooter>

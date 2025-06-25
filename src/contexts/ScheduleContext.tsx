@@ -7,12 +7,13 @@ import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, delete
 import { useToast } from '@/hooks/use-toast';
 import { colors } from '@/lib/placeholder-data';
 import { useUnit } from './UnitContext';
+import { addWeeks, format } from 'date-fns';
 
 interface ScheduleContextType {
   appointments: Appointment[];
   loading: boolean;
   error: string | null;
-  addAppointment: (appointment: Omit<Appointment, 'id' | 'createdAt' | 'color'>) => Promise<void>;
+  addAppointment: (data: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color'>; repeat: boolean }) => Promise<void>;
   deleteAppointment: (appointmentId: string) => Promise<void>;
 }
 
@@ -76,7 +77,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  const addAppointment = async (appointmentData: Omit<Appointment, 'id' | 'createdAt' | 'color'>) => {
+  const addAppointment = async ({ appointment: appointmentData, repeat }: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color'>; repeat: boolean }) => {
     if (!db) {
         toast({
             variant: "destructive",
@@ -88,22 +89,44 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     try {
       const appointmentsCollection = collection(db, 'appointments');
       const color = colors[Math.floor(Math.random() * colors.length)];
-      await addDoc(appointmentsCollection, {
+
+      const appointmentsToAdd = [];
+      appointmentsToAdd.push({
         ...appointmentData,
         color,
         createdAt: serverTimestamp()
       });
+
+      if (repeat) {
+        for (let i = 1; i <= 4; i++) {
+          const originalDate = new Date(appointmentData.date + 'T12:00:00Z'); // Use a fixed time to avoid timezone issues
+          const nextDate = addWeeks(originalDate, i);
+          const formattedNextDate = format(nextDate, 'yyyy-MM-dd');
+          
+          appointmentsToAdd.push({
+            ...appointmentData,
+            date: formattedNextDate,
+            color,
+            createdAt: serverTimestamp()
+          });
+        }
+      }
+
+      for (const app of appointmentsToAdd) {
+        await addDoc(appointmentsCollection, app);
+      }
+      
       toast({
         title: "Sucesso",
-        description: "Agendamento criado com sucesso.",
+        description: `Agendamento${appointmentsToAdd.length > 1 ? 's' : ''} criado${appointmentsToAdd.length > 1 ? 's' : ''} com sucesso.`,
       });
       await fetchAppointments();
     } catch (error) {
-      console.error("Error adding appointment: ", error);
+      console.error("Error adding appointment(s): ", error);
       toast({
         variant: "destructive",
         title: "Erro ao criar agendamento",
-        description: "Ocorreu um erro ao tentar salvar o agendamento.",
+        description: "Ocorreu um erro ao tentar salvar o(s) agendamento(s).",
       });
     }
   };
