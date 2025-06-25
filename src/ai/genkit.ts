@@ -2,8 +2,8 @@
 
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import {firebase} from '@genkit-ai/firebase/plugin';
-import {googleCloud} from '@genkit-ai/google-cloud/plugin';
+import { enableFirebaseTelemetry as firebase } from '@genkit-ai/firebase';
+import {googleCloud} from '@genkit-ai/google-cloud';
 
 export const ai = genkit({
   plugins: [
