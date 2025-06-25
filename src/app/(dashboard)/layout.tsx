@@ -50,9 +50,12 @@ export default function DashboardLayout({
               <AppSidebar />
               <SidebarInset>
                 <Header />
-                <main className="p-4 sm:p-6 lg:p-8">
+                <main className="flex-1 p-4 sm:p-6 lg:p-8">
                   {children}
                 </main>
+                <footer className="border-t p-4 text-center text-sm text-muted-foreground">
+                    Desenvolvido por: JVGP- João Pawlowicz
+                </footer>
               </SidebarInset>
             </SidebarProvider>
           </ScheduleProvider>

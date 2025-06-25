@@ -98,7 +98,8 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
           <DialogHeader>
             <DialogTitle>Adicionar Novo Usuário</DialogTitle>
             <DialogDescription>
-              Preencha os detalhes do novo usuário. <strong>Importante:</strong> Após salvar, crie a conta de login para este usuário (com o mesmo e-mail) na seção de Autenticação do console do Firebase.
+               Preencha os detalhes para criar o perfil do usuário no sistema. <br/><br/>
+               <strong>Passo Final (Importante):</strong> Após salvar, o administrador deve ir à seção de <strong>Autenticação</strong> no Console do Firebase, criar uma conta com o <strong>mesmo e-mail</strong> e definir uma senha inicial para o usuário.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

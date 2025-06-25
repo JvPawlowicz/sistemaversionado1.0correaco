@@ -14,11 +14,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
 
 export function UserNav() {
-  const { user, currentUser, logout, updateAvatar } = useAuth();
-  const [isUpdating, setIsUpdating] = React.useState(false);
+  const { user, currentUser, logout } = useAuth();
 
   if (!user || !currentUser) {
     return null;
@@ -32,12 +30,6 @@ export function UserNav() {
     return name.substring(0, 2).toUpperCase();
   };
   
-  const handleUpdateAvatar = async () => {
-    setIsUpdating(true);
-    await updateAvatar();
-    setIsUpdating(false);
-  }
-
   const displayName = currentUser.name;
   const displayEmail = currentUser.email;
 
@@ -63,11 +55,7 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/settings">Configurações</Link>
-          </DropdownMenuItem>
-           <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={handleUpdateAvatar} disabled={isUpdating} className="cursor-pointer">
-             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Mudar Avatar
+            <Link href="/profile">Meu Perfil</Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

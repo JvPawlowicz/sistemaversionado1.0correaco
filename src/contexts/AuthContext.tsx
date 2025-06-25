@@ -16,6 +16,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
   updateAvatar: () => Promise<void>;
+  updateUserName: (name: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 role: 'Admin',
                 status: 'Active',
                 avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
+                unitIds: []
               });
 
             } else {
@@ -183,6 +185,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUserName = async (name: string) => {
+    if (!db || !currentUser) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível atualizar o nome.' });
+        return;
+    }
+    if (name.trim().length < 3) {
+        toast({ variant: 'destructive', title: 'Nome inválido', description: 'O nome deve ter pelo menos 3 caracteres.' });
+        return;
+    }
+
+    const userDocRef = doc(db, 'users', currentUser.id);
+
+    try {
+        await updateDoc(userDocRef, { name });
+        setCurrentUser(prevUser => prevUser ? { ...prevUser, name } : null);
+        toast({ title: 'Sucesso!', description: 'Seu nome foi atualizado.' });
+    } catch (error) {
+        console.error("User name update error:", error);
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível atualizar o nome no banco de dados.' });
+    }
+  };
+
 
   const value = {
     user,
@@ -192,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     updateAvatar,
+    updateUserName,
   };
 
   return (
