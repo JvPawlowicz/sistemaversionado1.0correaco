@@ -12,8 +12,8 @@ import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = React.useState('evelyn.reed@clinicflow.com');
-  const [password, setPassword] = React.useState('password123');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
