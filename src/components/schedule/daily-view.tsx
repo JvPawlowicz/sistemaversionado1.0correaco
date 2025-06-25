@@ -28,7 +28,7 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
   const handleToday = () => setCurrentDate(new Date());
 
   const getAppointmentsForDay = (day: Date) => {
-    return appointments.filter(appointment => isSameDay(appointment.date, day));
+    return appointments.filter(appointment => isSameDay(new Date(appointment.date + 'T00:00:00'), day));
   };
 
   return (

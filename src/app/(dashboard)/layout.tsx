@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, ReactNode } from 'react';
 import { PatientProvider } from '@/contexts/PatientContext';
+import { ScheduleProvider } from '@/contexts/ScheduleContext';
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -40,6 +41,7 @@ export default function DashboardLayout({
 
   return (
     <PatientProvider>
+      <ScheduleProvider>
         <SidebarProvider>
           <AppSidebar />
           <SidebarInset>
@@ -49,6 +51,7 @@ export default function DashboardLayout({
             </main>
           </SidebarInset>
         </SidebarProvider>
+      </ScheduleProvider>
     </PatientProvider>
   );
 }

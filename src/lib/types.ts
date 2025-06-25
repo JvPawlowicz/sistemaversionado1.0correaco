@@ -22,14 +22,16 @@ export type User = {
 
 export type Appointment = {
   id: string;
+  patientId: string;
   patientName: string;
   professionalName: string;
   discipline: string;
   time: string;
   endTime: string;
-  date: Date;
+  date: string; // ISO String 'YYYY-MM-DD'
   room: string;
   color: string;
+  createdAt?: any; // For Firestore serverTimestamp
 };
 
 export type EvolutionRecord = {

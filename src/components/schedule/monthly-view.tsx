@@ -10,11 +10,11 @@ import { isSameDay } from 'date-fns';
 export function MonthlyView({ appointments, date, setDate }: { appointments: Appointment[], date: Date, setDate: (date: Date) => void }) {
     
     const selectedDayAppointments = React.useMemo(() => {
-        return appointments.filter(app => isSameDay(app.date, date));
+        return appointments.filter(app => isSameDay(new Date(app.date + 'T00:00:00'), date));
     }, [date, appointments]);
     
     const daysWithAppointments = React.useMemo(() => {
-        return appointments.map(app => app.date);
+        return appointments.map(app => new Date(app.date + 'T00:00:00'));
     }, [appointments]);
     
     return (
