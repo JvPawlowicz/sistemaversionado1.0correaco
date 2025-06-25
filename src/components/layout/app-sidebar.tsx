@@ -12,7 +12,7 @@ import {
   SidebarSeparator
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { LayoutDashboard, Users, HeartPulse, Settings, LogOut, Calendar } from 'lucide-react';
+import { LayoutDashboard, Users, HeartPulse, Settings, LogOut, Calendar, Bot } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function AppSidebar() {
@@ -23,6 +23,7 @@ export function AppSidebar() {
     { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
     { href: '/schedule', label: 'Agenda', icon: Calendar },
     { href: '/patients', label: 'Pacientes', icon: HeartPulse },
+    { href: '/ai-notes', label: 'Anotações com IA', icon: Bot },
     { href: '/users', label: 'Usuários', icon: Users, adminOnly: true },
   ];
 
