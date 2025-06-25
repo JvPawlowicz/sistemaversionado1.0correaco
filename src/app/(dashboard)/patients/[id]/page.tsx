@@ -1,7 +1,6 @@
 'use client';
 
-import { notFound, useRouter } from 'next/navigation';
-import { evolutionRecords, reports } from '@/lib/placeholder-data';
+import { useRouter } from 'next/navigation';
 import { PatientDetailView } from '@/components/patients/patient-detail-view';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,6 +30,6 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   }
 
   return (
-    <PatientDetailView patient={patient} records={evolutionRecords} reports={reports} />
+    <PatientDetailView patient={patient} />
   );
 }

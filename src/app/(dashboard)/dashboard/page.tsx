@@ -10,6 +10,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { isToday } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnit } from '@/contexts/UnitContext';
 
 function StatCard({ title, value, icon: Icon, loading }: { title: string; value: string | number; icon: React.ElementType; loading: boolean }) {
   return (
@@ -34,10 +35,11 @@ export default function DashboardPage() {
   const { appointments, loading: scheduleLoading } = useSchedule();
   const { users, loading: usersLoading } = useUser();
   const { currentUser } = useAuth();
+  const { selectedUnitId } = useUnit();
 
   const totalPatients = patients.filter(p => p.status === 'Active').length;
   const todaysAppointments = appointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length;
-  const totalTherapists = users.filter(u => u.role === 'Therapist').length;
+  const totalTherapists = users.filter(u => u.role === 'Therapist' && selectedUnitId && u.unitIds.includes(selectedUnitId)).length;
 
   const loading = patientsLoading || scheduleLoading || usersLoading;
 

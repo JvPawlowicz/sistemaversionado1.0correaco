@@ -24,6 +24,7 @@ export function AppSidebar() {
     { href: '/schedule', label: 'Agenda', icon: Calendar },
     { href: '/patients', label: 'Pacientes', icon: HeartPulse },
     { href: '/users', label: 'Usuários', icon: Users, adminOnly: true },
+    { href: '/ai-notes', label: 'Anotações IA', icon: Bot },
   ];
 
   return (
