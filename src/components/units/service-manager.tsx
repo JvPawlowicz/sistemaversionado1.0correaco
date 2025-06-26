@@ -49,7 +49,7 @@ export function ServiceManager({ unit, onServiceChange }: ServiceManagerProps) {
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
   
   // Filter professionals that belong to the current unit
-  const professionalsInUnit = users.filter(user => user.unitIds.includes(unit.id) && (user.role === 'Therapist' || user.role === 'Coordinator'));
+  const professionalsInUnit = users.filter(user => Array.isArray(user.unitIds) && user.unitIds.includes(unit.id) && (user.role === 'Therapist' || user.role === 'Coordinator'));
   const selectedProfessionals = users.filter(user => professionalIds.includes(user.id));
 
   const resetForm = () => {
