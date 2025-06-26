@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { User } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useUnit } from './UnitContext';
 
 interface UserContextType {
   users: User[];
@@ -20,6 +21,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { selectedUnitId } = useUnit();
 
   const fetchUsers = useCallback(async () => {
     if (!db) {
@@ -27,13 +29,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
     }
+    if (!selectedUnitId) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
       const usersCollection = collection(db, 'users');
-      // In a real app with many users, you might filter by selectedUnitId here too
-      // For now, we fetch all to allow admins to see everyone.
-      const q = query(usersCollection);
+      const q = query(usersCollection, where('unitIds', 'array-contains', selectedUnitId));
       const userSnapshot = await getDocs(q);
       const userList = userSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -51,16 +56,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
       toast({
         variant: "destructive",
         title: "Erro ao buscar usuários",
-        description: "Não foi possível carregar a lista de usuários.",
+        description: "Não foi possível carregar la lista de usuários.",
       });
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, selectedUnitId]);
 
   useEffect(() => {
-    // We refetch users when the component mounts.
-    // Server Actions will use revalidatePath to trigger updates after mutations.
     fetchUsers();
   }, [fetchUsers]);
 

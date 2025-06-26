@@ -18,6 +18,8 @@ function checkAdminInit() {
 
 const CreateUserSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
+  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
+  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   role: z.enum(['Admin', 'Therapist', 'Receptionist', 'Coordinator']),
   unitIds: z.array(z.string()).min(1, { message: 'Selecione pelo menos uma unidade.' }),
 });
@@ -28,6 +30,8 @@ export async function createUserAction(prevState: any, formData: FormData) {
 
   const validatedFields = CreateUserSchema.safeParse({
     name: formData.get('name'),
+    email: formData.get('email'),
+    password: formData.get('password'),
     role: formData.get('role'),
     unitIds: formData.getAll('unitIds'),
   });
@@ -40,9 +44,7 @@ export async function createUserAction(prevState: any, formData: FormData) {
     };
   }
 
-  const { name, role, unitIds } = validatedFields.data;
-  const email = `${name.toLowerCase().replace(/\s/g, '.').replace(/[^a-z0-9.]/g, '')}@clinic.local`;
-  const password = 'password';
+  const { name, role, unitIds, email, password } = validatedFields.data;
 
   try {
     const userRecord = await auth.createUser({
@@ -64,7 +66,7 @@ export async function createUserAction(prevState: any, formData: FormData) {
   } catch (error: any) {
     let message = 'Ocorreu um erro desconhecido.';
     if (error.code === 'auth/email-already-exists') {
-      message = 'Este e-mail já está em uso por outra conta (gerado a partir de um nome duplicado). Tente um nome diferente.';
+      message = 'Este e-mail já está em uso por outra conta.';
     }
     console.error('Error creating user:', error);
     return { success: false, message: message, errors: null };
@@ -386,5 +388,63 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
   } catch (error) {
     console.error('Error uploading document:', error);
     return { success: false, message: 'Ocorreu um erro durante o upload do documento.' };
+  }
+}
+
+// --- Delete Patient Action ---
+async function deleteCollection(collectionPath: string, batchSize: number) {
+  if (!db) return;
+  const collectionRef = db.collection(collectionPath);
+  const query = collectionRef.orderBy('__name__').limit(batchSize);
+
+  return new Promise<void>((resolve, reject) => {
+    deleteQueryBatch(query, resolve).catch(reject);
+  });
+
+  async function deleteQueryBatch(query: FirebaseFirestore.Query, resolve: () => void) {
+     if (!db) return;
+    const snapshot = await query.get();
+
+    const batchSize = snapshot.size;
+    if (batchSize === 0) {
+      resolve();
+      return;
+    }
+
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    process.nextTick(() => {
+      deleteQueryBatch(query, resolve);
+    });
+  }
+}
+
+export async function deletePatientAction(patientId: string): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+  if (!patientId) {
+    return { success: false, message: 'ID do paciente é obrigatório.' };
+  }
+
+  try {
+    const patientRef = db.collection('patients').doc(patientId);
+
+    // Delete subcollections
+    await deleteCollection(`patients/${patientId}/evolutionRecords`, 50);
+    await deleteCollection(`patients/${patientId}/documents`, 50);
+
+    // TODO: Delete files in Storage
+
+    // Delete the patient document
+    await patientRef.delete();
+
+    return { success: true, message: 'Paciente e todos os seus dados foram excluídos com sucesso.' };
+  } catch (error: any) {
+    console.error("Error deleting patient:", error);
+    return { success: false, message: 'Falha ao excluir o paciente.' };
   }
 }

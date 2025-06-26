@@ -21,6 +21,10 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
 
   const patient = patients.find((p) => p.id === params.id);
 
+  const handlePatientDeleted = () => {
+    router.push('/patients');
+  };
+
   const fetchRecords = useCallback(async () => {
     if (!patient || !db) return;
     setRecordsLoading(true);
@@ -97,6 +101,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
       documents={documents}
       documentsLoading={documentsLoading}
       onDocumentAdded={fetchDocuments}
+      onPatientDeleted={handlePatientDeleted}
     />
   );
 }

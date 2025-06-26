@@ -44,8 +44,8 @@ export default function DashboardLayout({
   }
 
   return (
-    <UserProvider>
-      <UnitProvider>
+    <UnitProvider>
+      <UserProvider>
         <PatientProvider>
           <ScheduleProvider>
             <NotificationProvider>
@@ -65,7 +65,7 @@ export default function DashboardLayout({
             </NotificationProvider>
           </ScheduleProvider>
         </PatientProvider>
-      </UnitProvider>
-    </UserProvider>
+      </UserProvider>
+    </UnitProvider>
   );
 }

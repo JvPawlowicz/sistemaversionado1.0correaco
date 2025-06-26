@@ -11,7 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, Loader2, ChevronDown } from 'lucide-react';
+import { FileText, Plus, Loader2, ChevronDown, MoreHorizontal, Trash2 } from 'lucide-react';
 import type { Patient, EvolutionRecord, PatientDocument } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
@@ -23,8 +23,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePatient } from '@/contexts/PatientContext';
 import { useToast } from '@/hooks/use-toast';
 import { updatePatientStatusAction } from '@/lib/actions';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { DocumentUploader } from './document-uploader';
+import { DeletePatientDialog } from './delete-patient-dialog';
 
 export function PatientDetailView({
   patient,
@@ -34,6 +35,7 @@ export function PatientDetailView({
   documents,
   documentsLoading,
   onDocumentAdded,
+  onPatientDeleted,
 }: {
   patient: Patient;
   records: EvolutionRecord[];
@@ -42,14 +44,16 @@ export function PatientDetailView({
   documents: PatientDocument[];
   documentsLoading: boolean;
   onDocumentAdded: () => void;
+  onPatientDeleted: () => void;
 }) {
   const [isNewRecordDialogOpen, setIsNewRecordDialogOpen] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const { currentUser } = useAuth();
   const { fetchPatients } = usePatient();
   const { toast } = useToast();
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
 
-  const canEditStatus = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
+  const canEdit = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
 
   const handleStatusChange = async (newStatus: 'Active' | 'Inactive') => {
       if (patient.status === newStatus || isUpdatingStatus) return;
@@ -89,6 +93,12 @@ export function PatientDetailView({
         patientId={patient.id}
         onRecordAdded={onRecordAdded}
       />
+      <DeletePatientDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        patient={patient}
+        onPatientDeleted={onPatientDeleted}
+      />
       <div className="space-y-6">
         <Card>
           <CardHeader className="flex flex-col items-start gap-4 sm:flex-row">
@@ -103,13 +113,13 @@ export function PatientDetailView({
               </CardDescription>
               <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <span>Nasc: {formattedDob}</span>
-                <span>Gênero: {genderMap[patient.gender] || 'Não informado'}</span>
-                <span>Telefone: {patient.phone}</span>
-                <span>Email: {patient.email}</span>
+                <span>Gênero: {patient.gender ? genderMap[patient.gender] : 'Não informado'}</span>
+                <span>Telefone: {patient.phone || 'Não informado'}</span>
+                <span>Email: {patient.email || 'Não informado'}</span>
               </div>
             </div>
-             <div>
-              {canEditStatus ? (
+             <div className="flex items-center gap-2">
+              {canEdit ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="w-[120px]" disabled={isUpdatingStatus}>
@@ -131,6 +141,25 @@ export function PatientDetailView({
                   {patient.status === 'Active' ? 'Ativo' : 'Inativo'}
                 </Badge>
               )}
+               {canEdit && (
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                      <DropdownMenuItem
+                        className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir Paciente
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+               )}
             </div>
           </CardHeader>
         </Card>
@@ -240,7 +269,7 @@ export function PatientDetailView({
                     </div>
                      <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Gênero</p>
-                        <p>{genderMap[patient.gender] || 'Não informado'}</p>
+                        <p>{patient.gender ? genderMap[patient.gender] : 'Não informado'}</p>
                     </div>
                      <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Status</p>
@@ -248,11 +277,11 @@ export function PatientDetailView({
                     </div>
                      <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">E-mail</p>
-                        <p>{patient.email}</p>
+                        <p>{patient.email || 'Não informado'}</p>
                     </div>
                      <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Telefone</p>
-                        <p>{patient.phone}</p>
+                        <p>{patient.phone || 'Não informado'}</p>
                     </div>
                     <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Última visita</p>

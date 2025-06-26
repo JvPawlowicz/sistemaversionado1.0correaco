@@ -1,13 +1,13 @@
 export type Patient = {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  lastVisit: string;
+  email?: string | null;
+  phone?: string | null;
+  lastVisit?: string | null;
   status: 'Active' | 'Inactive';
   avatarUrl: string;
-  dob: string;
-  gender: 'Male' | 'Female' | 'Other';
+  dob?: string | null;
+  gender?: 'Male' | 'Female' | 'Other' | null;
   unitIds: string[];
   createdAt?: any; // For Firestore serverTimestamp
 };

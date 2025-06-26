@@ -84,7 +84,7 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
           <DialogHeader>
             <DialogTitle>Adicionar Novo Usuário</DialogTitle>
             <DialogDescription>
-              Preencha os detalhes para criar o perfil. Um e-mail será gerado automaticamente e a senha inicial será <span className="font-mono font-semibold text-foreground">password</span>.
+             Preencha os detalhes para criar o perfil e o acesso do novo usuário.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -101,7 +101,20 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
                 {state.errors?.name && <p className="text-xs text-destructive mt-1">{state.errors.name[0]}</p>}
               </div>
             </div>
-            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">E-mail</Label>
+              <div className="col-span-3">
+                <Input id="email" name="email" type="email" required />
+                {state.errors?.email && <p className="text-xs text-destructive mt-1">{state.errors.email[0]}</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">Senha</Label>
+              <div className="col-span-3">
+                <Input id="password" name="password" type="password" required />
+                {state.errors?.password && <p className="text-xs text-destructive mt-1">{state.errors.password[0]}</p>}
+              </div>
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="role" className="text-right">Função</Label>
               <div className="col-span-3">

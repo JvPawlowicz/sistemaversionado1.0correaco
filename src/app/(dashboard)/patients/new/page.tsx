@@ -19,10 +19,10 @@ import type { Patient } from '@/lib/types';
 
 const patientFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
-  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
-  phone: z.string().min(10, { message: 'O telefone deve ter pelo menos 10 dígitos.' }),
-  dob: z.string().min(1, { message: 'A data de nascimento é obrigatória.' }),
-  gender: z.enum(['Male', 'Female', 'Other'], { required_error: 'O gênero é obrigatório.' }),
+  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }).optional().or(z.literal('')),
+  phone: z.string().optional(),
+  dob: z.string().optional(),
+  gender: z.enum(['Male', 'Female', 'Other']).optional(),
 });
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
@@ -39,6 +39,7 @@ export default function NewPatientPage() {
       name: '',
       email: '',
       phone: '',
+      dob: '',
       gender: undefined,
     },
   });
@@ -49,10 +50,10 @@ export default function NewPatientPage() {
 
     const newPatientData: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'> = {
       name: data.name,
-      email: data.email,
-      phone: data.phone,
-      dob: data.dob,
-      gender: data.gender,
+      email: data.email || null,
+      phone: data.phone || null,
+      dob: data.dob || null,
+      gender: data.gender || null,
       unitIds: [selectedUnitId],
     };
     
@@ -73,7 +74,7 @@ export default function NewPatientPage() {
           <Card>
             <CardHeader>
               <CardTitle>Informações do Paciente</CardTitle>
-              <CardDescription>Preencha os detalhes do novo paciente.</CardDescription>
+              <CardDescription>Preencha os detalhes do novo paciente. Apenas o nome é obrigatório.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -95,7 +96,7 @@ export default function NewPatientPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>E-mail</FormLabel>
+                      <FormLabel>E-mail (Opcional)</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="email@exemplo.com" {...field} disabled={isSaving}/>
                       </FormControl>
@@ -108,7 +109,7 @@ export default function NewPatientPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Telefone</FormLabel>
+                      <FormLabel>Telefone (Opcional)</FormLabel>
                       <FormControl>
                         <Input placeholder="(00) 00000-0000" {...field} disabled={isSaving}/>
                       </FormControl>
@@ -123,7 +124,7 @@ export default function NewPatientPage() {
                   name="dob"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data de Nascimento</FormLabel>
+                      <FormLabel>Data de Nascimento (Opcional)</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} disabled={isSaving}/>
                       </FormControl>
@@ -136,7 +137,7 @@ export default function NewPatientPage() {
                   name="gender"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Gênero</FormLabel>
+                      <FormLabel>Gênero (Opcional)</FormLabel>
                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}>
                         <FormControl>
                           <SelectTrigger>
