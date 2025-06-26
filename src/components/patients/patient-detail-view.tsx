@@ -11,7 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, Loader2 } from 'lucide-react';
+import { FileText, Plus, Loader2, ChevronDown } from 'lucide-react';
 import type { Patient, EvolutionRecord, Report } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
@@ -19,6 +19,11 @@ import { Badge } from '../ui/badge';
 import { NewEvolutionRecordDialog } from './new-evolution-record-dialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePatient } from '@/contexts/PatientContext';
+import { useToast } from '@/hooks/use-toast';
+import { updatePatientStatusAction } from '@/lib/actions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // Reports are not implemented yet, so we keep this empty.
 const reports: Report[] = [];
@@ -35,6 +40,26 @@ export function PatientDetailView({
   onRecordAdded: () => void;
 }) {
   const [isNewRecordDialogOpen, setIsNewRecordDialogOpen] = React.useState(false);
+  const { currentUser } = useAuth();
+  const { fetchPatients } = usePatient();
+  const { toast } = useToast();
+  const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
+
+  const canEditStatus = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
+
+  const handleStatusChange = async (newStatus: 'Active' | 'Inactive') => {
+      if (patient.status === newStatus || isUpdatingStatus) return;
+      setIsUpdatingStatus(true);
+      const result = await updatePatientStatusAction(patient.id, newStatus);
+      if (result.success) {
+          toast({ title: 'Sucesso!', description: result.message });
+          await fetchPatients();
+      } else {
+          toast({ variant: 'destructive', title: 'Erro', description: result.message });
+      }
+      setIsUpdatingStatus(false);
+  };
+
 
   const getInitials = (name: string) => {
     const names = name.split(' ');
@@ -79,9 +104,30 @@ export function PatientDetailView({
                 <span>Email: {patient.email}</span>
               </div>
             </div>
-            <Badge variant={patient.status === 'Active' ? 'default' : 'secondary'}>
-              {patient.status === 'Active' ? 'Ativo' : 'Inativo'}
-            </Badge>
+             <div>
+              {canEditStatus ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-[120px]" disabled={isUpdatingStatus}>
+                      {isUpdatingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : (patient.status === 'Active' ? 'Ativo' : 'Inativo')}
+                      {!isUpdatingStatus && <ChevronDown className="ml-auto h-4 w-4" />}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleStatusChange('Active')} disabled={patient.status === 'Active'}>
+                      Ativo
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange('Inactive')} disabled={patient.status === 'Inactive'}>
+                      Inativo
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Badge variant={patient.status === 'Active' ? 'default' : 'secondary'}>
+                  {patient.status === 'Active' ? 'Ativo' : 'Inativo'}
+                </Badge>
+              )}
+            </div>
           </CardHeader>
         </Card>
 

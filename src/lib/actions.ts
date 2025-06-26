@@ -305,3 +305,29 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
     return { success: false, message: 'Ocorreu um erro ao salvar o registro.', errors: null };
   }
 }
+
+
+// --- Update Patient Status Action ---
+const UpdatePatientStatusSchema = z.object({
+  patientId: z.string().min(1, 'ID do paciente é obrigatório.'),
+  status: z.enum(['Active', 'Inactive']),
+});
+
+export async function updatePatientStatusAction(patientId: string, status: 'Active' | 'Inactive'): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+
+  const validatedFields = UpdatePatientStatusSchema.safeParse({ patientId, status });
+
+  if (!validatedFields.success) {
+    return { success: false, message: 'Dados inválidos.' };
+  }
+
+  try {
+    await db.collection('patients').doc(patientId).update({ status });
+    return { success: true, message: 'Status do paciente atualizado com sucesso!' };
+  } catch (error) {
+    console.error('Error updating patient status:', error);
+    return { success: false, message: 'Ocorreu um erro ao atualizar o status do paciente.' };
+  }
+}

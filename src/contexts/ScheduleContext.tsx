@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { Appointment } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc, updateDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { colors } from '@/lib/placeholder-data';
 import { useUnit } from './UnitContext';
@@ -162,11 +162,32 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     }
     try {
       const appointmentRef = doc(db, 'appointments', appointmentId);
-      await updateDoc(appointmentRef, { status: status });
+      const appointmentDoc = await getDoc(appointmentRef);
+
+      if (!appointmentDoc.exists()) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Agendamento não encontrado.'});
+        return;
+      }
+
+      const appointmentData = appointmentDoc.data();
+      const batch = writeBatch(db);
+
+      batch.update(appointmentRef, { status: status });
+
+      let toastDescription = 'Status do agendamento foi atualizado.';
+      if (status === 'Realizado') {
+        const patientRef = doc(db, 'patients', appointmentData.patientId);
+        batch.update(patientRef, { lastVisit: appointmentData.date });
+        toastDescription = 'Status atualizado para "Realizado" e última visita do paciente registrada.'
+      }
+
+      await batch.commit();
+      
       toast({
         title: 'Sucesso',
-        description: 'Status do agendamento foi atualizado.',
+        description: toastDescription,
       });
+
       await fetchAppointments();
     } catch (error) {
       console.error('Error updating appointment status: ', error);

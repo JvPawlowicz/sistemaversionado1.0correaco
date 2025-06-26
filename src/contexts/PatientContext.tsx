@@ -13,6 +13,7 @@ interface PatientContextType {
   loading: boolean;
   error: string | null;
   addPatient: (patient: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'>) => Promise<void>;
+  fetchPatients: () => Promise<void>;
 }
 
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
@@ -124,7 +125,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <PatientContext.Provider value={{ patients, loading: loading || authLoading, error, addPatient }}>
+    <PatientContext.Provider value={{ patients, loading: loading || authLoading, error, addPatient, fetchPatients }}>
       {children}
     </PatientContext.Provider>
   );

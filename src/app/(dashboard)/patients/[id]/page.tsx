@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function PatientProfilePage({ params }: { params: { id: string } }) {
-  const { patients, loading: patientsLoading } = usePatient();
+  const { patients, loading: patientsLoading, fetchPatients } = usePatient();
   const router = useRouter();
   const [records, setRecords] = useState<EvolutionRecord[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(true);
@@ -28,7 +28,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
       const querySnapshot = await getDocs(q);
       const fetchedRecords = querySnapshot.docs.map(doc => {
           const data = doc.data();
-          const date = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.date);
+          const date = data.createdAt.toDate();
           return {
               id: doc.id,
               ...data,
