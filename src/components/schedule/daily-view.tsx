@@ -11,6 +11,7 @@ import { useSchedule } from '@/contexts/ScheduleContext';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { Badge } from '../ui/badge';
 
 const HOUR_HEIGHT = 60; // height of one hour in pixels
 
@@ -139,6 +140,9 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
                         <p className="font-bold whitespace-nowrap overflow-hidden text-ellipsis">{app.patientName}</p>
                         <p className="whitespace-nowrap overflow-hidden text-ellipsis">{app.professionalName}</p>
                         <p className="opacity-80 mt-1">{app.time} - {app.endTime}</p>
+                        <div className="absolute bottom-1 right-1 bg-black/20 text-white text-[10px] px-1.5 rounded-sm">
+                            {app.status}
+                        </div>
                       </div>
                     );
                   })}

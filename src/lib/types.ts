@@ -34,6 +34,7 @@ export type Appointment = {
   date: string; // ISO String 'YYYY-MM-DD'
   room: string;
   unitId: string;
+  status: 'Agendado' | 'Realizado' | 'Faltou' | 'Cancelado';
   color: string;
   createdAt?: any; // For Firestore serverTimestamp
 };

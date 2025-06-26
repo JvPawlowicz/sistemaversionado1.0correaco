@@ -13,7 +13,7 @@ interface ScheduleContextType {
   appointments: Appointment[];
   loading: boolean;
   error: string | null;
-  addAppointment: (data: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color'>; repeat: boolean }) => Promise<void>;
+  addAppointment: (data: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color' | 'status'>; repeat: boolean }) => Promise<void>;
   deleteAppointment: (appointmentId: string) => Promise<void>;
 }
 
@@ -77,7 +77,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  const addAppointment = async ({ appointment: appointmentData, repeat }: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color'>; repeat: boolean }) => {
+  const addAppointment = async ({ appointment: appointmentData, repeat }: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color' | 'status'>; repeat: boolean }) => {
     if (!db) {
         toast({
             variant: "destructive",
@@ -93,6 +93,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       const appointmentsToAdd = [];
       appointmentsToAdd.push({
         ...appointmentData,
+        status: 'Agendado',
         color,
         createdAt: serverTimestamp()
       });
@@ -106,6 +107,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
           appointmentsToAdd.push({
             ...appointmentData,
             date: formattedNextDate,
+            status: 'Agendado',
             color,
             createdAt: serverTimestamp()
           });

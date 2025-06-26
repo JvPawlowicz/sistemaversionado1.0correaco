@@ -55,7 +55,12 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
 
   const [isPatientPopoverOpen, setIsPatientPopoverOpen] = React.useState(false);
   
-  const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Admin' || u.role === 'Coordinator');
+  const professionals = users.filter(u => 
+    (u.role === 'Therapist' || u.role === 'Admin' || u.role === 'Coordinator') &&
+    selectedUnitId &&
+    u.unitIds.includes(selectedUnitId)
+  );
+  
   const selectedUnit = units.find(u => u.id === selectedUnitId);
   const availableRooms = selectedUnit ? selectedUnit.rooms : [];
 
@@ -100,7 +105,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     
     setIsSaving(true);
     
-    const newAppointmentData: Omit<Appointment, 'id' | 'createdAt' | 'color'> = {
+    const newAppointmentData: Omit<Appointment, 'id' | 'createdAt' | 'color' | 'status'> = {
         patientId,
         patientName,
         professionalName,
@@ -194,7 +199,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
                    <SelectValue placeholder="Selecione um profissional" />
                  </SelectTrigger>
                  <SelectContent>
-                    {usersLoading ? (
+                    {isLoading ? (
                      <SelectItem value="loading" disabled>Carregando...</SelectItem>
                    ) : (
                      professionals.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)

@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserTable } from '@/components/users/user-table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Terminal } from 'lucide-react';
+import { PlusCircle, Terminal, ShieldAlert } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { NewUserDialog } from '@/components/users/new-user-dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function UsersPage() {
   const { users, loading: usersLoading, error, fetchUsers } = useUser();
@@ -25,8 +26,7 @@ export default function UsersPage() {
   
   const loading = usersLoading || authLoading;
 
-  // Render a loading state or nothing while checking permissions to prevent content flashing
-  if (loading || !currentUser || currentUser.role !== 'Admin') {
+  if (loading) {
      return (
         <div className="space-y-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -41,6 +41,21 @@ export default function UsersPage() {
             </div>
         </div>
     );
+  }
+
+  if (!currentUser || currentUser.role !== 'Admin') {
+    return (
+       <Card className="mt-8">
+        <CardHeader className="items-center text-center">
+          <ShieldAlert className="h-12 w-12 text-destructive" />
+          <CardTitle className="text-2xl">Acesso Negado</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
+            <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
+            <Button onClick={() => router.push('/dashboard')} className="mt-4">Voltar para o Painel</Button>
+        </CardContent>
+       </Card>
+    )
   }
 
   return (
