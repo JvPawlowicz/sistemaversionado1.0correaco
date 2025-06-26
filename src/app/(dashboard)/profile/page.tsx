@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 const roleNames: Record<string, string> = {
   Admin: 'Administrador',
@@ -17,23 +18,46 @@ const roleNames: Record<string, string> = {
   Coordinator: 'Coordenador',
 };
 
-
 export default function ProfilePage() {
   const { currentUser, loading, updateAvatar, updateUserName } = useAuth();
   const [isAvatarUpdating, setIsAvatarUpdating] = React.useState(false);
   const [isNameUpdating, setIsNameUpdating] = React.useState(false);
   const [name, setName] = React.useState(currentUser?.name || '');
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
+  const { toast } = useToast();
+
   React.useEffect(() => {
     if (currentUser) {
       setName(currentUser.name);
     }
   }, [currentUser]);
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({
+          variant: 'destructive',
+          title: 'Arquivo muito grande',
+          description: 'Por favor, selecione uma imagem com menos de 2MB.',
+        });
+        return;
+      }
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleUpdateAvatar = async () => {
+    if (!avatarFile) return;
     setIsAvatarUpdating(true);
-    await updateAvatar();
+    await updateAvatar(avatarFile);
     setIsAvatarUpdating(false);
+    setAvatarFile(null);
+    setAvatarPreview(null);
   };
 
   const handleUpdateName = async (e: React.FormEvent) => {
@@ -76,21 +100,36 @@ export default function ProfilePage() {
           Gerencie suas informações pessoais e configurações de conta.
         </p>
       </div>
+      
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        className="hidden" 
+        accept="image/png, image/jpeg, image/webp" 
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
           <Card className="flex flex-col items-center p-6 text-center">
             <Avatar className="h-24 w-24 mb-4">
-              <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
+              <AvatarImage src={avatarPreview || currentUser.avatarUrl} alt={currentUser.name} />
               <AvatarFallback className="text-3xl">{getInitials(currentUser.name)}</AvatarFallback>
             </Avatar>
             <h2 className="text-xl font-semibold">{currentUser.name}</h2>
             <p className="text-muted-foreground">{currentUser.email}</p>
             <p className="text-sm text-muted-foreground mt-1">{roleNames[currentUser.role] || currentUser.role}</p>
-            <Button onClick={handleUpdateAvatar} disabled={isAvatarUpdating} className="mt-4 w-full">
-              {isAvatarUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Mudar Avatar
-            </Button>
+            <div className="flex w-full mt-4 gap-2">
+              <Button onClick={() => fileInputRef.current?.click()} className="flex-1">
+                Escolher Foto
+              </Button>
+              {avatarFile && (
+                <Button onClick={handleUpdateAvatar} disabled={isAvatarUpdating} className="flex-1">
+                  {isAvatarUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar
+                </Button>
+              )}
+            </div>
           </Card>
         </div>
 

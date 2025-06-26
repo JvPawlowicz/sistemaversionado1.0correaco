@@ -11,24 +11,13 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { DatePicker } from '@/components/ui/date-picker';
 import { usePatient } from '@/contexts/PatientContext';
 import { useUnit } from '@/contexts/UnitContext';
 import type { Patient } from '@/lib/types';
 
-const phoneRegex = new RegExp(
-  /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
-);
-
 const patientFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
-  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
-  phone: z.string().regex(phoneRegex, 'Número de telefone inválido.'),
-  dob: z.date({ required_error: 'A data de nascimento é obrigatória.' }),
-  gender: z.enum(['Male', 'Female', 'Other'], { required_error: 'Selecione o gênero.' }),
 });
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
@@ -43,9 +32,6 @@ export default function NewPatientPage() {
     resolver: zodResolver(patientFormSchema),
     defaultValues: {
       name: '',
-      email: '',
-      phone: '',
-      gender: undefined,
     },
   });
 
@@ -55,10 +41,10 @@ export default function NewPatientPage() {
 
     const newPatientData: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'> = {
       name: data.name,
-      email: data.email,
-      phone: data.phone,
-      dob: data.dob.toISOString().split('T')[0],
-      gender: data.gender,
+      email: `${data.name.replace(/\s+/g, '.').toLowerCase()}@placeholder.email`,
+      phone: '(00) 00000-0000',
+      dob: new Date(1990, 0, 1).toISOString().split('T')[0], // Default DOB
+      gender: 'Other',
       unitIds: [selectedUnitId],
     };
     
@@ -81,77 +67,16 @@ export default function NewPatientPage() {
               <CardTitle>Informações do Paciente</CardTitle>
               <CardDescription>Preencha os detalhes do novo paciente.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <CardContent>
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem>
                     <FormLabel>Nome Completo</FormLabel>
                     <FormControl>
                       <Input placeholder="Digite o nome completo" {...field} disabled={isSaving}/>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>E-mail</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="email@example.com" {...field} disabled={isSaving}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="(11) 99999-9999" {...field} disabled={isSaving}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="dob"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data de Nascimento</FormLabel>
-                    <FormControl>
-                      <DatePicker value={field.value} onChange={field.onChange} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="gender"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Gênero</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o gênero" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Female">Feminino</SelectItem>
-                        <SelectItem value="Male">Masculino</SelectItem>
-                        <SelectItem value="Other">Outro</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

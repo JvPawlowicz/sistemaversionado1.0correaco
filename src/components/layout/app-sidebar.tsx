@@ -12,7 +12,7 @@ import {
   SidebarSeparator
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { LayoutDashboard, Users, HeartPulse, Settings, LogOut, Calendar, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Users, HeartPulse, Settings, LogOut, Calendar, BarChart3, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function AppSidebar() {
@@ -25,6 +25,7 @@ export function AppSidebar() {
     { href: '/patients', label: 'Pacientes', icon: HeartPulse },
     { href: '/reports', label: 'Relatórios', icon: BarChart3 },
     { href: '/users', label: 'Usuários', icon: Users, adminOnly: true },
+    { href: '/notifications', label: 'Notificações', icon: Bell, adminOnly: true },
   ];
 
   return (

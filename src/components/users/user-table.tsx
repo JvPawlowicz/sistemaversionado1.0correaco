@@ -16,6 +16,7 @@ import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import type { User } from '@/lib/types';
 import { ResetPasswordDialog } from './reset-password-dialog';
+import { DeleteUserDialog } from './delete-user-dialog';
 
 interface UserTableProps {
   users: User[];
@@ -31,11 +32,17 @@ const roleNames: Record<User['role'], string> = {
 
 export function UserTable({ users, onAddUser }: UserTableProps) {
   const [isResetPasswordOpen, setIsResetPasswordOpen] = React.useState(false);
+  const [isDeleteUserOpen, setIsDeleteUserOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
 
   const handleResetPasswordClick = (user: User) => {
     setSelectedUser(user);
     setIsResetPasswordOpen(true);
+  };
+  
+  const handleDeleteClick = (user: User) => {
+    setSelectedUser(user);
+    setIsDeleteUserOpen(true);
   };
 
   if (users.length === 0) {
@@ -57,6 +64,11 @@ export function UserTable({ users, onAddUser }: UserTableProps) {
         isOpen={isResetPasswordOpen} 
         onOpenChange={setIsResetPasswordOpen}
         user={selectedUser} 
+      />
+      <DeleteUserDialog
+        isOpen={isDeleteUserOpen}
+        onOpenChange={setIsDeleteUserOpen}
+        user={selectedUser}
       />
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
         <Table>
@@ -101,12 +113,13 @@ export function UserTable({ users, onAddUser }: UserTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuItem disabled>Editar Perfil</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleResetPasswordClick(user)}>
                             Resetar Senha
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem disabled className="text-destructive">Desativar (em breve)</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => handleDeleteClick(user)}>
+                            Excluir
+                          </DropdownMenuItem>
                       </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

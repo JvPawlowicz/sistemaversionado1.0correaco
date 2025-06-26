@@ -11,6 +11,7 @@ import { ScheduleProvider } from '@/contexts/ScheduleContext';
 import { Loader2 } from 'lucide-react';
 import { UserProvider } from '@/contexts/UserContext';
 import { UnitProvider } from '@/contexts/UnitContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 
 export default function DashboardLayout({
   children,
@@ -46,18 +47,20 @@ export default function DashboardLayout({
       <UnitProvider>
         <PatientProvider>
           <ScheduleProvider>
-            <SidebarProvider>
-              <AppSidebar />
-              <SidebarInset>
-                <Header />
-                <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                  {children}
-                </main>
-                <footer className="border-t p-4 text-center text-sm text-muted-foreground">
-                    Desenvolvido por: JVGP- João Pawlowicz
-                </footer>
-              </SidebarInset>
-            </SidebarProvider>
+            <NotificationProvider>
+              <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset>
+                  <Header />
+                  <main className="flex-1 p-4 sm:p-6 lg:p-8">
+                    {children}
+                  </main>
+                  <footer className="border-t p-4 text-center text-sm text-muted-foreground">
+                      Desenvolvido por: JVGP- João Pawlowicz
+                  </footer>
+                </SidebarInset>
+              </SidebarProvider>
+            </NotificationProvider>
           </ScheduleProvider>
         </PatientProvider>
       </UnitProvider>

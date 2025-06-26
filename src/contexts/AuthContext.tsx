@@ -3,10 +3,12 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as AuthUser } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
 import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { ref as storage_ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -15,7 +17,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
-  updateAvatar: () => Promise<void>;
+  updateAvatar: (file: File) => Promise<void>;
   updateUserName: (name: string) => Promise<void>;
 }
 
@@ -152,8 +154,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  const updateAvatar = async () => {
-    if (!auth || !db || !currentUser) {
+  const updateAvatar = async (file: File) => {
+    if (!auth || !db || !storage || !currentUser) {
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -162,15 +164,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const newAvatarUrl = `https://i.pravatar.cc/150?u=${Date.now()}`;
-    const userDocRef = doc(db, 'users', currentUser.id);
+    const storageRef = storage_ref(storage, `avatars/${currentUser.id}`);
     
     try {
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      const userDocRef = doc(db, 'users', currentUser.id);
       await updateDoc(userDocRef, {
-        avatarUrl: newAvatarUrl
+        avatarUrl: downloadURL
       });
-      // Update local state immediately for instant feedback
-      setCurrentUser(prevUser => prevUser ? { ...prevUser, avatarUrl: newAvatarUrl } : null);
+
+      setCurrentUser(prevUser => prevUser ? { ...prevUser, avatarUrl: downloadURL } : null);
       toast({
         title: 'Sucesso!',
         description: 'Seu avatar foi atualizado.',
@@ -179,8 +184,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
        console.error("Avatar update error:", error);
        toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Não foi possível atualizar o avatar no banco de dados.',
+        title: 'Erro no Upload',
+        description: 'Não foi possível fazer o upload do avatar. Tente novamente.',
       });
     }
   };
