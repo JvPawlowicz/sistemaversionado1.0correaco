@@ -16,7 +16,7 @@ let auth: Auth | null = null;
 let db: Firestore | null = null;
 
 // Ensure all required client-side environment variables are present
-const hasClerkConfig =
+const hasFirebaseConfig =
   firebaseConfig.apiKey &&
   firebaseConfig.authDomain &&
   firebaseConfig.projectId &&
@@ -24,7 +24,7 @@ const hasClerkConfig =
   firebaseConfig.messagingSenderId &&
   firebaseConfig.appId;
 
-if (hasClerkConfig) {
+if (hasFirebaseConfig) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
@@ -34,7 +34,7 @@ if (hasClerkConfig) {
   }
 } else {
     // This warning will be shown in the browser console
-    console.warn("Firebase client-side configuration is missing or incomplete. Firebase features will be disabled. Please add your config to the .env file.");
+    console.warn("Firebase client-side configuration is missing or incomplete. Please add your config to the .env file.");
 }
 
 export { app, auth, db };
