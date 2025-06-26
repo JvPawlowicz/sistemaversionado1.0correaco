@@ -50,7 +50,7 @@ export function PatientDetailView({
             </CardDescription>
             <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
               <span>Nasc: {patient.dob}</span>
-              <span>Gênero: {patient.gender === 'Female' ? 'Feminino' : 'Masculino'}</span>
+              <span>Gênero: {patient.gender === 'Female' ? 'Feminino' : patient.gender === 'Male' ? 'Masculino' : 'Outro'}</span>
               <span>Telefone: {patient.phone}</span>
               <span>Email: {patient.email}</span>
             </div>
