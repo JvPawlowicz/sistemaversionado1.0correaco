@@ -75,11 +75,11 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
                 <h4 className="font-medium">Alterar Status</h4>
                 <div className="grid grid-cols-2 gap-2">
                     <Button variant="outline" onClick={() => handleUpdateStatus('Realizado')}>
-                        <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                        <CheckCircle className="mr-2 h-4 w-4 text-primary" />
                         Realizado
                     </Button>
                     <Button variant="outline" onClick={() => handleUpdateStatus('Faltou')}>
-                         <XCircle className="mr-2 h-4 w-4 text-red-500" />
+                         <XCircle className="mr-2 h-4 w-4 text-destructive" />
                         Faltou
                     </Button>
                 </div>
@@ -89,7 +89,7 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
             <div className="flex gap-2">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive-outline">
+                        <Button variant="destructive">
                             <Trash2 className="mr-2 h-4 w-4" />
                             Excluir Registro
                         </Button>
@@ -109,7 +109,7 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-                <Button variant="destructive" onClick={() => handleUpdateStatus('Cancelado')}>
+                <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleUpdateStatus('Cancelado')}>
                     <AlertCircle className="mr-2 h-4 w-4" />
                     Cancelar Agendamento
                 </Button>
