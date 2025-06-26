@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, ChevronsUpDown, Check, CircleAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUnit } from '@/contexts/UnitContext';
+import { useUser } from '@/contexts/UserContext';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
   const [state, formAction] = useFormState(createUserAction, initialState);
   const { toast } = useToast();
   const { units, loading: unitsLoading } = useUnit();
+  const { fetchUsers } = useUser();
 
   const [selectedUnitIds, setSelectedUnitIds] = React.useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
@@ -57,11 +59,12 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
   React.useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
+      fetchUsers(); // Instantly refresh the user list
       onOpenChange(false);
     } else if (state.message && !state.errors) {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
-  }, [state, onOpenChange, toast]);
+  }, [state, onOpenChange, toast, fetchUsers]);
   
   const resetForm = () => {
       formRef.current?.reset();

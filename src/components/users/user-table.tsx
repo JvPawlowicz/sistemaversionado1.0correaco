@@ -101,12 +101,12 @@ export function UserTable({ users, onAddUser }: UserTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuItem>Editar Perfil</DropdownMenuItem>
+                          <DropdownMenuItem disabled>Editar Perfil</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleResetPasswordClick(user)}>
                             Resetar Senha
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">Desativar</DropdownMenuItem>
+                          <DropdownMenuItem disabled className="text-destructive">Desativar (em breve)</DropdownMenuItem>
                       </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
