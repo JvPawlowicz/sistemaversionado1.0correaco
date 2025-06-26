@@ -75,23 +75,28 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     if (authLoading) return;
 
     if (currentUser) {
-      const userUnitIds = currentUser.unitIds || [];
-      const availableUnits = allUnits.filter(unit => userUnitIds.includes(unit.id));
+      let availableUnits: Unit[];
+      // Admins should see all units to manage them. Other roles see only their assigned units.
+      if (currentUser.role === 'Admin') {
+        availableUnits = allUnits;
+      } else {
+        const userUnitIds = currentUser.unitIds || [];
+        availableUnits = allUnits.filter(unit => userUnitIds.includes(unit.id));
+      }
       
       setUnits(availableUnits);
       
-      // Use the functional form of setState to avoid dependency issues.
-      // This ensures that when the available units change, we validate the
-      // current selection without overriding a valid user selection.
       setSelectedUnitId(currentSelectedId => {
-        if (availableUnits.some(u => u.id === currentSelectedId)) {
-          return currentSelectedId; // The current selection is still valid
+        // If the current selection is still valid within the new available units, keep it.
+        if (currentSelectedId && availableUnits.some(u => u.id === currentSelectedId)) {
+          return currentSelectedId; 
         }
-        // The current selection is invalid or null, so reset to the first available unit
+        // Otherwise, reset to the first available unit, or null if there are none.
         return availableUnits.length > 0 ? availableUnits[0].id : null;
       });
 
     } else {
+      // No user, no units.
       setUnits([]);
       setSelectedUnitId(null);
     }
