@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { PatientDetailView } from '@/components/patients/patient-detail-view';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,7 +11,8 @@ import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-export default function PatientProfilePage({ params }: { params: { id: string } }) {
+export default function PatientProfilePage() {
+  const params = useParams<{ id: string }>();
   const { patients, loading: patientsLoading, fetchPatients } = usePatient();
   const router = useRouter();
   const [records, setRecords] = useState<EvolutionRecord[]>([]);
