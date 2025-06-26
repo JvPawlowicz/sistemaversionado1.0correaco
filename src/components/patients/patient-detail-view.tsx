@@ -11,8 +11,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, Loader2, ChevronDown, MoreHorizontal, Trash2 } from 'lucide-react';
-import type { Patient, EvolutionRecord, PatientDocument } from '@/lib/types';
+import { FileText, Plus, Loader2, ChevronDown, MoreHorizontal, Trash2, Edit } from 'lucide-react';
+import type { Patient, EvolutionRecord, PatientDocument, FamilyMember } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
@@ -26,6 +26,8 @@ import { updatePatientStatusAction } from '@/lib/actions';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { DocumentUploader } from './document-uploader';
 import { DeletePatientDialog } from './delete-patient-dialog';
+import { EditPatientDialog } from './edit-patient-dialog';
+import { FamilyMemberManager } from './family-member-manager';
 
 export function PatientDetailView({
   patient,
@@ -35,7 +37,11 @@ export function PatientDetailView({
   documents,
   documentsLoading,
   onDocumentAdded,
+  familyMembers,
+  familyMembersLoading,
+  onFamilyMemberChange,
   onPatientDeleted,
+  onPatientUpdated
 }: {
   patient: Patient;
   records: EvolutionRecord[];
@@ -44,9 +50,14 @@ export function PatientDetailView({
   documents: PatientDocument[];
   documentsLoading: boolean;
   onDocumentAdded: () => void;
+  familyMembers: FamilyMember[];
+  familyMembersLoading: boolean;
+  onFamilyMemberChange: () => void;
   onPatientDeleted: () => void;
+  onPatientUpdated: () => void;
 }) {
   const [isNewRecordDialogOpen, setIsNewRecordDialogOpen] = React.useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const { currentUser } = useAuth();
   const { fetchPatients } = usePatient();
@@ -85,6 +96,12 @@ export function PatientDetailView({
     Other: 'Outro',
   };
 
+  const getAddressString = (address: Patient['address']) => {
+    if (!address) return 'Não informado';
+    const parts = [address.street, address.city, address.state, address.zip].filter(Boolean);
+    return parts.join(', ');
+  }
+
   return (
     <>
       <NewEvolutionRecordDialog
@@ -98,6 +115,12 @@ export function PatientDetailView({
         onOpenChange={setIsDeleteDialogOpen}
         patient={patient}
         onPatientDeleted={onPatientDeleted}
+      />
+      <EditPatientDialog
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        patient={patient}
+        onPatientUpdated={onPatientUpdated}
       />
       <div className="space-y-6">
         <Card>
@@ -150,6 +173,11 @@ export function PatientDetailView({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                       <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar Paciente
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                         onClick={() => setIsDeleteDialogOpen(true)}
@@ -165,9 +193,10 @@ export function PatientDetailView({
         </Card>
 
         <Tabs defaultValue="evolution">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="evolution">Evolução</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
+            <TabsTrigger value="family">Familiares</TabsTrigger>
             <TabsTrigger value="profile">Perfil Completo</TabsTrigger>
           </TabsList>
           <TabsContent value="evolution">
@@ -213,8 +242,8 @@ export function PatientDetailView({
           <TabsContent value="documents">
             <Card>
               <CardHeader>
-                <CardTitle>Documentos</CardTitle>
-                <CardDescription>Faça upload e gerencie os documentos do paciente.</CardDescription>
+                <CardTitle>Imagens e Arquivos</CardTitle>
+                <CardDescription>Faça upload e gerencie os documentos, exames e fotos do paciente.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                   <DocumentUploader patientId={patient.id} onDocumentAdded={onDocumentAdded} />
@@ -226,13 +255,13 @@ export function PatientDetailView({
                     ) : documents.length > 0 ? (
                       <ul className="space-y-2">
                           {documents.map(doc => (
-                              <li key={doc.id} className="flex items-center justify-between rounded-lg border p-3">
-                                  <div className="flex items-center gap-3">
+                              <li key={doc.id} className="flex items-center justify-between rounded-lg border p-3 gap-2">
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
                                       <FileText className="h-5 w-5 text-primary"/>
-                                      <div>
-                                          <p className="font-medium">{doc.fileName}</p>
+                                      <div className="flex-1 min-w-0">
+                                          <p className="font-medium truncate" title={doc.fileName}>{doc.fileName}</p>
                                           <p className="text-sm text-muted-foreground">
-                                            Enviado em {format(doc.uploadedAt, 'dd/MM/yyyy')} - {(doc.size / 1024).toFixed(2)} KB
+                                            {doc.category} - Enviado em {format(doc.uploadedAt, 'dd/MM/yyyy')} - {(doc.size / 1024).toFixed(2)} KB
                                           </p>
                                       </div>
                                   </div>
@@ -248,6 +277,22 @@ export function PatientDetailView({
                       </div>
                     )}
                   </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+           <TabsContent value="family">
+            <Card>
+              <CardHeader>
+                <CardTitle>Familiares e Contatos</CardTitle>
+                <CardDescription>Gerencie as informações dos familiares e contatos do paciente.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FamilyMemberManager
+                  patientId={patient.id}
+                  familyMembers={familyMembers}
+                  isLoading={familyMembersLoading}
+                  onFamilyMemberChange={onFamilyMemberChange}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -290,6 +335,24 @@ export function PatientDetailView({
                     <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Data de Cadastro</p>
                         <p>{patient.createdAt?.toDate ? format(patient.createdAt.toDate(), 'PPP', { locale: ptBR }) : 'Não disponível'}</p>
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <p className="font-medium text-muted-foreground">Endereço</p>
+                      <p>{getAddressString(patient.address)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">Diagnóstico</p>
+                      <p>{patient.diagnosis || 'Não informado'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">Profissional Indicador</p>
+                      <p>{patient.referringProfessional || 'Não informado'}</p>
+                    </div>
+                    <div className="space-y-1 flex items-center gap-2">
+                        <p className="font-medium text-muted-foreground">Permissão de Uso de Imagem:</p>
+                        <Badge variant={patient.imageUseConsent ? 'default' : 'secondary'}>
+                            {patient.imageUseConsent ? 'Concedida' : 'Não Concedida'}
+                        </Badge>
                     </div>
                  </div>
               </CardContent>

@@ -20,6 +20,8 @@ interface UnitContextType {
 
 const UnitContext = createContext<UnitContextType | undefined>(undefined);
 
+const CENTRAL_UNIT_ID = 'central';
+
 export function UnitProvider({ children }: { children: ReactNode }) {
   const [allUnits, setAllUnits] = useState<Unit[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -28,6 +30,12 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const { toast } = useToast();
   const { currentUser, loading: authLoading } = useAuth();
+
+  const centralUnit: Unit = {
+    id: CENTRAL_UNIT_ID,
+    name: 'Central (Todas as Unidades)',
+    rooms: [],
+  };
 
   const fetchUnits = useCallback(async () => {
     if (!db) {
@@ -72,6 +80,15 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     fetchUnits();
   }, [fetchUnits]);
 
+  const handleSetSelectedUnitId = (id: string | null) => {
+    setSelectedUnitId(id);
+    if (id) {
+        localStorage.setItem('selectedUnitId', id);
+    } else {
+        localStorage.removeItem('selectedUnitId');
+    }
+  };
+
   useEffect(() => {
     if (authLoading || !currentUser) {
       setUnits([]);
@@ -81,7 +98,7 @@ export function UnitProvider({ children }: { children: ReactNode }) {
 
     let availableUnits: Unit[];
     if (currentUser.role === 'Admin') {
-      availableUnits = allUnits;
+      availableUnits = [centralUnit, ...allUnits];
     } else {
       const userUnitIds = currentUser.unitIds || [];
       availableUnits = allUnits.filter(unit => userUnitIds.includes(unit.id));
@@ -89,12 +106,15 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     
     setUnits(availableUnits);
     
-    // Check if the current selection is still valid within the new available units
-    if (!availableUnits.some(u => u.id === selectedUnitId)) {
-      // If not, set to the first available unit or null
-      setSelectedUnitId(availableUnits.length > 0 ? availableUnits[0].id : null);
+    const storedUnitId = localStorage.getItem('selectedUnitId');
+    if (storedUnitId && availableUnits.some(u => u.id === storedUnitId)) {
+        if (selectedUnitId !== storedUnitId) {
+            setSelectedUnitId(storedUnitId);
+        }
+    } else if (!availableUnits.some(u => u.id === selectedUnitId)) {
+      handleSetSelectedUnitId(availableUnits.length > 0 ? availableUnits[0].id : null);
     }
-  }, [currentUser, allUnits, authLoading, selectedUnitId]);
+  }, [currentUser, allUnits, authLoading]);
 
 
   const addUnit = async (unitName: string) => {
@@ -129,7 +149,7 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, addRoomToUnit, selectedUnitId, setSelectedUnitId, fetchUnits }}>
+    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, addRoomToUnit, selectedUnitId, setSelectedUnitId: handleSetSelectedUnitId, fetchUnits }}>
       {children}
     </UnitContext.Provider>
   );

@@ -3,11 +3,12 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { Appointment } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc, updateDoc, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc, updateDoc, getDoc, writeBatch, type Query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { colors } from '@/lib/placeholder-data';
 import { useUnit } from './UnitContext';
 import { addWeeks, format } from 'date-fns';
+import { useAuth } from './AuthContext';
 
 interface ScheduleContextType {
   appointments: Appointment[];
@@ -26,6 +27,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { selectedUnitId } = useUnit();
+  const { currentUser } = useAuth();
 
   const fetchAppointments = useCallback(async () => {
     if (!db) {
@@ -42,7 +44,14 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       const appointmentsCollection = collection(db, 'appointments');
-      const q = query(appointmentsCollection, where('unitId', '==', selectedUnitId));
+      
+      let q: Query;
+      if (selectedUnitId === 'central' && currentUser?.role === 'Admin') {
+        q = query(appointmentsCollection);
+      } else {
+        q = query(appointmentsCollection, where('unitId', '==', selectedUnitId));
+      }
+      
       const appointmentSnapshot = await getDocs(q);
       const appointmentList = appointmentSnapshot.docs.map(doc => {
         const data = doc.data();
@@ -59,7 +68,8 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       });
 
       setAppointments(appointmentList);
-    } catch (err: any) {
+    } catch (err: any)
+    {
       console.error("Error fetching appointments: ", err);
       const userFriendlyError = "Falha ao buscar agendamentos. Verifique as regras de segurança e se o índice necessário foi criado no Firestore.";
       setError(userFriendlyError);
@@ -72,7 +82,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [toast, selectedUnitId]);
+  }, [toast, selectedUnitId, currentUser]);
 
   useEffect(() => {
     fetchAppointments();

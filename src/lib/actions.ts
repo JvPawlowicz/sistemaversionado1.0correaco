@@ -309,6 +309,67 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
   }
 }
 
+// --- Update Patient Details Action ---
+const UpdatePatientSchema = z.object({
+  patientId: z.string().min(1, 'ID do paciente é obrigatório.'),
+  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
+  email: z.string().email({ message: 'E-mail inválido.' }).optional().or(z.literal('')),
+  phone: z.string().optional(),
+  dob: z.string().optional(),
+  gender: z.enum(['Male', 'Female', 'Other', '']).optional(),
+  diagnosis: z.string().optional(),
+  referringProfessional: z.string().optional(),
+  imageUseConsent: z.preprocess((val) => val === 'on' || val === true, z.boolean()),
+  addressStreet: z.string().optional(),
+  addressCity: z.string().optional(),
+  addressState: z.string().optional(),
+  addressZip: z.string().optional(),
+});
+
+export async function updatePatientDetailsAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = UpdatePatientSchema.safeParse({
+    patientId: formData.get('patientId'),
+    name: formData.get('name'),
+    email: formData.get('email'),
+    phone: formData.get('phone'),
+    dob: formData.get('dob'),
+    gender: formData.get('gender'),
+    diagnosis: formData.get('diagnosis'),
+    referringProfessional: formData.get('referringProfessional'),
+    imageUseConsent: formData.get('imageUseConsent'),
+    addressStreet: formData.get('addressStreet'),
+    addressCity: formData.get('addressCity'),
+    addressState: formData.get('addressState'),
+    addressZip: formData.get('addressZip'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  const { patientId, addressCity, addressState, addressStreet, addressZip, ...patientData } = validatedFields.data;
+  
+  const address = (addressStreet || addressCity || addressState || addressZip) 
+    ? { street: addressStreet || '', city: addressCity || '', state: addressState || '', zip: addressZip || '' } 
+    : null;
+
+  try {
+    await db.collection('patients').doc(patientId).update({ ...patientData, address });
+    return { success: true, message: 'Dados do paciente atualizados com sucesso!', errors: null };
+  } catch (error) {
+    console.error('Error updating patient details:', error);
+    return { success: false, message: 'Ocorreu um erro ao atualizar os dados do paciente.', errors: null };
+  }
+}
+
+
 
 // --- Update Patient Status Action ---
 const UpdatePatientStatusSchema = z.object({
@@ -343,7 +404,9 @@ const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp
 const UploadDocumentSchema = z.object({
   documentFile: fileSchema
     .refine((file) => file.size <= MAX_FILE_SIZE, `O tamanho máximo do arquivo é 10MB.`)
-    .refine((file) => ACCEPTED_FILE_TYPES.includes(file.type), "Formato de arquivo não suportado."),
+    .refine((file) => file.type ? ACCEPTED_FILE_TYPES.includes(file.type) : false, "Formato de arquivo não suportado."),
+  category: z.enum(['Exame', 'Documento Legal', 'Foto Terapêutica', 'Outro']),
+  description: z.string().optional(),
 });
 
 export async function uploadDocumentAction(patientId: string, formData: FormData): Promise<{ success: boolean; message: string }> {
@@ -352,6 +415,8 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
   
   const validatedFields = UploadDocumentSchema.safeParse({
     documentFile: formData.get('documentFile'),
+    category: formData.get('category'),
+    description: formData.get('description'),
   });
 
   if (!validatedFields.success) {
@@ -359,7 +424,7 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
     return { success: false, message: error || 'Dados do arquivo inválidos.' };
   }
 
-  const { documentFile } = validatedFields.data;
+  const { documentFile, category, description } = validatedFields.data;
 
   try {
     const bucket = storageAdmin.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
@@ -372,8 +437,6 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
       metadata: { contentType: documentFile.type },
     });
     
-    await fileUpload.makePublic();
-
     const fileUrl = fileUpload.publicUrl();
     
     await db.collection('patients').doc(patientId).collection('documents').add({
@@ -381,6 +444,8 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
       url: fileUrl,
       fileType: documentFile.type,
       size: documentFile.size,
+      category,
+      description: description || '',
       uploadedAt: FieldValue.serverTimestamp(),
     });
 
@@ -433,18 +498,69 @@ export async function deletePatientAction(patientId: string): Promise<{ success:
   try {
     const patientRef = db.collection('patients').doc(patientId);
 
-    // Delete subcollections
     await deleteCollection(`patients/${patientId}/evolutionRecords`, 50);
     await deleteCollection(`patients/${patientId}/documents`, 50);
+    await deleteCollection(`patients/${patientId}/familyMembers`, 50);
 
     // TODO: Delete files in Storage
 
-    // Delete the patient document
     await patientRef.delete();
 
     return { success: true, message: 'Paciente e todos os seus dados foram excluídos com sucesso.' };
   } catch (error: any) {
     console.error("Error deleting patient:", error);
     return { success: false, message: 'Falha ao excluir o paciente.' };
+  }
+}
+
+// --- Family Member Actions ---
+const FamilyMemberSchema = z.object({
+  name: z.string().min(3, 'Nome é obrigatório.'),
+  relationship: z.string().min(2, 'Parentesco é obrigatório.'),
+  phone: z.string().optional(),
+  observations: z.string().optional(),
+});
+
+export async function addFamilyMemberAction(patientId: string, prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = FamilyMemberSchema.safeParse({
+    name: formData.get('name'),
+    relationship: formData.get('relationship'),
+    phone: formData.get('phone'),
+    observations: formData.get('observations'),
+  });
+
+  if (!validatedFields.success) {
+    return { success: false, message: "Dados inválidos.", errors: validatedFields.error.flatten().fieldErrors };
+  }
+
+  try {
+    await db.collection('patients').doc(patientId).collection('familyMembers').add({
+      ...validatedFields.data,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    return { success: true, message: "Familiar adicionado com sucesso!", errors: null };
+  } catch (error) {
+    console.error("Error adding family member:", error);
+    return { success: false, message: "Falha ao adicionar familiar.", errors: null };
+  }
+}
+
+export async function deleteFamilyMemberAction(patientId: string, memberId: string): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+  
+  if (!patientId || !memberId) {
+    return { success: false, message: 'IDs são obrigatórios.' };
+  }
+
+  try {
+    await db.collection('patients').doc(patientId).collection('familyMembers').doc(memberId).delete();
+    return { success: true, message: 'Familiar removido com sucesso.' };
+  } catch (error) {
+    console.error("Error deleting family member:", error);
+    return { success: false, message: 'Falha ao remover familiar.' };
   }
 }

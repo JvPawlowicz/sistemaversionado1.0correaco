@@ -3,9 +3,10 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { User } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, type Query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useUnit } from './UnitContext';
+import { useAuth } from './AuthContext';
 
 interface UserContextType {
   users: User[];
@@ -22,6 +23,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { selectedUnitId } = useUnit();
+  const { currentUser } = useAuth();
 
   const fetchUsers = useCallback(async () => {
     if (!db) {
@@ -38,7 +40,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       const usersCollection = collection(db, 'users');
-      const q = query(usersCollection, where('unitIds', 'array-contains', selectedUnitId));
+      
+      let q: Query;
+      if (selectedUnitId === 'central' && currentUser?.role === 'Admin') {
+          q = query(usersCollection);
+      } else {
+          q = query(usersCollection, where('unitIds', 'array-contains', selectedUnitId));
+      }
+
       const userSnapshot = await getDocs(q);
       const userList = userSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -61,7 +70,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [toast, selectedUnitId]);
+  }, [toast, selectedUnitId, currentUser]);
 
   useEffect(() => {
     fetchUsers();

@@ -5,19 +5,21 @@ import { PatientDetailView } from '@/components/patients/patient-detail-view';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState, useCallback } from 'react';
-import type { Patient, EvolutionRecord, PatientDocument } from '@/lib/types';
+import type { Patient, EvolutionRecord, PatientDocument, FamilyMember } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function PatientProfilePage({ params }: { params: { id: string } }) {
-  const { patients, loading: patientsLoading } = usePatient();
+  const { patients, loading: patientsLoading, fetchPatients } = usePatient();
   const router = useRouter();
   const [records, setRecords] = useState<EvolutionRecord[]>([]);
   const [documents, setDocuments] = useState<PatientDocument[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(true);
   const [documentsLoading, setDocumentsLoading] = useState(true);
+  const [familyMembersLoading, setFamilyMembersLoading] = useState(true);
 
   const patient = patients.find((p) => p.id === params.id);
 
@@ -72,6 +74,27 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     }
   }, [patient]);
 
+  const fetchFamilyMembers = useCallback(async () => {
+    if (!patient || !db) return;
+    setFamilyMembersLoading(true);
+    try {
+      const familyCollectionRef = collection(db, 'patients', patient.id, 'familyMembers');
+      const q = query(familyCollectionRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const fetchedFamilyMembers = querySnapshot.docs.map(doc => {
+          return {
+              id: doc.id,
+              ...doc.data(),
+          } as FamilyMember;
+      });
+      setFamilyMembers(fetchedFamilyMembers);
+    } catch (error) {
+        console.error("Error fetching family members: ", error);
+    } finally {
+        setFamilyMembersLoading(false);
+    }
+  }, [patient]);
+
 
   useEffect(() => {
     if (!patientsLoading && !patient) {
@@ -79,8 +102,9 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     } else if (patient) {
       fetchRecords();
       fetchDocuments();
+      fetchFamilyMembers();
     }
-  }, [patientsLoading, patient, router, fetchRecords, fetchDocuments]);
+  }, [patientsLoading, patient, router, fetchRecords, fetchDocuments, fetchFamilyMembers]);
 
   if (patientsLoading || !patient) {
     return (
@@ -101,7 +125,11 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
       documents={documents}
       documentsLoading={documentsLoading}
       onDocumentAdded={fetchDocuments}
+      familyMembers={familyMembers}
+      familyMembersLoading={familyMembersLoading}
+      onFamilyMemberChange={fetchFamilyMembers}
       onPatientDeleted={handlePatientDeleted}
+      onPatientUpdated={fetchPatients}
     />
   );
 }

@@ -50,7 +50,12 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       setError(null);
       const patientsCollection = collection(db, 'patients');
 
-      const q = query(patientsCollection, where('unitIds', 'array-contains', selectedUnitId));
+      let q: Query;
+      if (selectedUnitId === 'central' && currentUser?.role === 'Admin') {
+          q = query(patientsCollection);
+      } else {
+          q = query(patientsCollection, where('unitIds', 'array-contains', selectedUnitId));
+      }
 
       const patientSnapshot = await getDocs(q);
       const patientList = patientSnapshot.docs.map(doc => ({
@@ -102,7 +107,8 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         status: 'Active',
         lastVisit: null,
         avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        imageUseConsent: false,
       });
       toast({
         title: "Sucesso",

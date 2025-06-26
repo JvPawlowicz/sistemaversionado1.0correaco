@@ -10,6 +10,17 @@ export type Patient = {
   gender?: 'Male' | 'Female' | 'Other' | null;
   unitIds: string[];
   createdAt?: any; // For Firestore serverTimestamp
+
+  // New fields
+  diagnosis?: string | null;
+  referringProfessional?: string | null;
+  imageUseConsent?: boolean;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+  } | null;
 };
 
 export type User = {
@@ -54,14 +65,18 @@ export type PatientDocument = {
   url: string;
   fileType: string;
   size: number;
+  category: 'Exame' | 'Documento Legal' | 'Foto Terapêutica' | 'Outro';
+  description: string;
   uploadedAt: any; // Firestore serverTimestamp
 };
 
-export type Report = {
-  id:string;
-  title: string;
-  date: string;
-  url: string;
+export type FamilyMember = {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  observations: string;
+  createdAt?: any;
 };
 
 export type Unit = {
