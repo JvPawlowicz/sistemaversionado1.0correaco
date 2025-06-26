@@ -73,31 +73,28 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   }, [fetchUnits]);
 
   useEffect(() => {
-    if (authLoading) return;
-
-    if (currentUser) {
-      let availableUnits: Unit[];
-      if (currentUser.role === 'Admin') {
-        availableUnits = allUnits;
-      } else {
-        const userUnitIds = currentUser.unitIds || [];
-        availableUnits = allUnits.filter(unit => userUnitIds.includes(unit.id));
-      }
-      
-      setUnits(availableUnits);
-      
-      setSelectedUnitId(currentSelectedId => {
-        if (currentSelectedId && availableUnits.some(u => u.id === currentSelectedId)) {
-          return currentSelectedId; 
-        }
-        return availableUnits.length > 0 ? availableUnits[0].id : null;
-      });
-
-    } else {
+    if (authLoading || !currentUser) {
       setUnits([]);
       setSelectedUnitId(null);
+      return;
     }
-  }, [currentUser, allUnits, authLoading]);
+
+    let availableUnits: Unit[];
+    if (currentUser.role === 'Admin') {
+      availableUnits = allUnits;
+    } else {
+      const userUnitIds = currentUser.unitIds || [];
+      availableUnits = allUnits.filter(unit => userUnitIds.includes(unit.id));
+    }
+    
+    setUnits(availableUnits);
+    
+    // Check if the current selection is still valid within the new available units
+    if (!availableUnits.some(u => u.id === selectedUnitId)) {
+      // If not, set to the first available unit or null
+      setSelectedUnitId(availableUnits.length > 0 ? availableUnits[0].id : null);
+    }
+  }, [currentUser, allUnits, authLoading, selectedUnitId]);
 
 
   const addUnit = async (unitName: string) => {

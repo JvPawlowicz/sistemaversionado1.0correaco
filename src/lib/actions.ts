@@ -4,6 +4,16 @@ import { z } from 'zod';
 import { auth, db } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
+// --- Helper for checking Firebase Admin initialization ---
+function checkAdminInit() {
+  if (!auth || !db) {
+    const errorMessage = 'A configuração do Firebase Admin não foi carregada. Verifique as variáveis de ambiente do servidor.';
+    console.error(errorMessage);
+    return { success: false, message: errorMessage, errors: null };
+  }
+  return null;
+}
+
 // --- Create User Action ---
 
 const CreateUserSchema = z.object({
@@ -13,6 +23,9 @@ const CreateUserSchema = z.object({
 });
 
 export async function createUserAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
   const validatedFields = CreateUserSchema.safeParse({
     name: formData.get('name'),
     role: formData.get('role'),
@@ -70,6 +83,9 @@ const UpdateUserSchema = z.object({
 });
 
 export async function updateUserAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
   const validatedFields = UpdateUserSchema.safeParse({
     uid: formData.get('uid'),
     name: formData.get('name'),
@@ -88,9 +104,7 @@ export async function updateUserAction(prevState: any, formData: FormData) {
   const { uid, name, role, unitIds } = validatedFields.data;
 
   try {
-    // Also update the display name in Firebase Auth
     await auth.updateUser(uid, { displayName: name });
-    // Update the user document in Firestore
     await db.collection('users').doc(uid).update({
       name,
       role,
@@ -109,6 +123,9 @@ export async function updateUserAction(prevState: any, formData: FormData) {
 // --- Update User Password Action ---
 
 export async function updateUserPasswordAction(uid: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    const adminCheck = checkAdminInit();
+    if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+
     if (!uid || !newPassword) {
         return { success: false, message: 'UID do usuário e nova senha são obrigatórios.' };
     }
@@ -131,6 +148,9 @@ export async function updateUserPasswordAction(uid: string, newPassword: string)
 // --- Delete User Action ---
 
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+  
   if (!uid) {
     return { success: false, message: 'UID do usuário é obrigatório.' };
   }
@@ -147,13 +167,15 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
 // --- Delete Unit Action ---
 
 export async function deleteUnitAction(unitId: string): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+  
   if (!unitId) {
     return { success: false, message: 'ID da unidade é obrigatório.' };
   }
   try {
     const unitRef = db.collection('units').doc(unitId);
     
-    // 1. Remove unitId from all users assigned to it.
     const usersRef = db.collection('users');
     const usersQuery = usersRef.where('unitIds', 'array-contains', unitId);
     const usersSnapshot = await usersQuery.get();
@@ -164,7 +186,6 @@ export async function deleteUnitAction(unitId: string): Promise<{ success: boole
     });
     await batch.commit();
 
-    // 2. Delete the unit document.
     await unitRef.delete();
 
     return { success: true, message: 'Unidade excluída com sucesso.' };
@@ -187,6 +208,9 @@ const NotificationSchema = z.object({
 });
 
 export async function createNotificationAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+  
   const validatedFields = NotificationSchema.safeParse({
     title: formData.get('title'),
     content: formData.get('content'),
@@ -243,6 +267,9 @@ const CreateEvolutionRecordSchema = z.object({
 });
 
 export async function createEvolutionRecordAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+  
   const validatedFields = CreateEvolutionRecordSchema.safeParse({
     patientId: formData.get('patientId'),
     title: formData.get('title'),
