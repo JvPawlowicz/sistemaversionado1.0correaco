@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useSchedule } from '@/contexts/ScheduleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { AppointmentActionsDialog } from './appointment-actions-dialog';
@@ -20,6 +19,76 @@ const timeToMinutes = (time: string) => {
   return hours * 60 + minutes;
 };
 
+// This function calculates the layout for appointments on a given day to handle overlaps.
+function calculateAppointmentLayout(appointmentsOnDay: Appointment[]) {
+  if (!appointmentsOnDay || appointmentsOnDay.length === 0) {
+    return [];
+  }
+
+  const sortedApps = [...appointmentsOnDay].sort((a, b) => {
+    const startDiff = timeToMinutes(a.time) - timeToMinutes(b.time);
+    if (startDiff !== 0) return startDiff;
+    return timeToMinutes(a.endTime) - timeToMinutes(b.endTime);
+  });
+
+  const withLayout = sortedApps.map(app => ({
+    ...app,
+    layout: { col: 0, totalCols: 1 },
+  }));
+
+  for (let i = 0; i < withLayout.length; i++) {
+    const currentApp = withLayout[i];
+    let column = 0;
+    let placed = false;
+    while (!placed) {
+      let hasOverlapInColumn = false;
+      for (let j = 0; j < i; j++) {
+        const prevApp = withLayout[j];
+        if (prevApp.layout.col === column) {
+          if (timeToMinutes(currentApp.time) < timeToMinutes(prevApp.endTime)) {
+            hasOverlapInColumn = true;
+            break;
+          }
+        }
+      }
+      if (!hasOverlapInColumn) {
+        currentApp.layout.col = column;
+        placed = true;
+      } else {
+        column++;
+      }
+    }
+  }
+  
+  for (let i = 0; i < withLayout.length; i++) {
+      const app1 = withLayout[i];
+      let groupMaxCols = app1.layout.col + 1;
+       for (let j = 0; j < withLayout.length; j++) {
+           const app2 = withLayout[j];
+            if (timeToMinutes(app1.time) < timeToMinutes(app2.endTime) && timeToMinutes(app1.endTime) > timeToMinutes(app2.time)) {
+                groupMaxCols = Math.max(groupMaxCols, app2.layout.col + 1);
+            }
+       }
+       app1.layout.totalCols = groupMaxCols;
+  }
+
+   for (let i = 0; i < withLayout.length; i++) {
+      const app1 = withLayout[i];
+      let finalMaxCols = app1.layout.totalCols;
+       for (let j = 0; j < withLayout.length; j++) {
+           if (i === j) continue;
+           const app2 = withLayout[j];
+            if (timeToMinutes(app1.time) < timeToMinutes(app2.endTime) && timeToMinutes(app1.endTime) > timeToMinutes(app2.time)) {
+                finalMaxCols = Math.max(finalMaxCols, app2.layout.totalCols)
+            }
+       }
+       app1.layout.totalCols = finalMaxCols;
+  }
+
+  return withLayout;
+}
+
+
 export function DailyView({ appointments, currentDate, setCurrentDate }: { appointments: Appointment[], currentDate: Date, setCurrentDate: (date: Date) => void }) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday
   const hours = Array.from({ length: 13 }, (_, i) => i + 7); // 7 AM to 7 PM
@@ -29,13 +98,21 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
   const [isActionsDialogOpen, setIsActionsDialogOpen] = React.useState(false);
   const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
 
+  const laidOutAppointmentsByDay = React.useMemo(() => {
+    const dayMap = new Map<string, (Appointment & { layout: { col: number; totalCols: number } })[]>();
+    days.forEach(day => {
+      const appointmentsOnDay = appointments.filter(appointment =>
+        isSameDay(new Date(appointment.date + 'T00:00:00'), day)
+      );
+      dayMap.set(day.toISOString(), calculateAppointmentLayout(appointmentsOnDay));
+    });
+    return dayMap;
+  }, [appointments, days]);
+
+
   const handleNextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
   const handlePrevWeek = () => setCurrentDate(subWeeks(currentDate, 1));
   const handleToday = () => setCurrentDate(new Date());
-
-  const getAppointmentsForDay = (day: Date) => {
-    return appointments.filter(appointment => isSameDay(new Date(appointment.date + 'T00:00:00'), day));
-  };
 
   const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -89,9 +166,12 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
                   {hours.map((hour, index) => (
                       <div key={hour} className={`h-[60px] ${index > 0 ? 'border-t border-border/70' : ''}`}></div>
                   ))}
-                  {getAppointmentsForDay(day).map(app => {
+                  {(laidOutAppointmentsByDay.get(day.toISOString()) || []).map(app => {
                     const top = ((timeToMinutes(app.time) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
                     const height = ((timeToMinutes(app.endTime) - timeToMinutes(app.time)) / 60) * HOUR_HEIGHT - 2;
+
+                    const widthPercentage = 100 / app.layout.totalCols;
+                    const leftPercentage = app.layout.col * widthPercentage;
 
                     const canInteract = currentUser && (
                         currentUser.role === 'Admin' ||
@@ -107,7 +187,7 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
                         key={app.id}
                         onClick={() => canInteract && handleAppointmentClick(app)}
                         className={cn(
-                          "absolute w-full p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-all",
+                          "absolute p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-all",
                           canInteract ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed",
                           (app.status === 'Faltou' || app.status === 'Cancelado') && "opacity-60",
                           app.status === 'Cancelado' && "line-through",
@@ -116,9 +196,10 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
                         style={{
                           top: `${top}px`,
                           height: `${height}px`,
+                          width: `calc(${widthPercentage}% - 4px)`,
+                          left: `calc(${leftPercentage}% + 2px)`,
+                          zIndex: app.layout.col,
                           backgroundColor: app.color,
-                          left: '4px',
-                          width: 'calc(100% - 8px)'
                         }}
                       >
                         <p className="font-bold whitespace-nowrap overflow-hidden text-ellipsis">{app.patientName}</p>

@@ -19,6 +19,7 @@ import { ResetPasswordDialog } from './reset-password-dialog';
 import { DeleteUserDialog } from './delete-user-dialog';
 import { EditUserDialog } from './edit-user-dialog';
 import { useUnit } from '@/contexts/UnitContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserTableProps {
   users: User[];
@@ -39,6 +40,7 @@ export function UserTable({ users, onAddUser, searchTerm }: UserTableProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const { units } = useUnit();
+  const { currentUser } = useAuth();
 
   const handleResetPasswordClick = (user: User) => {
     setSelectedUser(user);
@@ -143,7 +145,7 @@ export function UserTable({ users, onAddUser, searchTerm }: UserTableProps) {
                 <TableCell>
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" disabled={currentUser?.id === user.id}>
                               <MoreHorizontal className="h-4 w-4" />
                               <span className="sr-only">Ações</span>
                           </Button>
