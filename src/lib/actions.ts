@@ -2,7 +2,6 @@
 
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase-admin';
-import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 
 // --- Create User Action ---
@@ -231,5 +230,51 @@ export async function createNotificationAction(prevState: any, formData: FormDat
   } catch (error: any) {
     console.error('Error creating notification:', error);
     return { success: false, message: "Ocorreu um erro ao salvar a notificação.", errors: null };
+  }
+}
+
+// --- Create Evolution Record Action ---
+
+const CreateEvolutionRecordSchema = z.object({
+  patientId: z.string().min(1, 'ID do paciente é obrigatório.'),
+  title: z.string().min(3, 'O título deve ter pelo menos 3 caracteres.'),
+  details: z.string().min(10, 'Os detalhes devem ter pelo menos 10 caracteres.'),
+  author: z.string().min(1, 'Autor é obrigatório.'),
+});
+
+export async function createEvolutionRecordAction(prevState: any, formData: FormData) {
+  const validatedFields = CreateEvolutionRecordSchema.safeParse({
+    patientId: formData.get('patientId'),
+    title: formData.get('title'),
+    details: formData.get('details'),
+    author: formData.get('author'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  const { patientId, title, details, author } = validatedFields.data;
+
+  try {
+    await db
+      .collection('patients')
+      .doc(patientId)
+      .collection('evolutionRecords')
+      .add({
+        title,
+        details,
+        author,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    
+    return { success: true, message: 'Registro de evolução salvo com sucesso!', errors: null };
+  } catch (error) {
+    console.error('Error creating evolution record:', error);
+    return { success: false, message: 'Ocorreu um erro ao salvar o registro.', errors: null };
   }
 }

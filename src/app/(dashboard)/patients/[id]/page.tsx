@@ -63,6 +63,11 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   }
 
   return (
-    <PatientDetailView patient={patient} records={records} recordsLoading={recordsLoading} />
+    <PatientDetailView
+      patient={patient}
+      records={records}
+      recordsLoading={recordsLoading}
+      onRecordAdded={fetchRecords}
+    />
   );
 }
