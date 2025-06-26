@@ -1,5 +1,4 @@
 'use client';
-import { NoteAssistantForm } from "@/components/ai-notes/note-assistant-form";
 
 export default function AiNotesPage() {
   return (
@@ -10,11 +9,10 @@ export default function AiNotesPage() {
                 Anotações com Assistente IA
             </h1>
             <p className="text-muted-foreground">
-                Selecione um paciente, escreva suas anotações e deixe a IA estruturar o registro de evolução.
+                Esta funcionalidade foi desativada.
             </p>
         </div>
       </div>
-      <NoteAssistantForm />
     </div>
   );
 }

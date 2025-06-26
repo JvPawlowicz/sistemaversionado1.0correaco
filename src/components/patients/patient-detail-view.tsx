@@ -74,12 +74,6 @@ export function PatientDetailView({
               <CardDescription>Registro cronológico do progresso e sessões do paciente.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button asChild>
-                <Link href="/ai-notes">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Registro com IA
-                </Link>
-              </Button>
               <div className="space-y-4">
                 {recordsLoading ? (
                   <div className="flex items-center justify-center py-8">
