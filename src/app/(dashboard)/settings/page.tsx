@@ -121,24 +121,23 @@ export default function SettingsPage() {
             <Accordion type="single" collapsible className="w-full">
               {units.map((unit) => (
                 <AccordionItem value={unit.id} key={unit.id}>
-                  <AccordionTrigger>
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <span>{unit.name}</span>
-                      {isAdmin && (
+                  <div className="flex items-center w-full">
+                    <AccordionTrigger className="flex-1 text-left">
+                      {unit.name}
+                    </AccordionTrigger>
+                    {isAdmin && (
+                      <div className="pl-4 pr-2">
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation(); // prevent accordion from toggling
-                            handleDeleteClick(unit);
-                          }}
+                          onClick={() => handleDeleteClick(unit)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
-                    </div>
-                  </AccordionTrigger>
+                      </div>
+                    )}
+                  </div>
                   <AccordionContent>
                     <h4 className="font-semibold mb-2">Salas nesta Unidade:</h4>
                     {unit.rooms.length > 0 ? (
