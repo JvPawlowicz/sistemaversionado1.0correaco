@@ -48,6 +48,15 @@ export type EvolutionRecord = {
   createdAt?: any; // For Firestore serverTimestamp
 };
 
+export type PatientDocument = {
+  id: string;
+  fileName: string;
+  url: string;
+  fileType: string;
+  size: number;
+  uploadedAt: any; // Firestore serverTimestamp
+};
+
 export type Report = {
   id:string;
   title: string;
@@ -69,4 +78,5 @@ export type Notification = {
   createdAt?: any;
   targetType?: 'ALL' | 'ROLE' | 'UNIT' | 'SPECIFIC';
   targetValue?: string | string[];
+  seenBy?: string[];
 };

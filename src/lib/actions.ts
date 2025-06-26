@@ -1,12 +1,12 @@
 'use server';
 
 import { z } from 'zod';
-import { auth, db } from '@/lib/firebase-admin';
+import { auth, db, storageAdmin } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
 // --- Helper for checking Firebase Admin initialization ---
 function checkAdminInit() {
-  if (!auth || !db) {
+  if (!auth || !db || !storageAdmin) {
     const errorMessage = 'A configuração do Firebase Admin não foi carregada. Verifique as variáveis de ambiente do servidor.';
     console.error(errorMessage);
     return { success: false, message: errorMessage, errors: null };
@@ -231,6 +231,7 @@ export async function createNotificationAction(prevState: any, formData: FormDat
     content,
     targetType,
     createdAt: FieldValue.serverTimestamp(),
+    seenBy: [],
   };
 
   switch (targetType) {
@@ -329,5 +330,61 @@ export async function updatePatientStatusAction(patientId: string, status: 'Acti
   } catch (error) {
     console.error('Error updating patient status:', error);
     return { success: false, message: 'Ocorreu um erro ao atualizar o status do paciente.' };
+  }
+}
+
+// --- Upload Document Action ---
+const fileSchema = z.custom<File>(val => val instanceof File, "Por favor, envie um arquivo.");
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+
+const UploadDocumentSchema = z.object({
+  documentFile: fileSchema
+    .refine((file) => file.size <= MAX_FILE_SIZE, `O tamanho máximo do arquivo é 10MB.`)
+    .refine((file) => ACCEPTED_FILE_TYPES.includes(file.type), "Formato de arquivo não suportado."),
+});
+
+export async function uploadDocumentAction(patientId: string, formData: FormData): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+  
+  const validatedFields = UploadDocumentSchema.safeParse({
+    documentFile: formData.get('documentFile'),
+  });
+
+  if (!validatedFields.success) {
+    const error = validatedFields.error.flatten().fieldErrors.documentFile?.[0];
+    return { success: false, message: error || 'Dados do arquivo inválidos.' };
+  }
+
+  const { documentFile } = validatedFields.data;
+
+  try {
+    const bucket = storageAdmin.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+    const filePath = `documents/${patientId}/${Date.now()}-${documentFile.name}`;
+    const fileUpload = bucket.file(filePath);
+
+    const buffer = Buffer.from(await documentFile.arrayBuffer());
+
+    await fileUpload.save(buffer, {
+      metadata: { contentType: documentFile.type },
+    });
+    
+    await fileUpload.makePublic();
+
+    const fileUrl = fileUpload.publicUrl();
+    
+    await db.collection('patients').doc(patientId).collection('documents').add({
+      fileName: documentFile.name,
+      url: fileUrl,
+      fileType: documentFile.type,
+      size: documentFile.size,
+      uploadedAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true, message: 'Documento enviado com sucesso!' };
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    return { success: false, message: 'Ocorreu um erro durante o upload do documento.' };
   }
 }

@@ -5,18 +5,25 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserTable } from '@/components/users/user-table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Terminal, ShieldAlert } from 'lucide-react';
+import { PlusCircle, Terminal, ShieldAlert, Search } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { NewUserDialog } from '@/components/users/new-user-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 export default function UsersPage() {
   const { users, loading: usersLoading, error } = useUser();
   const { currentUser, loading: authLoading } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const router = useRouter();
+  const [searchTerm, setSearchTerm] = React.useState('');
+
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   React.useEffect(() => {
     if (!authLoading && currentUser && currentUser.role !== 'Admin') {
@@ -65,10 +72,22 @@ export default function UsersPage() {
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
           Gestão de Usuários
         </h1>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Novo Usuário
-        </Button>
+        <div className="flex items-center gap-2">
+             <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Buscar por nome ou e-mail..."
+                    className="pl-8 sm:w-[300px]"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+            <Button onClick={() => setIsDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar Novo Usuário
+            </Button>
+        </div>
       </div>
       {error ? (
         <Alert variant="destructive">
@@ -79,7 +98,7 @@ export default function UsersPage() {
           </AlertDescription>
         </Alert>
       ) : (
-        <UserTable users={users} onAddUser={() => setIsDialogOpen(true)} />
+        <UserTable users={filteredUsers} onAddUser={() => setIsDialogOpen(true)} searchTerm={searchTerm} />
       )}
     </div>
   );

@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { FileText, Plus, Loader2, ChevronDown } from 'lucide-react';
-import type { Patient, EvolutionRecord, Report } from '@/lib/types';
+import type { Patient, EvolutionRecord, PatientDocument } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
@@ -24,20 +24,24 @@ import { usePatient } from '@/contexts/PatientContext';
 import { useToast } from '@/hooks/use-toast';
 import { updatePatientStatusAction } from '@/lib/actions';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-
-// Reports are not implemented yet, so we keep this empty.
-const reports: Report[] = [];
+import { DocumentUploader } from './document-uploader';
 
 export function PatientDetailView({
   patient,
   records,
   recordsLoading,
   onRecordAdded,
+  documents,
+  documentsLoading,
+  onDocumentAdded,
 }: {
   patient: Patient;
   records: EvolutionRecord[];
   recordsLoading: boolean;
   onRecordAdded: () => void;
+  documents: PatientDocument[];
+  documentsLoading: boolean;
+  onDocumentAdded: () => void;
 }) {
   const [isNewRecordDialogOpen, setIsNewRecordDialogOpen] = React.useState(false);
   const { currentUser } = useAuth();
@@ -134,7 +138,7 @@ export function PatientDetailView({
         <Tabs defaultValue="evolution">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="evolution">Evolução</TabsTrigger>
-            <TabsTrigger value="reports">Relatórios</TabsTrigger>
+            <TabsTrigger value="documents">Documentos</TabsTrigger>
             <TabsTrigger value="profile">Perfil Completo</TabsTrigger>
           </TabsList>
           <TabsContent value="evolution">
@@ -177,39 +181,44 @@ export function PatientDetailView({
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="reports">
+          <TabsContent value="documents">
             <Card>
               <CardHeader>
-                <CardTitle>Relatórios</CardTitle>
-                <CardDescription>Documentos oficiais e relatórios relacionados ao paciente.</CardDescription>
+                <CardTitle>Documentos</CardTitle>
+                <CardDescription>Faça upload e gerencie os documentos do paciente.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                  <Button disabled>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Novo Relatório
-                  </Button>
-                  {reports.length > 0 ? (
-                    <ul className="space-y-2">
-                        {reports.map(report => (
-                            <li key={report.id} className="flex items-center justify-between rounded-lg border p-3">
-                                <div className="flex items-center gap-3">
-                                    <FileText className="h-5 w-5 text-primary"/>
-                                    <div>
-                                        <p className="font-medium">{report.title}</p>
-                                        <p className="text-sm text-muted-foreground">Gerado em {report.date}</p>
-                                    </div>
-                                </div>
-                                <Button asChild variant="outline" size="sm">
-                                    <Link href={report.url}>Baixar</Link>
-                                </Button>
-                            </li>
-                        ))}
-                    </ul>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>Nenhum relatório encontrado. (Funcionalidade em desenvolvimento)</p>
-                    </div>
-                  )}
+                  <DocumentUploader patientId={patient.id} onDocumentAdded={onDocumentAdded} />
+                  <div className="space-y-2 pt-4">
+                    {documentsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : documents.length > 0 ? (
+                      <ul className="space-y-2">
+                          {documents.map(doc => (
+                              <li key={doc.id} className="flex items-center justify-between rounded-lg border p-3">
+                                  <div className="flex items-center gap-3">
+                                      <FileText className="h-5 w-5 text-primary"/>
+                                      <div>
+                                          <p className="font-medium">{doc.fileName}</p>
+                                          <p className="text-sm text-muted-foreground">
+                                            Enviado em {format(doc.uploadedAt, 'dd/MM/yyyy')} - {(doc.size / 1024).toFixed(2)} KB
+                                          </p>
+                                      </div>
+                                  </div>
+                                  <Button asChild variant="outline" size="sm">
+                                      <Link href={doc.url} target="_blank" rel="noopener noreferrer">Baixar</Link>
+                                  </Button>
+                              </li>
+                          ))}
+                      </ul>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>Nenhum documento encontrado.</p>
+                      </div>
+                    )}
+                  </div>
               </CardContent>
             </Card>
           </TabsContent>

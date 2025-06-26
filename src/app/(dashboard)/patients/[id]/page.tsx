@@ -5,17 +5,19 @@ import { PatientDetailView } from '@/components/patients/patient-detail-view';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState, useCallback } from 'react';
-import type { Patient, EvolutionRecord } from '@/lib/types';
+import type { Patient, EvolutionRecord, PatientDocument } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function PatientProfilePage({ params }: { params: { id: string } }) {
-  const { patients, loading: patientsLoading, fetchPatients } = usePatient();
+  const { patients, loading: patientsLoading } = usePatient();
   const router = useRouter();
   const [records, setRecords] = useState<EvolutionRecord[]>([]);
+  const [documents, setDocuments] = useState<PatientDocument[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(true);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
 
   const patient = patients.find((p) => p.id === params.id);
 
@@ -43,14 +45,38 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     }
   }, [patient]);
 
+  const fetchDocuments = useCallback(async () => {
+    if (!patient || !db) return;
+    setDocumentsLoading(true);
+    try {
+      const docsCollectionRef = collection(db, 'patients', patient.id, 'documents');
+      const q = query(docsCollectionRef, orderBy('uploadedAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const fetchedDocs = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+              id: doc.id,
+              ...data,
+              uploadedAt: data.uploadedAt.toDate(),
+          } as PatientDocument;
+      });
+      setDocuments(fetchedDocs);
+    } catch (error) {
+        console.error("Error fetching documents: ", error);
+    } finally {
+        setDocumentsLoading(false);
+    }
+  }, [patient]);
+
 
   useEffect(() => {
     if (!patientsLoading && !patient) {
       router.push('/patients');
     } else if (patient) {
       fetchRecords();
+      fetchDocuments();
     }
-  }, [patientsLoading, patient, router, fetchRecords]);
+  }, [patientsLoading, patient, router, fetchRecords, fetchDocuments]);
 
   if (patientsLoading || !patient) {
     return (
@@ -68,6 +94,9 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
       records={records}
       recordsLoading={recordsLoading}
       onRecordAdded={fetchRecords}
+      documents={documents}
+      documentsLoading={documentsLoading}
+      onDocumentAdded={fetchDocuments}
     />
   );
 }

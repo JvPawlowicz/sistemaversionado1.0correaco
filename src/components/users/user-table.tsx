@@ -23,6 +23,7 @@ import { useUnit } from '@/contexts/UnitContext';
 interface UserTableProps {
   users: User[];
   onAddUser: () => void;
+  searchTerm: string;
 }
 
 const roleNames: Record<User['role'], string> = {
@@ -32,7 +33,7 @@ const roleNames: Record<User['role'], string> = {
   Coordinator: 'Coordenador',
 };
 
-export function UserTable({ users, onAddUser }: UserTableProps) {
+export function UserTable({ users, onAddUser, searchTerm }: UserTableProps) {
   const [isResetPasswordOpen, setIsResetPasswordOpen] = React.useState(false);
   const [isDeleteUserOpen, setIsDeleteUserOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
@@ -58,7 +59,12 @@ export function UserTable({ users, onAddUser }: UserTableProps) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border bg-card text-card-foreground shadow-sm p-8 text-center">
         <h3 className="text-xl font-semibold mb-2">Nenhum usuário encontrado</h3>
-        <p className="text-muted-foreground mb-4">Comece adicionando um novo usuário ao sistema.</p>
+        <p className="text-muted-foreground mb-4">
+            {searchTerm 
+                ? "Tente refinar sua busca ou adicione um novo usuário."
+                : "Comece adicionando um novo usuário ao sistema."
+            }
+        </p>
         <Button onClick={onAddUser}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Adicionar Novo Usuário
