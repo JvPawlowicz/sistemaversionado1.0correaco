@@ -25,7 +25,7 @@ export type User = {
 
 export type Appointment = {
   id: string;
-  patientId?: string; // Optional now
+  patientId: string;
   patientName: string;
   professionalName: string;
   discipline: string;

@@ -27,6 +27,7 @@ import { createUserAction } from '@/lib/actions';
 interface NewUserDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onUserAdded: () => void;
 }
 
 const initialState = {
@@ -45,7 +46,7 @@ function SubmitButton() {
   );
 }
 
-export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
+export function NewUserDialog({ isOpen, onOpenChange, onUserAdded }: NewUserDialogProps) {
   const [state, formAction] = useFormState(createUserAction, initialState);
   const { toast } = useToast();
   const { units, loading: unitsLoading } = useUnit();
@@ -57,11 +58,12 @@ export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
   React.useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
+      onUserAdded();
       onOpenChange(false);
     } else if (state.message && !state.errors) {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
-  }, [state, onOpenChange, toast]);
+  }, [state, onOpenChange, toast, onUserAdded]);
   
   const resetForm = () => {
       formRef.current?.reset();

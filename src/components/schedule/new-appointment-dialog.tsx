@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSchedule } from '@/contexts/ScheduleContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronsUpDown, Check } from 'lucide-react';
 import type { Appointment } from '@/lib/types';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +23,10 @@ import { useUser } from '@/contexts/UserContext';
 import { useUnit } from '@/contexts/UnitContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
+import { usePatient } from '@/contexts/PatientContext';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 interface NewAppointmentDialogProps {
   isOpen: boolean;
@@ -32,12 +36,14 @@ interface NewAppointmentDialogProps {
 export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDialogProps) {
   const [mounted, setMounted] = React.useState(false);
   const { users, loading: usersLoading } = useUser();
+  const { patients, loading: patientsLoading } = usePatient();
   const { units, selectedUnitId, loading: unitsLoading } = useUnit();
   const { addAppointment } = useSchedule();
   const { currentUser } = useAuth();
   const [isSaving, setIsSaving] = React.useState(false);
   const { toast } = useToast();
 
+  const [patientId, setPatientId] = React.useState('');
   const [patientName, setPatientName] = React.useState('');
   const [professionalName, setProfessionalName] = React.useState('');
   const [discipline, setDiscipline] = React.useState('');
@@ -46,12 +52,15 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   const [endTime, setEndTime] = React.useState('10:00');
   const [room, setRoom] = React.useState('');
   const [repeat, setRepeat] = React.useState(false);
+
+  const [isPatientPopoverOpen, setIsPatientPopoverOpen] = React.useState(false);
   
   const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Admin' || u.role === 'Coordinator');
   const selectedUnit = units.find(u => u.id === selectedUnitId);
   const availableRooms = selectedUnit ? selectedUnit.rooms : [];
 
   const resetForm = () => {
+    setPatientId('');
     setPatientName('');
     setProfessionalName(currentUser?.role === 'Therapist' ? currentUser.name : '');
     setDiscipline('');
@@ -80,7 +89,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!patientName || !professionalName || !discipline || !date || !time || !endTime || !room || !selectedUnitId) {
+    if (!patientId || !professionalName || !discipline || !date || !time || !endTime || !room || !selectedUnitId) {
         toast({
             variant: "destructive",
             title: "Campos obrigatórios",
@@ -92,6 +101,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     setIsSaving(true);
     
     const newAppointmentData: Omit<Appointment, 'id' | 'createdAt' | 'color'> = {
+        patientId,
         patientName,
         professionalName,
         discipline,
@@ -112,7 +122,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     return null;
   }
   
-  const isLoading = usersLoading || unitsLoading;
+  const isLoading = usersLoading || unitsLoading || patientsLoading;
   const isTherapist = currentUser?.role === 'Therapist';
 
   return (
@@ -130,8 +140,52 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="patientName" className="text-right">Paciente/Evento</Label>
-              <Input id="patientName" value={patientName} onChange={e => setPatientName(e.target.value)} className="col-span-3" required placeholder="Digite o nome"/>
+              <Label htmlFor="patient" className="text-right">Paciente</Label>
+              <div className="col-span-3">
+                 <Popover open={isPatientPopoverOpen} onOpenChange={setIsPatientPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={isPatientPopoverOpen}
+                      className="w-full justify-between"
+                      disabled={isLoading}
+                    >
+                      {patientName || "Selecione um paciente..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar paciente..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum paciente encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {patients.map((patient) => (
+                            <CommandItem
+                              key={patient.id}
+                              value={patient.name}
+                              onSelect={() => {
+                                setPatientId(patient.id);
+                                setPatientName(patient.name);
+                                setIsPatientPopoverOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  patientId === patient.id ? 'opacity-100' : 'opacity-0'
+                                )}
+                              />
+                              {patient.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="professional" className="text-right">Profissional</Label>
@@ -162,14 +216,6 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
                  <Input id="time" type="time" value={time} onChange={e => setTime(e.target.value)} required disabled={isLoading}/>
                  <Input id="endTime" type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required disabled={isLoading}/>
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="unit" className="text-right">Unidade</Label>
-               <Select value={selectedUnitId ?? ""} disabled>
-                 <SelectTrigger className="col-span-3">
-                   <SelectValue placeholder="Unidade selecionada no cabeçalho" />
-                 </SelectTrigger>
-               </Select>
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="room" className="text-right">Sala</Label>
