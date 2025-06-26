@@ -58,6 +58,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   const professionals = users.filter(u => 
     (u.role === 'Therapist' || u.role === 'Admin' || u.role === 'Coordinator') &&
     selectedUnitId &&
+    u.unitIds &&
     u.unitIds.includes(selectedUnitId)
   );
   
