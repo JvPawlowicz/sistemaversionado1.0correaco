@@ -15,7 +15,16 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 
-if (firebaseConfig.projectId) {
+// Ensure all required client-side environment variables are present
+const hasClerkConfig =
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.storageBucket &&
+  firebaseConfig.messagingSenderId &&
+  firebaseConfig.appId;
+
+if (hasClerkConfig) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
@@ -24,7 +33,8 @@ if (firebaseConfig.projectId) {
     console.error("Failed to initialize Firebase. Please check your configuration.", e);
   }
 } else {
-    console.warn("Firebase configuration is missing. Firebase features will be disabled. Please add your config to the .env file.");
+    // This warning will be shown in the browser console
+    console.warn("Firebase client-side configuration is missing or incomplete. Firebase features will be disabled. Please add your config to the .env file.");
 }
 
 export { app, auth, db };

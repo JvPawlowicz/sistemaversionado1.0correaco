@@ -9,9 +9,9 @@ const serviceAccount = {
 };
 
 // Check if all required environment variables are present
-const hasCredentials = serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey;
+const hasAdminCredentials = serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey;
 
-if (hasCredentials && !admin.apps.length) {
+if (hasAdminCredentials && !admin.apps.length) {
   try {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
@@ -31,8 +31,9 @@ let dbInstance: ReturnType<typeof getFirestore> | null = null;
 if (admin.apps.length > 0) {
     authInstance = getAuth();
     dbInstance = getFirestore();
-} else if (process.env.NODE_ENV !== 'production') {
+} else {
     // Provide a warning during development if the admin SDK is not initialized.
+    // This will appear in the server-side logs (your terminal).
     console.warn("Firebase Admin SDK not initialized. Server-side Firebase features like user creation will not work. Please check your .env file and service account credentials.");
 }
 
