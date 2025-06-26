@@ -1,12 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as AuthUser } from 'firebase/auth';
 import { auth, db, storage } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
-import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref as storage_ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 
@@ -19,6 +19,7 @@ interface AuthContextType {
   logout: () => void;
   updateAvatar: (file: File) => Promise<void>;
   updateUserName: (name: string) => Promise<void>;
+  refetchCurrentUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,76 +31,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!auth || !db) {
-      setLoading(false);
+  const fetchUserProfile = useCallback(async (authUser: AuthUser) => {
+    if (!db) {
+      console.error("Firestore not initialized, cannot fetch user profile.");
+      setCurrentUser(null);
       return;
     }
-    
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      if (authUser) {
-        setUser(authUser);
-        try {
-          const usersCollectionRef = collection(db, 'users');
-          const q = query(usersCollectionRef, where('email', '==', authUser.email), limit(1));
-          const querySnapshot = await getDocs(q);
+    try {
+      const usersCollectionRef = collection(db, 'users');
+      const q = query(usersCollectionRef, where('email', '==', authUser.email), limit(1));
+      const querySnapshot = await getDocs(q);
 
-          if (!querySnapshot.empty) {
-            const userDoc = querySnapshot.docs[0];
-            setCurrentUser({ id: userDoc.id, ...userDoc.data() } as User);
-          } else {
-            // User exists in Auth, but no profile in 'users' collection.
-            // Let's check if this is the VERY first user.
-            const allUsersSnapshot = await getDocs(query(usersCollectionRef, limit(1)));
-            
-            if (allUsersSnapshot.empty) {
-              // This is the first user ever! Let's make them an Admin.
-              toast({
-                title: 'Bem-vindo, Administrador!',
-                description: 'Detectamos que este é o primeiro login. Seu perfil de administrador foi criado automaticamente.',
-              });
-
-              const newUserDocRef = await addDoc(usersCollectionRef, {
-                name: authUser.email?.split('@')[0] || 'Admin',
-                email: authUser.email,
-                role: 'Admin',
-                status: 'Active',
-                avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
-                createdAt: serverTimestamp()
-              });
-
-              // Set the current user in state immediately so they don't get logged out
-              setCurrentUser({
-                id: newUserDocRef.id,
-                name: authUser.email?.split('@')[0] || 'Admin',
-                email: authUser.email!,
-                role: 'Admin',
-                status: 'Active',
-                avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
-                unitIds: []
-              });
-
-            } else {
-              // Not the first user, and profile is missing. This is the intended error.
-              toast({
-                variant: 'destructive',
-                title: 'Perfil não encontrado',
-                description: 'Sua conta de login existe, mas não há um perfil de usuário associado. Contate um administrador.',
-              });
-              await signOut(auth); // Log them out
-              setCurrentUser(null);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        setCurrentUser({ id: userDoc.id, ...userDoc.data() } as User);
+      } else {
+        // User exists in Auth, but no profile in 'users' collection. Check if this is the first user.
+        const allUsersSnapshot = await getDocs(query(usersCollectionRef, limit(1)));
+        
+        if (allUsersSnapshot.empty) {
+          // This is the first user ever! Let's make them an Admin.
           toast({
-              variant: 'destructive',
-              title: 'Erro de Perfil',
-              description: 'Não foi possível carregar seu perfil de usuário.',
-            });
+            title: 'Bem-vindo, Administrador!',
+            description: 'Detectamos que este é o primeiro login. Seu perfil de administrador foi criado automaticamente.',
+          });
+
+          const newUserPayload = {
+            name: authUser.email?.split('@')[0] || 'Admin',
+            email: authUser.email,
+            role: 'Admin' as const,
+            status: 'Active' as const,
+            unitIds: [],
+            avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
+            createdAt: serverTimestamp()
+          };
+          
+          const newUserDocRef = await addDoc(usersCollectionRef, newUserPayload);
+          setCurrentUser({ id: newUserDocRef.id, ...newUserPayload });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Perfil não encontrado',
+            description: 'Sua conta de login existe, mas não há um perfil de usuário associado. Contate um administrador.',
+          });
           await signOut(auth);
           setCurrentUser(null);
         }
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      toast({
+          variant: 'destructive',
+          title: 'Erro de Perfil',
+          description: 'Não foi possível carregar seu perfil de usuário.',
+        });
+      if (auth) await signOut(auth);
+      setCurrentUser(null);
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      if (authUser) {
+        setUser(authUser);
+        await fetchUserProfile(authUser);
       } else {
         setUser(null);
         setCurrentUser(null);
@@ -108,7 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [toast]);
+  }, [fetchUserProfile]);
+
+  const refetchCurrentUser = useCallback(async () => {
+    if (user) {
+      await fetchUserProfile(user);
+    }
+  }, [user, fetchUserProfile]);
 
   const login = async (email: string, pass: string) => {
     if (!auth) {
@@ -222,6 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     updateAvatar,
     updateUserName,
+    refetchCurrentUser,
   };
 
   return (

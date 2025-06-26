@@ -106,7 +106,7 @@ export function PatientDetailView({
               <CardDescription>Documentos oficiais e relatórios relacionados ao paciente.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <Button>
+                <Button disabled>
                     <Plus className="mr-2 h-4 w-4" />
                     Novo Relatório
                 </Button>

@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { updateUserAction } from '@/lib/actions';
 import type { User } from '@/lib/types';
 import { useUser } from '@/contexts/UserContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EditUserDialogProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogPro
   const { toast } = useToast();
   const { units, loading: unitsLoading } = useUnit();
   const { fetchUsers } = useUser();
+  const { currentUser, refetchCurrentUser } = useAuth();
 
   const [selectedUnitIds, setSelectedUnitIds] = React.useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
@@ -68,12 +70,15 @@ export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogPro
   React.useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
-      fetchUsers(); // Refetch users to update the table
+      fetchUsers();
+      if (user && currentUser && user.id === currentUser.id) {
+        refetchCurrentUser();
+      }
       onOpenChange(false);
     } else if (state.message && !state.errors) {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
-  }, [state, onOpenChange, toast, fetchUsers]);
+  }, [state, onOpenChange, toast, fetchUsers, user, currentUser, refetchCurrentUser]);
 
   const handleClose = () => {
     formRef.current?.reset();
