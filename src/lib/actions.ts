@@ -58,7 +58,6 @@ export async function createUserAction(prevState: any, formData: FormData) {
     return { success: false, message: message, errors: null };
   }
 
-  revalidatePath('/users');
   return { success: true, message: 'Usuário criado com sucesso!', errors: null };
 }
 
@@ -104,7 +103,6 @@ export async function updateUserAction(prevState: any, formData: FormData) {
     return { success: false, message: 'Ocorreu um erro desconhecido ao atualizar o usuário.', errors: null };
   }
 
-  revalidatePath('/users');
   return { success: true, message: 'Usuário atualizado com sucesso!', errors: null };
 }
 
@@ -139,15 +137,41 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
   }
   try {
     await auth.deleteUser(uid);
-    // Note: Deleting user from Auth does not delete their Firestore doc automatically
-    // unless you use a Firebase Extension for that.
     await db.collection('users').doc(uid).delete();
-    
-    // We don't call revalidatePath here because the client-side context will handle the refresh.
     return { success: true, message: 'Usuário excluído com sucesso.' };
   } catch (error: any) {
     console.error("Error deleting user:", error);
     return { success: false, message: 'Falha ao excluir o usuário.' };
+  }
+}
+
+// --- Delete Unit Action ---
+
+export async function deleteUnitAction(unitId: string): Promise<{ success: boolean; message: string }> {
+  if (!unitId) {
+    return { success: false, message: 'ID da unidade é obrigatório.' };
+  }
+  try {
+    const unitRef = db.collection('units').doc(unitId);
+    
+    // 1. Remove unitId from all users assigned to it.
+    const usersRef = db.collection('users');
+    const usersQuery = usersRef.where('unitIds', 'array-contains', unitId);
+    const usersSnapshot = await usersQuery.get();
+
+    const batch = db.batch();
+    usersSnapshot.forEach(doc => {
+      batch.update(doc.ref, { unitIds: FieldValue.arrayRemove(unitId) });
+    });
+    await batch.commit();
+
+    // 2. Delete the unit document.
+    await unitRef.delete();
+
+    return { success: true, message: 'Unidade excluída com sucesso.' };
+  } catch (error: any) {
+    console.error("Error deleting unit:", error);
+    return { success: false, message: 'Falha ao excluir a unidade.' };
   }
 }
 

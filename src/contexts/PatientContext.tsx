@@ -3,9 +3,10 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { Patient } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, query, where, type Query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useUnit } from './UnitContext';
+import { useAuth } from './AuthContext';
 
 interface PatientContextType {
   patients: Patient[];
@@ -22,23 +23,39 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { selectedUnitId } = useUnit();
+  const { currentUser, loading: authLoading } = useAuth();
 
   const fetchPatients = useCallback(async () => {
+    if (authLoading || !currentUser) {
+      setLoading(false);
+      setPatients([]);
+      return;
+    }
+    
     if (!db) {
         setError("A configuração do Firebase está ausente. Não é possível buscar pacientes.");
         setLoading(false);
         return;
     }
-     if (!selectedUnitId) {
+    
+    if (currentUser.role !== 'Admin' && !selectedUnitId) {
       setPatients([]);
       setLoading(false);
       return;
     }
+
     try {
       setLoading(true);
       setError(null);
       const patientsCollection = collection(db, 'patients');
-      const q = query(patientsCollection, where('unitIds', 'array-contains', selectedUnitId));
+
+      let q: Query;
+      if (currentUser.role === 'Admin') {
+        q = query(patientsCollection);
+      } else {
+        q = query(patientsCollection, where('unitIds', 'array-contains', selectedUnitId));
+      }
+
       const patientSnapshot = await getDocs(q);
       const patientList = patientSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -67,7 +84,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [toast, selectedUnitId]);
+  }, [toast, selectedUnitId, currentUser, authLoading]);
 
   useEffect(() => {
     fetchPatients();
@@ -107,7 +124,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <PatientContext.Provider value={{ patients, loading, error, addPatient }}>
+    <PatientContext.Provider value={{ patients, loading: loading || authLoading, error, addPatient }}>
       {children}
     </PatientContext.Provider>
   );

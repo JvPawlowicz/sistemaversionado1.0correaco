@@ -19,10 +19,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUnit } from '@/contexts/UnitContext';
-import { Loader2, Plus, Terminal } from 'lucide-react';
+import { Loader2, Plus, Terminal, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { DeleteUnitDialog } from '@/components/settings/delete-unit-dialog';
+import type { Unit } from '@/lib/types';
 
 function AddRoomForm({ unitId }: { unitId: string }) {
   const [roomName, setRoomName] = React.useState('');
@@ -57,8 +60,16 @@ function AddRoomForm({ unitId }: { unitId: string }) {
 
 export default function SettingsPage() {
   const { units, loading, error, addUnit } = useUnit();
+  const { currentUser } = useAuth();
   const [newUnitName, setNewUnitName] = React.useState('');
   const [isAddingUnit, setIsAddingUnit] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [selectedUnit, setSelectedUnit] = React.useState<Unit | null>(null);
+
+  const handleDeleteClick = (unit: Unit) => {
+    setSelectedUnit(unit);
+    setIsDeleteDialogOpen(true);
+  };
 
   const handleAddUnit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +80,15 @@ export default function SettingsPage() {
     setIsAddingUnit(false);
   };
 
+  const isAdmin = currentUser?.role === 'Admin';
+
   return (
     <div className="space-y-6">
+      <DeleteUnitDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        unit={selectedUnit}
+      />
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
           Configurações
@@ -103,7 +121,24 @@ export default function SettingsPage() {
             <Accordion type="single" collapsible className="w-full">
               {units.map((unit) => (
                 <AccordionItem value={unit.id} key={unit.id}>
-                  <AccordionTrigger>{unit.name}</AccordionTrigger>
+                  <AccordionTrigger>
+                    <div className="flex items-center justify-between w-full pr-2">
+                      <span>{unit.name}</span>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation(); // prevent accordion from toggling
+                            handleDeleteClick(unit);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <h4 className="font-semibold mb-2">Salas nesta Unidade:</h4>
                     {unit.rooms.length > 0 ? (
@@ -119,7 +154,7 @@ export default function SettingsPage() {
                         Nenhuma sala cadastrada para esta unidade.
                       </p>
                     )}
-                    <AddRoomForm unitId={unit.id} />
+                    {isAdmin && <AddRoomForm unitId={unit.id} />}
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -127,31 +162,33 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Adicionar Nova Unidade</CardTitle>
-        </CardHeader>
-        <form onSubmit={handleAddUnit}>
-          <CardContent>
-            <Label htmlFor="new-unit-name">Nome da Unidade</Label>
-            <Input
-              id="new-unit-name"
-              value={newUnitName}
-              onChange={(e) => setNewUnitName(e.target.value)}
-              placeholder="Ex: Unidade Principal"
-              disabled={isAddingUnit}
-            />
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isAddingUnit}>
-              {isAddingUnit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Plus className="mr-2 h-4 w-4" />
-              Criar Unidade
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+      
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Adicionar Nova Unidade</CardTitle>
+          </CardHeader>
+          <form onSubmit={handleAddUnit}>
+            <CardContent>
+              <Label htmlFor="new-unit-name">Nome da Unidade</Label>
+              <Input
+                id="new-unit-name"
+                value={newUnitName}
+                onChange={(e) => setNewUnitName(e.target.value)}
+                placeholder="Ex: Unidade Principal"
+                disabled={isAddingUnit}
+              />
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" disabled={isAddingUnit}>
+                {isAddingUnit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Plus className="mr-2 h-4 w-4" />
+                Criar Unidade
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      )}
     </div>
   );
 }

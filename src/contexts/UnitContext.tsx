@@ -15,6 +15,7 @@ interface UnitContextType {
   setSelectedUnitId: (id: string | null) => void;
   addUnit: (unitName: string) => Promise<void>;
   addRoomToUnit: (unitId: string, roomName: string) => Promise<void>;
+  fetchUnits: () => Promise<void>;
 }
 
 const UnitContext = createContext<UnitContextType | undefined>(undefined);
@@ -76,7 +77,6 @@ export function UnitProvider({ children }: { children: ReactNode }) {
 
     if (currentUser) {
       let availableUnits: Unit[];
-      // Admins should see all units to manage them. Other roles see only their assigned units.
       if (currentUser.role === 'Admin') {
         availableUnits = allUnits;
       } else {
@@ -87,16 +87,13 @@ export function UnitProvider({ children }: { children: ReactNode }) {
       setUnits(availableUnits);
       
       setSelectedUnitId(currentSelectedId => {
-        // If the current selection is still valid within the new available units, keep it.
         if (currentSelectedId && availableUnits.some(u => u.id === currentSelectedId)) {
           return currentSelectedId; 
         }
-        // Otherwise, reset to the first available unit, or null if there are none.
         return availableUnits.length > 0 ? availableUnits[0].id : null;
       });
 
     } else {
-      // No user, no units.
       setUnits([]);
       setSelectedUnitId(null);
     }
@@ -135,7 +132,7 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, addRoomToUnit, selectedUnitId, setSelectedUnitId }}>
+    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, addRoomToUnit, selectedUnitId, setSelectedUnitId, fetchUnits }}>
       {children}
     </UnitContext.Provider>
   );
