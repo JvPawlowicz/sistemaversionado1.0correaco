@@ -316,6 +316,16 @@ const ChartLegendContent = React.forwardRef<
 )
 ChartLegendContent.displayName = "ChartLegend"
 
+const ChartPie = React.forwardRef<
+  React.ElementRef<typeof RechartsPrimitive.Pie>,
+  React.ComponentProps<typeof RechartsPrimitive.Pie>
+>(({ ...props }, ref) => {
+    return (
+      <RechartsPrimitive.Pie {...props} ref={ref} />
+    )
+})
+ChartPie.displayName = "ChartPie"
+
 // Helper to extract item config from a payload.
 function getPayloadConfigFromPayload(
   config: ChartConfig,
@@ -362,4 +372,5 @@ export {
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  ChartPie
 }
