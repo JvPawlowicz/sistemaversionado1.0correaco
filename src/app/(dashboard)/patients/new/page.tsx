@@ -12,12 +12,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePatient } from '@/contexts/PatientContext';
 import { useUnit } from '@/contexts/UnitContext';
 import type { Patient } from '@/lib/types';
 
 const patientFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
+  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
+  phone: z.string().min(10, { message: 'O telefone deve ter pelo menos 10 dígitos.' }),
+  dob: z.string().min(1, { message: 'A data de nascimento é obrigatória.' }),
+  gender: z.enum(['Male', 'Female', 'Other'], { required_error: 'O gênero é obrigatório.' }),
 });
 
 type PatientFormValues = z.infer<typeof patientFormSchema>;
@@ -32,6 +37,9 @@ export default function NewPatientPage() {
     resolver: zodResolver(patientFormSchema),
     defaultValues: {
       name: '',
+      email: '',
+      phone: '',
+      gender: undefined,
     },
   });
 
@@ -41,10 +49,10 @@ export default function NewPatientPage() {
 
     const newPatientData: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'> = {
       name: data.name,
-      email: `${data.name.replace(/\s+/g, '.').toLowerCase()}@placeholder.email`,
-      phone: '(00) 00000-0000',
-      dob: new Date(1990, 0, 1).toISOString().split('T')[0], // Default DOB
-      gender: 'Other',
+      email: data.email,
+      phone: data.phone,
+      dob: data.dob,
+      gender: data.gender,
       unitIds: [selectedUnitId],
     };
     
@@ -67,7 +75,7 @@ export default function NewPatientPage() {
               <CardTitle>Informações do Paciente</CardTitle>
               <CardDescription>Preencha os detalhes do novo paciente.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -81,10 +89,75 @@ export default function NewPatientPage() {
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>E-mail</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="email@exemplo.com" {...field} disabled={isSaving}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="(00) 00000-0000" {...field} disabled={isSaving}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="dob"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Nascimento</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} disabled={isSaving}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gênero</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o gênero" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Male">Masculino</SelectItem>
+                          <SelectItem value="Female">Feminino</SelectItem>
+                          <SelectItem value="Other">Outro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
                <div className="flex justify-end gap-2 w-full">
-                  <Button variant="outline" asChild>
+                  <Button variant="outline" asChild type="button">
                     <Link href="/patients">Cancelar</Link>
                   </Button>
                   <Button type="submit" disabled={isSaving || !selectedUnitId}>

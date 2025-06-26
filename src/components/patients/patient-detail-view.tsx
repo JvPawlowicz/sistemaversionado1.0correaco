@@ -17,6 +17,8 @@ import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
 import { NewEvolutionRecordDialog } from './new-evolution-record-dialog';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 // Reports are not implemented yet, so we keep this empty.
 const reports: Report[] = [];
@@ -41,6 +43,14 @@ export function PatientDetailView({
     }
     return name.substring(0, 2).toUpperCase();
   };
+  
+  const formattedDob = patient.dob ? format(new Date(patient.dob + 'T00:00:00'), 'dd/MM/yyyy') : 'Não informado';
+
+  const genderMap = {
+    Male: 'Masculino',
+    Female: 'Feminino',
+    Other: 'Outro',
+  };
 
   return (
     <>
@@ -63,8 +73,8 @@ export function PatientDetailView({
                 ID do Paciente: {patient.id}
               </CardDescription>
               <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <span>Nasc: {patient.dob}</span>
-                <span>Gênero: {patient.gender === 'Female' ? 'Feminino' : patient.gender === 'Male' ? 'Masculino' : 'Outro'}</span>
+                <span>Nasc: {formattedDob}</span>
+                <span>Gênero: {genderMap[patient.gender] || 'Não informado'}</span>
                 <span>Telefone: {patient.phone}</span>
                 <span>Email: {patient.email}</span>
               </div>
@@ -171,11 +181,11 @@ export function PatientDetailView({
                     </div>
                      <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Data de Nascimento</p>
-                        <p>{patient.dob}</p>
+                        <p>{formattedDob}</p>
                     </div>
                      <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Gênero</p>
-                        <p>{patient.gender === 'Female' ? 'Feminino' : patient.gender === 'Male' ? 'Masculino' : 'Outro'}</p>
+                        <p>{genderMap[patient.gender] || 'Não informado'}</p>
                     </div>
                      <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Status</p>
@@ -189,9 +199,13 @@ export function PatientDetailView({
                         <p className="font-medium text-muted-foreground">Telefone</p>
                         <p>{patient.phone}</p>
                     </div>
-                       <div className="space-y-1">
+                    <div className="space-y-1">
                         <p className="font-medium text-muted-foreground">Última visita</p>
-                        <p>{patient.lastVisit}</p>
+                        <p>{patient.lastVisit ? format(new Date(patient.lastVisit + 'T00:00:00'), 'dd/MM/yyyy') : 'N/A'}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="font-medium text-muted-foreground">Data de Cadastro</p>
+                        <p>{patient.createdAt?.toDate ? format(patient.createdAt.toDate(), 'PPP', { locale: ptBR }) : 'Não disponível'}</p>
                     </div>
                  </div>
               </CardContent>
