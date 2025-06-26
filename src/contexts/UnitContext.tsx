@@ -5,6 +5,7 @@ import type { Unit } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, arrayUnion, serverTimestamp, query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from './AuthContext';
 
 interface UnitContextType {
   units: Unit[];
@@ -19,11 +20,13 @@ interface UnitContextType {
 const UnitContext = createContext<UnitContextType | undefined>(undefined);
 
 export function UnitProvider({ children }: { children: ReactNode }) {
+  const [allUnits, setAllUnits] = useState<Unit[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { currentUser, loading: authLoading } = useAuth();
 
   const fetchUnits = useCallback(async () => {
     if (!db) {
@@ -47,20 +50,13 @@ export function UnitProvider({ children }: { children: ReactNode }) {
         return dateB.getTime() - dateA.getTime();
       });
 
-      setUnits(unitList);
-
-      // Set the first unit as selected by default if none is selected
-      if (unitList.length > 0 && !selectedUnitId) {
-        setSelectedUnitId(unitList[0].id);
-      } else if (unitList.length === 0) {
-        setSelectedUnitId(null);
-      }
+      setAllUnits(unitList);
 
     } catch (err: any) {
       console.error("Error fetching units: ", err);
       const userFriendlyError = "Falha ao buscar unidades. Verifique se a coleção 'units' existe e se as regras de segurança estão corretas.";
       setError(userFriendlyError);
-      setUnits([]);
+      setAllUnits([]);
       toast({
         variant: "destructive",
         title: "Erro ao buscar unidades",
@@ -69,11 +65,30 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [toast, selectedUnitId]);
+  }, [toast]);
 
   useEffect(() => {
     fetchUnits();
   }, [fetchUnits]);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (currentUser) {
+      const userUnitIds = currentUser.unitIds || [];
+      const availableUnits = allUnits.filter(unit => userUnitIds.includes(unit.id));
+      
+      setUnits(availableUnits);
+      
+      if (!availableUnits.some(u => u.id === selectedUnitId)) {
+        setSelectedUnitId(availableUnits.length > 0 ? availableUnits[0].id : null);
+      }
+    } else {
+      setUnits([]);
+      setSelectedUnitId(null);
+    }
+  }, [currentUser, allUnits, authLoading, selectedUnitId]);
+
 
   const addUnit = async (unitName: string) => {
     if (!db) return;
@@ -107,7 +122,7 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UnitContext.Provider value={{ units, loading, error, addUnit, addRoomToUnit, selectedUnitId, setSelectedUnitId }}>
+    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, addRoomToUnit, selectedUnitId, setSelectedUnitId }}>
       {children}
     </UnitContext.Provider>
   );
