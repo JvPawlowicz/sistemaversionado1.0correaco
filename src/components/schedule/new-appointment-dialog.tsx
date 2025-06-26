@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -16,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Loader2, ChevronsUpDown, Check } from 'lucide-react';
-import type { Appointment } from '@/lib/types';
+import type { Appointment, Service, User } from '@/lib/types';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
@@ -34,7 +35,6 @@ interface NewAppointmentDialogProps {
 }
 
 export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDialogProps) {
-  const [mounted, setMounted] = React.useState(false);
   const { users, loading: usersLoading } = useUser();
   const { patients, loading: patientsLoading } = usePatient();
   const { units, selectedUnitId, loading: unitsLoading } = useUnit();
@@ -44,58 +44,64 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   const { toast } = useToast();
 
   const [patientId, setPatientId] = React.useState('');
-  const [patientName, setPatientName] = React.useState('');
+  const [serviceId, setServiceId] = React.useState('');
   const [professionalName, setProfessionalName] = React.useState('');
-  const [discipline, setDiscipline] = React.useState('');
   const [date, setDate] = React.useState(format(new Date(), 'yyyy-MM-dd'));
   const [time, setTime] = React.useState('09:00');
   const [endTime, setEndTime] = React.useState('10:00');
-  const [room, setRoom] = React.useState('');
+  const [room, setRoom] = React.useState('Sala 1'); // Simplified room
   const [repeat, setRepeat] = React.useState(false);
 
   const [isPatientPopoverOpen, setIsPatientPopoverOpen] = React.useState(false);
   
-  const professionals = users.filter(u => 
-    (u.role === 'Therapist' || u.role === 'Admin' || u.role === 'Coordinator') &&
-    selectedUnitId &&
-    u.unitIds &&
-    u.unitIds.includes(selectedUnitId)
-  );
+  const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
+  const availableServices = selectedUnit?.services || [];
   
-  const selectedUnit = units.find(u => u.id === selectedUnitId);
-  const availableRooms = selectedUnit ? selectedUnit.rooms : [];
+  const selectedService = React.useMemo(() => availableServices.find(s => s.id === serviceId), [availableServices, serviceId]);
+  
+  const availableProfessionals = React.useMemo(() => {
+    if (!selectedService) return [];
+    return users.filter(user => selectedService.professionalIds.includes(user.id));
+  }, [users, selectedService]);
 
   const resetForm = () => {
     setPatientId('');
-    setPatientName('');
+    setServiceId('');
     setProfessionalName(currentUser?.role === 'Therapist' ? currentUser.name : '');
-    setDiscipline('');
     setDate(format(new Date(), 'yyyy-MM-dd'));
     setTime('09:00');
     setEndTime('10:00');
-    setRoom('');
+    setRoom('Sala 1');
     setRepeat(false);
   };
+  
+  React.useEffect(() => {
+    setServiceId('');
+    setProfessionalName('');
+  }, [selectedUnitId]);
 
   React.useEffect(() => {
-    setMounted(true);
-  }, []);
+    setProfessionalName('');
+  }, [serviceId]);
 
   React.useEffect(() => {
     if (currentUser?.role === 'Therapist') {
-      setProfessionalName(currentUser.name);
+      // Find a service this therapist is in for the selected unit
+      const service = availableServices.find(s => s.professionalIds.includes(currentUser.id));
+      if (service) {
+        setServiceId(service.id);
+        setProfessionalName(currentUser.name);
+      }
     }
-  }, [currentUser]);
+  }, [currentUser, availableServices]);
 
-
-  React.useEffect(() => {
-    // Reset room selection when unit changes
-    setRoom('');
-  }, [selectedUnitId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!patientId || !professionalName || !discipline || !date || !time || !endTime || !room || !selectedUnitId) {
+    const patientName = patients.find(p => p.id === patientId)?.name;
+    const serviceName = selectedService?.name;
+
+    if (!patientId || !professionalName || !serviceId || !date || !time || !endTime || !room || !selectedUnitId || !patientName || !serviceName) {
         toast({
             variant: "destructive",
             title: "Campos obrigatórios",
@@ -110,7 +116,8 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
         patientId,
         patientName,
         professionalName,
-        discipline,
+        serviceId,
+        serviceName,
         date,
         time,
         endTime,
@@ -124,10 +131,6 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     resetForm();
   };
 
-  if (!mounted) {
-    return null;
-  }
-  
   const isLoading = usersLoading || unitsLoading || patientsLoading;
   const canEditProfessional = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator' || currentUser?.role === 'Receptionist';
 
@@ -141,7 +144,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
           <DialogHeader>
             <DialogTitle>Novo Agendamento</DialogTitle>
             <DialogDescription>
-              Preencha os detalhes abaixo para criar um novo agendamento.
+              Preencha os detalhes para criar um novo agendamento.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -150,14 +153,8 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
               <div className="col-span-3">
                  <Popover open={isPatientPopoverOpen} onOpenChange={setIsPatientPopoverOpen}>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={isPatientPopoverOpen}
-                      className="w-full justify-between"
-                      disabled={isLoading}
-                    >
-                      {patientName || "Selecione um paciente..."}
+                    <Button variant="outline" role="combobox" className="w-full justify-between" disabled={isLoading}>
+                      {patientId ? patients.find(p => p.id === patientId)?.name : "Selecione um paciente..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -168,21 +165,8 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
                         <CommandEmpty>Nenhum paciente encontrado.</CommandEmpty>
                         <CommandGroup>
                           {patients.map((patient) => (
-                            <CommandItem
-                              key={patient.id}
-                              value={patient.name}
-                              onSelect={() => {
-                                setPatientId(patient.id);
-                                setPatientName(patient.name);
-                                setIsPatientPopoverOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  'mr-2 h-4 w-4',
-                                  patientId === patient.id ? 'opacity-100' : 'opacity-0'
-                                )}
-                              />
+                            <CommandItem key={patient.id} value={patient.name} onSelect={() => { setPatientId(patient.id); setIsPatientPopoverOpen(false); }}>
+                              <Check className={cn('mr-2 h-4 w-4', patientId === patient.id ? 'opacity-100' : 'opacity-0')} />
                               {patient.name}
                             </CommandItem>
                           ))}
@@ -194,23 +178,26 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
               </div>
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="professional" className="text-right">Profissional</Label>
-              <Select onValueChange={setProfessionalName} value={professionalName} required disabled={isLoading || !canEditProfessional}>
+              <Label htmlFor="service" className="text-right">Serviço</Label>
+              <Select onValueChange={setServiceId} value={serviceId} required disabled={isLoading || availableServices.length === 0}>
                  <SelectTrigger className="col-span-3">
-                   <SelectValue placeholder="Selecione um profissional" />
+                   <SelectValue placeholder="Selecione um serviço" />
                  </SelectTrigger>
                  <SelectContent>
-                    {isLoading ? (
-                     <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                   ) : (
-                     professionals.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)
-                   )}
+                   {availableServices.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                  </SelectContent>
                </Select>
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="discipline" className="text-right">Disciplina</Label>
-               <Input id="discipline" value={discipline} onChange={e => setDiscipline(e.target.value)} className="col-span-3" required placeholder="Ex: Fisioterapia" disabled={isLoading}/>
+              <Label htmlFor="professional" className="text-right">Profissional</Label>
+              <Select onValueChange={setProfessionalName} value={professionalName} required disabled={isLoading || !canEditProfessional || availableProfessionals.length === 0}>
+                 <SelectTrigger className="col-span-3">
+                   <SelectValue placeholder="Selecione um profissional" />
+                 </SelectTrigger>
+                 <SelectContent>
+                    {availableProfessionals.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+                 </SelectContent>
+               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">Data</Label>
@@ -223,26 +210,10 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
                  <Input id="endTime" type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required disabled={isLoading}/>
               </div>
             </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="room" className="text-right">Sala</Label>
-              <Select onValueChange={setRoom} value={room} required disabled={!selectedUnitId || availableRooms.length === 0 || isLoading}>
-                 <SelectTrigger className="col-span-3">
-                   <SelectValue placeholder="Selecione uma sala" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   {availableRooms.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                 </SelectContent>
-               </Select>
-            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="repeat" className="text-right">Repetir</Label>
               <div className="col-span-3 flex items-center space-x-2">
-                <Switch
-                  id="repeat"
-                  checked={repeat}
-                  onCheckedChange={setRepeat}
-                  disabled={isLoading}
-                />
+                <Switch id="repeat" checked={repeat} onCheckedChange={setRepeat} disabled={isLoading} />
                 <Label htmlFor="repeat" className="text-sm text-muted-foreground">
                   Repetir semanalmente por 4 semanas
                 </Label>
@@ -263,3 +234,4 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     </Dialog>
   );
 }
+

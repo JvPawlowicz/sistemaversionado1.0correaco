@@ -1,193 +1,151 @@
-'use client';
+export type Address = {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+};
 
-import * as React from 'react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from '@/components/ui/card';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useUnit } from '@/contexts/UnitContext';
-import { Loader2, Plus, Terminal, Trash2 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/contexts/AuthContext';
-import { DeleteUnitDialog } from '@/components/settings/delete-unit-dialog';
-import type { Unit } from '@/lib/types';
+export type InstitutionalDocument = {
+  name: string;
+  url: string;
+};
 
-function AddRoomForm({ unitId }: { unitId: string }) {
-  const [roomName, setRoomName] = React.useState('');
-  const [isSaving, setIsSaving] = React.useState(false);
-  const { addRoomToUnit } = useUnit();
+export type Service = {
+  id: string;
+  name: string;
+  description: string;
+  capacity: number; // 1 para individual, >1 para grupo, 0 para ilimitado
+  unitId: string;
+  professionalIds: string[];
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!roomName.trim()) return;
-    setIsSaving(true);
-    await addRoomToUnit(unitId, roomName.trim());
-    setRoomName('');
-    setIsSaving(false);
-  };
+export type Unit = {
+  id: string;
+  name: string;
+  cnpj?: string;
+  address?: Address | null;
+  phone?: string;
+  email?: string;
+  responsibleTech?: string;
+  photoUrl?: string;
+  institutionalDocuments?: InstitutionalDocument[];
+  services?: Service[]; // Populado no frontend
+  createdAt?: any;
+};
 
-  return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2 mt-4">
-      <Input
-        value={roomName}
-        onChange={(e) => setRoomName(e.target.value)}
-        placeholder="Nome da nova sala"
-        className="flex-1"
-        disabled={isSaving}
-      />
-      <Button type="submit" size="sm" disabled={isSaving}>
-        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Adicionar Sala
-      </Button>
-    </form>
-  );
-}
+export type Patient = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  lastVisit?: string | null;
+  status: 'Active' | 'Inactive';
+  avatarUrl: string;
+  dob?: string | null;
+  gender?: 'Male' | 'Female' | 'Other' | null;
+  unitIds: string[];
+  createdAt?: any;
 
-export default function SettingsPage() {
-  const { units, loading, error, addUnit } = useUnit();
-  const { currentUser } = useAuth();
-  const [newUnitName, setNewUnitName] = React.useState('');
-  const [isAddingUnit, setIsAddingUnit] = React.useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  const [selectedUnit, setSelectedUnit] = React.useState<Unit | null>(null);
+  diagnosis?: string | null;
+  referringProfessional?: string | null;
+  imageUseConsent?: boolean;
+  address?: Address | null;
+};
 
-  const handleDeleteClick = (unit: Unit) => {
-    setSelectedUnit(unit);
-    setIsDeleteDialogOpen(true);
-  };
+export type Availability = {
+  type: 'Free' | 'Planning' | 'Supervision';
+  dayOfWeek: number; // 0 (Sun) to 6 (Sat)
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+};
 
-  const handleAddUnit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUnitName.trim()) return;
-    setIsAddingUnit(true);
-    await addUnit(newUnitName.trim());
-    setNewUnitName('');
-    setIsAddingUnit(false);
-  };
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Admin' | 'Therapist' | 'Receptionist' | 'Coordinator';
+  status: 'Active' | 'Inactive';
+  avatarUrl: string;
+  unitIds: string[];
+  availability?: Availability[];
+  createdAt?: any;
+};
 
-  const isAdmin = currentUser?.role === 'Admin';
+export type Appointment = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  professionalName: string;
+  serviceId: string;
+  serviceName: string;
+  time: string;
+  endTime: string;
+  date: string; // ISO String 'YYYY-MM-DD'
+  room: string;
+  unitId: string;
+  status: 'Agendado' | 'Realizado' | 'Faltou' | 'Cancelado';
+  color: string;
+  groupId?: string | null;
+  attendees?: string[]; // Array of patientIds for group sessions
+  createdAt?: any;
+};
 
-  return (
-    <div className="space-y-6">
-      <DeleteUnitDialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        unit={selectedUnit}
-      />
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-          Configurações
-        </h1>
-        <p className="text-muted-foreground">
-          Gerencie suas unidades, salas e outras configurações do sistema.
-        </p>
-      </div>
+export type EvolutionRecord = {
+  id: string;
+  date: string;
+  title: string;
+  details: string;
+  author: string;
+  groupId?: string | null; // To link evolution to a group session
+  createdAt?: any;
+};
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Gerenciar Unidades</CardTitle>
-          <CardDescription>
-            Adicione novas unidades e gerencie as salas de cada uma.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ) : error ? (
-            <Alert variant="destructive">
-              <Terminal className="h-4 w-4" />
-              <AlertTitle>Erro ao Carregar Dados</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : (
-            <Accordion type="single" collapsible className="w-full">
-              {units.map((unit) => (
-                <AccordionItem value={unit.id} key={unit.id}>
-                  <div className="flex items-center w-full">
-                    <AccordionTrigger className="flex-1 text-left">
-                      {unit.name}
-                    </AccordionTrigger>
-                    {isAdmin && (
-                      <div className="pl-4 pr-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive"
-                          onClick={() => handleDeleteClick(unit)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  <AccordionContent>
-                    <h4 className="font-semibold mb-2">Salas nesta Unidade:</h4>
-                    {unit.rooms.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {unit.rooms.map((room, index) => (
-                          <Badge key={index} variant="secondary">
-                            {room}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Nenhuma sala cadastrada para esta unidade.
-                      </p>
-                    )}
-                    {isAdmin && <AddRoomForm unitId={unit.id} />}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          )}
-        </CardContent>
-      </Card>
-      
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Adicionar Nova Unidade</CardTitle>
-          </CardHeader>
-          <form onSubmit={handleAddUnit}>
-            <CardContent>
-              <Label htmlFor="new-unit-name">Nome da Unidade</Label>
-              <Input
-                id="new-unit-name"
-                value={newUnitName}
-                onChange={(e) => setNewUnitName(e.target.value)}
-                placeholder="Ex: Unidade Principal"
-                disabled={isAddingUnit}
-              />
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={isAddingUnit}>
-                {isAddingUnit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Plus className="mr-2 h-4 w-4" />
-                Criar Unidade
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
-      )}
-    </div>
-  );
-}
+export type PatientDocument = {
+  id:string;
+  fileName: string;
+  url: string;
+  fileType: string;
+  size: number;
+  category: 'Exame' | 'Documento Legal' | 'Foto Terapêutica' | 'Outro';
+  description: string;
+  uploadedAt: any;
+};
+
+export type FamilyMember = {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  observations: string;
+  createdAt?: any;
+};
+
+export type TherapyGroup = {
+  id: string;
+  name: string;
+  serviceId: string;
+  unitId: string;
+  patientIds: string[];
+  professionalIds: string[];
+};
+
+export type TimeBlock = {
+    id: string;
+    title: string;
+    unitId?: string; // Block entire unit
+    userIds?: string[]; // Block specific users
+    date: string; // YYYY-MM-DD
+    startTime: string; // HH:mm
+    endTime: string; // HH:mm
+};
+
+
+export type Notification = {
+  id: string;
+  title: string;
+  content: string;
+  createdAt?: any;
+  targetType?: 'ALL' | 'ROLE' | 'UNIT' | 'SPECIFIC';
+  targetValue?: string | string[];
+  seenBy?: string[];
+};

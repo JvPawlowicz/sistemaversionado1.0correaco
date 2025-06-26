@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -14,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment } from '@/lib/types';
-import { Calendar, Clock, User, Home, CheckCircle, XCircle, AlertCircle, Trash2 } from 'lucide-react';
+import { Calendar, Clock, User, Home, CheckCircle, XCircle, AlertCircle, Trash2, Stethoscope } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
@@ -57,6 +58,10 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
                 <div className="flex items-center gap-3">
                     <User className="w-4 h-4 text-muted-foreground" />
                     <span className="font-semibold">{appointment.patientName}</span>
+                </div>
+                 <div className="flex items-center gap-3">
+                    <Stethoscope className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-semibold">{appointment.serviceName}</span>
                 </div>
                  <div className="flex items-center gap-3">
                     <Calendar className="w-4 h-4 text-muted-foreground" />

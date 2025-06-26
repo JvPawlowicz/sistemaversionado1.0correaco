@@ -1,8 +1,11 @@
+
 'use server';
 
 import { z } from 'zod';
 import { auth, db, storageAdmin } from '@/lib/firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, WriteResult } from 'firebase-admin/firestore';
+import type { Unit, Service } from './types';
+import { revalidatePath } from 'next/cache';
 
 // --- Helper for checking Firebase Admin initialization ---
 function checkAdminInit() {
@@ -62,7 +65,7 @@ export async function createUserAction(prevState: any, formData: FormData) {
       avatarUrl: `https://i.pravatar.cc/150?u=${userRecord.uid}`,
       createdAt: FieldValue.serverTimestamp(),
     });
-
+    revalidatePath('/users');
   } catch (error: any) {
     let message = 'Ocorreu um erro desconhecido.';
     if (error.code === 'auth/email-already-exists') {
@@ -112,7 +115,7 @@ export async function updateUserAction(prevState: any, formData: FormData) {
       role,
       unitIds,
     });
-
+    revalidatePath('/users');
   } catch (error: any) {
     console.error('Error updating user:', error);
     return { success: false, message: 'Ocorreu um erro desconhecido ao atualizar o usuário.', errors: null };
@@ -140,6 +143,7 @@ export async function updateUserPasswordAction(uid: string, newPassword: string)
         await auth.updateUser(uid, {
             password: newPassword,
         });
+        revalidatePath('/users');
         return { success: true, message: 'Senha atualizada com sucesso!' };
     } catch (error: any) {
         console.error("Error updating password:", error);
@@ -159,6 +163,7 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
   try {
     await auth.deleteUser(uid);
     await db.collection('users').doc(uid).delete();
+    revalidatePath('/users');
     return { success: true, message: 'Usuário excluído com sucesso.' };
   } catch (error: any) {
     console.error("Error deleting user:", error);
@@ -166,34 +171,48 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
   }
 }
 
-// --- Delete Unit Action ---
+// --- Unit and Service Actions ---
+const unitFormSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
+  cnpj: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email({ message: 'E-mail inválido.' }).optional().or(z.literal('')),
+  responsibleTech: z.string().optional(),
+  addressStreet: z.string().optional(),
+  addressCity: z.string().optional(),
+  addressState: z.string().optional(),
+  addressZip: z.string().optional(),
+});
 
-export async function deleteUnitAction(unitId: string): Promise<{ success: boolean; message: string }> {
+export async function updateUnitAction(prevState: any, formData: FormData) {
   const adminCheck = checkAdminInit();
-  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+  if (adminCheck) return adminCheck;
   
-  if (!unitId) {
-    return { success: false, message: 'ID da unidade é obrigatório.' };
+  const validatedFields = unitFormSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!validatedFields.success) {
+    return { success: false, message: 'Dados inválidos.', errors: validatedFields.error.flatten().fieldErrors };
   }
+
+  const { id, addressCity, addressState, addressStreet, addressZip, ...unitData } = validatedFields.data;
+
+  if (!id) {
+     return { success: false, message: 'ID da unidade é obrigatório para atualização.', errors: null };
+  }
+
+  const address = (addressStreet || addressCity || addressState || addressZip) 
+    ? { street: addressStreet || '', city: addressCity || '', state: addressState || '', zip: addressZip || '' } 
+    : null;
+  
   try {
-    const unitRef = db.collection('units').doc(unitId);
-    
-    const usersRef = db.collection('users');
-    const usersQuery = usersRef.where('unitIds', 'array-contains', unitId);
-    const usersSnapshot = await usersQuery.get();
-
-    const batch = db.batch();
-    usersSnapshot.forEach(doc => {
-      batch.update(doc.ref, { unitIds: FieldValue.arrayRemove(unitId) });
-    });
-    await batch.commit();
-
-    await unitRef.delete();
-
-    return { success: true, message: 'Unidade excluída com sucesso.' };
-  } catch (error: any) {
-    console.error("Error deleting unit:", error);
-    return { success: false, message: 'Falha ao excluir a unidade.' };
+    await db.collection('units').doc(id).update({ ...unitData, address });
+    revalidatePath(`/units/${id}`);
+    revalidatePath(`/units`);
+    return { success: true, message: "Unidade atualizada com sucesso!", errors: null };
+  } catch (error) {
+     console.error("Error updating unit:", error);
+    return { success: false, message: "Falha ao atualizar a unidade.", errors: null };
   }
 }
 
@@ -253,6 +272,7 @@ export async function createNotificationAction(prevState: any, formData: FormDat
 
   try {
     await db.collection('notifications').add(notificationData);
+    revalidatePath('/notifications');
     return { success: true, message: 'Notificação criada com sucesso!', errors: null };
   } catch (error: any) {
     console.error('Error creating notification:', error);
@@ -301,7 +321,7 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
         author,
         createdAt: FieldValue.serverTimestamp(),
       });
-    
+    revalidatePath(`/patients/${patientId}`);
     return { success: true, message: 'Registro de evolução salvo com sucesso!', errors: null };
   } catch (error) {
     console.error('Error creating evolution record:', error);
@@ -324,6 +344,7 @@ const UpdatePatientSchema = z.object({
   addressCity: z.string().optional(),
   addressState: z.string().optional(),
   addressZip: z.string().optional(),
+  unitIds: z.array(z.string()).optional(),
 });
 
 export async function updatePatientDetailsAction(prevState: any, formData: FormData) {
@@ -331,19 +352,9 @@ export async function updatePatientDetailsAction(prevState: any, formData: FormD
   if (adminCheck) return adminCheck;
 
   const validatedFields = UpdatePatientSchema.safeParse({
-    patientId: formData.get('patientId'),
-    name: formData.get('name'),
-    email: formData.get('email'),
-    phone: formData.get('phone'),
-    dob: formData.get('dob'),
-    gender: formData.get('gender'),
-    diagnosis: formData.get('diagnosis'),
-    referringProfessional: formData.get('referringProfessional'),
-    imageUseConsent: formData.get('imageUseConsent'),
-    addressStreet: formData.get('addressStreet'),
-    addressCity: formData.get('addressCity'),
-    addressState: formData.get('addressState'),
-    addressZip: formData.get('addressZip'),
+    ...Object.fromEntries(formData.entries()),
+    unitIds: formData.getAll('unitIds'),
+    imageUseConsent: formData.get('imageUseConsent')
   });
 
   if (!validatedFields.success) {
@@ -362,6 +373,8 @@ export async function updatePatientDetailsAction(prevState: any, formData: FormD
 
   try {
     await db.collection('patients').doc(patientId).update({ ...patientData, address });
+    revalidatePath(`/patients/${patientId}`);
+    revalidatePath('/patients');
     return { success: true, message: 'Dados do paciente atualizados com sucesso!', errors: null };
   } catch (error) {
     console.error('Error updating patient details:', error);
@@ -389,6 +402,7 @@ export async function updatePatientStatusAction(patientId: string, status: 'Acti
 
   try {
     await db.collection('patients').doc(patientId).update({ status });
+    revalidatePath(`/patients/${patientId}`);
     return { success: true, message: 'Status do paciente atualizado com sucesso!' };
   } catch (error) {
     console.error('Error updating patient status:', error);
@@ -448,7 +462,7 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
       description: description || '',
       uploadedAt: FieldValue.serverTimestamp(),
     });
-
+    revalidatePath(`/patients/${patientId}`);
     return { success: true, message: 'Documento enviado com sucesso!' };
   } catch (error) {
     console.error('Error uploading document:', error);
@@ -490,7 +504,7 @@ async function deleteCollection(collectionPath: string, batchSize: number) {
 
 export async function deletePatientAction(patientId: string): Promise<{ success: boolean; message: string }> {
   const adminCheck = checkAdminInit();
-  if (adminCheck) return adminCheck;
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
   if (!patientId) {
     return { success: false, message: 'ID do paciente é obrigatório.' };
   }
@@ -505,7 +519,7 @@ export async function deletePatientAction(patientId: string): Promise<{ success:
     // TODO: Delete files in Storage
 
     await patientRef.delete();
-
+    revalidatePath('/patients');
     return { success: true, message: 'Paciente e todos os seus dados foram excluídos com sucesso.' };
   } catch (error: any) {
     console.error("Error deleting patient:", error);
@@ -541,6 +555,7 @@ export async function addFamilyMemberAction(patientId: string, prevState: any, f
       ...validatedFields.data,
       createdAt: FieldValue.serverTimestamp(),
     });
+    revalidatePath(`/patients/${patientId}`);
     return { success: true, message: "Familiar adicionado com sucesso!", errors: null };
   } catch (error) {
     console.error("Error adding family member:", error);
@@ -550,7 +565,7 @@ export async function addFamilyMemberAction(patientId: string, prevState: any, f
 
 export async function deleteFamilyMemberAction(patientId: string, memberId: string): Promise<{ success: boolean; message: string }> {
   const adminCheck = checkAdminInit();
-  if (adminCheck) return adminCheck;
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
   
   if (!patientId || !memberId) {
     return { success: false, message: 'IDs são obrigatórios.' };
@@ -558,6 +573,7 @@ export async function deleteFamilyMemberAction(patientId: string, memberId: stri
 
   try {
     await db.collection('patients').doc(patientId).collection('familyMembers').doc(memberId).delete();
+    revalidatePath(`/patients/${patientId}`);
     return { success: true, message: 'Familiar removido com sucesso.' };
   } catch (error) {
     console.error("Error deleting family member:", error);

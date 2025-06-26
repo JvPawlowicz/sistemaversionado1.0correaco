@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -9,7 +10,7 @@ import { useSchedule } from '@/contexts/ScheduleContext';
 import { usePatient } from '@/contexts/PatientContext';
 import { useUser } from '@/contexts/UserContext';
 import { useUnit } from '@/contexts/UnitContext';
-import type { Appointment } from '@/lib/types';
+import type { Appointment, Service } from '@/lib/types';
 import { addDays, isAfter, isBefore, isEqual, startOfDay } from 'date-fns';
 import { Download, Loader2, SlidersHorizontal, Trash } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
@@ -29,16 +30,17 @@ export function ReportsView() {
     endDate: new Date(),
     patientId: '',
     professionalName: '',
-    room: '',
+    serviceId: '',
     status: '',
   });
 
   const isLoading = scheduleLoading || patientsLoading || usersLoading || unitsLoading;
+  
+  const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
+  const availableServices = selectedUnit?.services || [];
   const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Coordinator' || u.role === 'Admin');
-  const rooms = units.find(u => u.id === selectedUnitId)?.rooms || [];
 
   const handleFilterChange = (key: keyof typeof filters, value: any) => {
-    // When "all" is selected, we clear the filter by setting it to an empty string.
     setFilters(prev => ({ ...prev, [key]: value === 'all' ? '' : value }));
   };
 
@@ -57,8 +59,8 @@ export function ReportsView() {
     if (filters.professionalName) {
       result = result.filter(app => app.professionalName === filters.professionalName);
     }
-    if (filters.room) {
-      result = result.filter(app => app.room === filters.room);
+    if (filters.serviceId) {
+      result = result.filter(app => app.serviceId === filters.serviceId);
     }
     if (filters.status) {
       result = result.filter(app => app.status === filters.status);
@@ -74,7 +76,7 @@ export function ReportsView() {
         endDate: new Date(),
         patientId: '',
         professionalName: '',
-        room: '',
+        serviceId: '',
         status: '',
     });
     setFilteredAppointments([]);
@@ -89,13 +91,13 @@ export function ReportsView() {
     
     (doc as any).autoTable({
         startY: 22,
-        head: [['Data', 'Horário', 'Paciente', 'Profissional', 'Sala', 'Status']],
+        head: [['Data', 'Horário', 'Paciente', 'Profissional', 'Serviço', 'Status']],
         body: filteredAppointments.map(app => [
             format(new Date(app.date + "T00:00:00"), 'dd/MM/yyyy', { locale: ptBR }),
             `${app.time} - ${app.endTime}`,
             app.patientName,
             app.professionalName,
-            app.room,
+            app.serviceName,
             app.status
         ]),
         headStyles: { fillColor: [63, 76, 181] },
@@ -142,12 +144,12 @@ export function ReportsView() {
             </Select>
           </div>
           <div className="flex flex-col space-y-1.5">
-            <label className="text-sm font-medium">Sala</label>
-            <Select onValueChange={value => handleFilterChange('room', value)} value={filters.room} disabled={isLoading || rooms.length === 0}>
-              <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+            <label className="text-sm font-medium">Serviço</label>
+            <Select onValueChange={value => handleFilterChange('serviceId', value)} value={filters.serviceId} disabled={isLoading || availableServices.length === 0}>
+              <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                 {rooms.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                <SelectItem value="all">Todos</SelectItem>
+                 {availableServices.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -193,8 +195,8 @@ export function ReportsView() {
                         <TableRow>
                             <TableHead>Data</TableHead>
                             <TableHead>Paciente</TableHead>
-                            <TableHead>Profissional</TableHead>
-                            <TableHead className="hidden md:table-cell">Sala</TableHead>
+                            <TableHead>Serviço</TableHead>
+                            <TableHead className="hidden md:table-cell">Profissional</TableHead>
                             <TableHead className="hidden sm:table-cell">Status</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -209,8 +211,8 @@ export function ReportsView() {
                                     <div className="text-sm text-muted-foreground">{`${app.time}-${app.endTime}`}</div>
                                 </TableCell>
                                 <TableCell>{app.patientName}</TableCell>
-                                <TableCell>{app.professionalName}</TableCell>
-                                <TableCell className="hidden md:table-cell">{app.room}</TableCell>
+                                <TableCell>{app.serviceName}</TableCell>
+                                <TableCell className="hidden md:table-cell">{app.professionalName}</TableCell>
                                 <TableCell className="hidden sm:table-cell"><Badge variant={app.status === 'Realizado' ? 'default' : 'secondary'}>{app.status}</Badge></TableCell>
                              </TableRow>
                            ))

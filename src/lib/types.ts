@@ -1,3 +1,38 @@
+export type Address = {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+
+export type InstitutionalDocument = {
+  name: string;
+  url: string;
+};
+
+export type Service = {
+  id: string;
+  name: string;
+  description: string;
+  capacity: number; // 1 para individual, >1 para grupo, 0 para ilimitado
+  unitId: string;
+  professionalIds: string[];
+};
+
+export type Unit = {
+  id: string;
+  name: string;
+  cnpj?: string;
+  address?: Address | null;
+  phone?: string;
+  email?: string;
+  responsibleTech?: string;
+  photoUrl?: string;
+  institutionalDocuments?: InstitutionalDocument[];
+  services?: Service[]; // Populado no frontend
+  createdAt?: any;
+};
+
 export type Patient = {
   id: string;
   name: string;
@@ -9,18 +44,19 @@ export type Patient = {
   dob?: string | null;
   gender?: 'Male' | 'Female' | 'Other' | null;
   unitIds: string[];
-  createdAt?: any; // For Firestore serverTimestamp
+  createdAt?: any;
 
-  // New fields
   diagnosis?: string | null;
   referringProfessional?: string | null;
   imageUseConsent?: boolean;
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-  } | null;
+  address?: Address | null;
+};
+
+export type Availability = {
+  type: 'Free' | 'Planning' | 'Supervision';
+  dayOfWeek: number; // 0 (Sun) to 6 (Sat)
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
 };
 
 export type User = {
@@ -31,7 +67,8 @@ export type User = {
   status: 'Active' | 'Inactive';
   avatarUrl: string;
   unitIds: string[];
-  createdAt?: any; // For Firestore serverTimestamp
+  availability?: Availability[];
+  createdAt?: any;
 };
 
 export type Appointment = {
@@ -39,7 +76,8 @@ export type Appointment = {
   patientId: string;
   patientName: string;
   professionalName: string;
-  discipline: string;
+  serviceId: string;
+  serviceName: string;
   time: string;
   endTime: string;
   date: string; // ISO String 'YYYY-MM-DD'
@@ -47,7 +85,9 @@ export type Appointment = {
   unitId: string;
   status: 'Agendado' | 'Realizado' | 'Faltou' | 'Cancelado';
   color: string;
-  createdAt?: any; // For Firestore serverTimestamp
+  groupId?: string | null;
+  attendees?: string[]; // Array of patientIds for group sessions
+  createdAt?: any;
 };
 
 export type EvolutionRecord = {
@@ -56,18 +96,19 @@ export type EvolutionRecord = {
   title: string;
   details: string;
   author: string;
-  createdAt?: any; // For Firestore serverTimestamp
+  groupId?: string | null; // To link evolution to a group session
+  createdAt?: any;
 };
 
 export type PatientDocument = {
-  id: string;
+  id:string;
   fileName: string;
   url: string;
   fileType: string;
   size: number;
   category: 'Exame' | 'Documento Legal' | 'Foto Terapêutica' | 'Outro';
   description: string;
-  uploadedAt: any; // Firestore serverTimestamp
+  uploadedAt: any;
 };
 
 export type FamilyMember = {
@@ -79,12 +120,25 @@ export type FamilyMember = {
   createdAt?: any;
 };
 
-export type Unit = {
+export type TherapyGroup = {
   id: string;
   name: string;
-  rooms: string[];
-  createdAt?: any;
+  serviceId: string;
+  unitId: string;
+  patientIds: string[];
+  professionalIds: string[];
 };
+
+export type TimeBlock = {
+    id: string;
+    title: string;
+    unitId?: string; // Block entire unit
+    userIds?: string[]; // Block specific users
+    date: string; // YYYY-MM-DD
+    startTime: string; // HH:mm
+    endTime: string; // HH:mm
+};
+
 
 export type Notification = {
   id: string;

@@ -1,19 +1,25 @@
+
 'use client';
 
 import * as React from 'react';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useActionState, useFormStatus } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, CircleAlert } from 'lucide-react';
+import { Loader2, CircleAlert, ChevronsUpDown, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { updatePatientDetailsAction } from '@/lib/actions';
 import type { Patient } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
+import { useUnit } from '@/contexts/UnitContext';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
 
 interface EditPatientDialogProps {
   isOpen: boolean;
@@ -42,6 +48,16 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
   const [state, formAction] = useActionState(updatePatientDetailsAction, initialState);
   const { toast } = useToast();
   const formRef = React.useRef<HTMLFormElement>(null);
+  const { units, loading: unitsLoading } = useUnit();
+
+  const [selectedUnitIds, setSelectedUnitIds] = React.useState<string[]>([]);
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (patient) {
+        setSelectedUnitIds(patient.unitIds || []);
+    }
+  }, [patient]);
 
   React.useEffect(() => {
     if (state.success) {
@@ -58,6 +74,9 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
   }
 
   if (!patient) return null;
+  
+  const displayableUnits = units.filter(u => u.id !== 'central');
+  const selectedUnits = displayableUnits.filter(unit => selectedUnitIds.includes(unit.id));
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -137,6 +156,46 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
                     <Input id="addressZip" name="addressZip" placeholder="00000-000" defaultValue={patient.address?.zip || ''} />
                 </div>
             </fieldset>
+
+            <div className="space-y-2">
+               <Label htmlFor="units">Unidades Vinculadas</Label>
+                {selectedUnitIds.map(id => <input key={id} type="hidden" name="unitIds" value={id} />)}
+                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" className="w-full justify-between h-auto min-h-10" disabled={unitsLoading}>
+                    <div className="flex gap-1 flex-wrap">
+                        {selectedUnits.length > 0 ? selectedUnits.map(unit => (
+                        <Badge variant="secondary" key={unit.id} className="mr-1">{unit.name}</Badge>
+                        )) : "Selecione as unidades..."}
+                    </div>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                    <CommandInput placeholder="Buscar unidade..." />
+                    <CommandList>
+                        <CommandEmpty>Nenhuma unidade encontrada.</CommandEmpty>
+                        <CommandGroup>
+                        {displayableUnits.map((unit) => (
+                            <CommandItem key={unit.id} value={unit.name} onSelect={() => {
+                                setSelectedUnitIds(
+                                    selectedUnitIds.includes(unit.id)
+                                    ? selectedUnitIds.filter((id) => id !== unit.id)
+                                    : [...selectedUnitIds, unit.id]
+                                );
+                                setIsPopoverOpen(true);
+                            }}>
+                            <Check className={cn('mr-2 h-4 w-4', selectedUnitIds.includes(unit.id) ? 'opacity-100' : 'opacity-0')} />
+                            {unit.name}
+                            </CommandItem>
+                        ))}
+                        </CommandGroup>
+                    </CommandList>
+                    </Command>
+                </PopoverContent>
+                </Popover>
+            </div>
             
             <div className="flex items-center space-x-2 pt-2">
                 <Checkbox id="imageUseConsent" name="imageUseConsent" defaultChecked={patient.imageUseConsent} />

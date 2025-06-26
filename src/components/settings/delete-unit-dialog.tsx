@@ -1,66 +1,151 @@
-'use client';
+export type Address = {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+};
 
-import * as React from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import type { Unit } from '@/lib/types';
-import { deleteUnitAction } from '@/lib/actions';
-import { Loader2 } from 'lucide-react';
-import { useUnit } from '@/contexts/UnitContext';
+export type InstitutionalDocument = {
+  name: string;
+  url: string;
+};
 
-interface DeleteUnitDialogProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  unit: Unit | null;
-}
+export type Service = {
+  id: string;
+  name: string;
+  description: string;
+  capacity: number; // 1 para individual, >1 para grupo, 0 para ilimitado
+  unitId: string;
+  professionalIds: string[];
+};
 
-export function DeleteUnitDialog({ isOpen, onOpenChange, unit }: DeleteUnitDialogProps) {
-  const [isDeleting, setIsDeleting] = React.useState(false);
-  const { toast } = useToast();
-  const { fetchUnits } = useUnit();
+export type Unit = {
+  id: string;
+  name: string;
+  cnpj?: string;
+  address?: Address | null;
+  phone?: string;
+  email?: string;
+  responsibleTech?: string;
+  photoUrl?: string;
+  institutionalDocuments?: InstitutionalDocument[];
+  services?: Service[]; // Populado no frontend
+  createdAt?: any;
+};
 
-  const handleDelete = async () => {
-    if (!unit) return;
-    setIsDeleting(true);
-    const result = await deleteUnitAction(unit.id);
-    setIsDeleting(false);
-    if (result.success) {
-      toast({ title: 'Sucesso!', description: result.message });
-      await fetchUnits();
-      onOpenChange(false);
-    } else {
-      toast({ variant: 'destructive', title: 'Erro', description: result.message });
-    }
-  };
+export type Patient = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  lastVisit?: string | null;
+  status: 'Active' | 'Inactive';
+  avatarUrl: string;
+  dob?: string | null;
+  gender?: 'Male' | 'Female' | 'Other' | null;
+  unitIds: string[];
+  createdAt?: any;
 
-  if (!unit) return null;
+  diagnosis?: string | null;
+  referringProfessional?: string | null;
+  imageUseConsent?: boolean;
+  address?: Address | null;
+};
 
-  return (
-    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja excluir a unidade <span className="font-semibold">{unit.name}</span>? Esta ação é permanente e removerá a unidade do sistema e dos perfis de todos os usuários vinculados.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isDeleting}>
-            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sim, excluir
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
+export type Availability = {
+  type: 'Free' | 'Planning' | 'Supervision';
+  dayOfWeek: number; // 0 (Sun) to 6 (Sat)
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+};
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Admin' | 'Therapist' | 'Receptionist' | 'Coordinator';
+  status: 'Active' | 'Inactive';
+  avatarUrl: string;
+  unitIds: string[];
+  availability?: Availability[];
+  createdAt?: any;
+};
+
+export type Appointment = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  professionalName: string;
+  serviceId: string;
+  serviceName: string;
+  time: string;
+  endTime: string;
+  date: string; // ISO String 'YYYY-MM-DD'
+  room: string;
+  unitId: string;
+  status: 'Agendado' | 'Realizado' | 'Faltou' | 'Cancelado';
+  color: string;
+  groupId?: string | null;
+  attendees?: string[]; // Array of patientIds for group sessions
+  createdAt?: any;
+};
+
+export type EvolutionRecord = {
+  id: string;
+  date: string;
+  title: string;
+  details: string;
+  author: string;
+  groupId?: string | null; // To link evolution to a group session
+  createdAt?: any;
+};
+
+export type PatientDocument = {
+  id:string;
+  fileName: string;
+  url: string;
+  fileType: string;
+  size: number;
+  category: 'Exame' | 'Documento Legal' | 'Foto Terapêutica' | 'Outro';
+  description: string;
+  uploadedAt: any;
+};
+
+export type FamilyMember = {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  observations: string;
+  createdAt?: any;
+};
+
+export type TherapyGroup = {
+  id: string;
+  name: string;
+  serviceId: string;
+  unitId: string;
+  patientIds: string[];
+  professionalIds: string[];
+};
+
+export type TimeBlock = {
+    id: string;
+    title: string;
+    unitId?: string; // Block entire unit
+    userIds?: string[]; // Block specific users
+    date: string; // YYYY-MM-DD
+    startTime: string; // HH:mm
+    endTime: string; // HH:mm
+};
+
+
+export type Notification = {
+  id: string;
+  title: string;
+  content: string;
+  createdAt?: any;
+  targetType?: 'ALL' | 'ROLE' | 'UNIT' | 'SPECIFIC';
+  targetValue?: string | string[];
+  seenBy?: string[];
+};

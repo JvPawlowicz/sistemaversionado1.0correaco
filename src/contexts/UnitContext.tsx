@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import type { Unit } from '@/lib/types';
+import type { Unit, Service } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, arrayUnion, serverTimestamp, query } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, serverTimestamp, query, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthContext';
 
@@ -13,8 +14,10 @@ interface UnitContextType {
   error: string | null;
   selectedUnitId: string | null;
   setSelectedUnitId: (id: string | null) => void;
-  addUnit: (unitName: string) => Promise<void>;
-  addRoomToUnit: (unitId: string, roomName: string) => Promise<void>;
+  addUnit: (unitData: Omit<Unit, 'id' | 'createdAt' | 'services'>) => Promise<void>;
+  deleteUnit: (unitId: string) => Promise<void>;
+  addServiceToUnit: (unitId: string, serviceData: Omit<Service, 'id' | 'unitId'>) => Promise<void>;
+  deleteService: (unitId: string, serviceId: string) => Promise<void>;
   fetchUnits: () => Promise<void>;
 }
 
@@ -34,7 +37,6 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   const centralUnit: Unit = {
     id: CENTRAL_UNIT_ID,
     name: 'Central (Todas as Unidades)',
-    rooms: [],
   };
 
   const fetchUnits = useCallback(async () => {
@@ -46,12 +48,25 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       const unitsCollection = collection(db, 'units');
-      const q = query(unitsCollection);
-      const unitSnapshot = await getDocs(q);
-      const unitList = unitSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Unit));
+      const unitSnapshot = await getDocs(query(unitsCollection));
+      
+      const unitListPromises = unitSnapshot.docs.map(async (unitDoc) => {
+        const unitData = unitDoc.data() as Omit<Unit, 'id' | 'services'>;
+        const servicesCollection = collection(db, 'units', unitDoc.id, 'services');
+        const servicesSnapshot = await getDocs(query(servicesCollection));
+        const services = servicesSnapshot.docs.map(serviceDoc => ({
+          id: serviceDoc.id,
+          ...serviceDoc.data()
+        } as Service));
+        
+        return {
+          id: unitDoc.id,
+          ...unitData,
+          services,
+        } as Unit;
+      });
+
+      const unitList = await Promise.all(unitListPromises);
 
       unitList.sort((a, b) => {
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
@@ -63,14 +78,9 @@ export function UnitProvider({ children }: { children: ReactNode }) {
 
     } catch (err: any) {
       console.error("Error fetching units: ", err);
-      const userFriendlyError = "Falha ao buscar unidades. Verifique se a coleção 'units' existe e se as regras de segurança estão corretas.";
-      setError(userFriendlyError);
+      setError("Falha ao buscar unidades.");
       setAllUnits([]);
-      toast({
-        variant: "destructive",
-        title: "Erro ao buscar unidades",
-        description: "Não foi possível carregar a lista de unidades.",
-      });
+      toast({ variant: "destructive", title: "Erro ao buscar unidades" });
     } finally {
       setLoading(false);
     }
@@ -114,15 +124,15 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     } else if (!availableUnits.some(u => u.id === selectedUnitId)) {
       handleSetSelectedUnitId(availableUnits.length > 0 ? availableUnits[0].id : null);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, allUnits, authLoading]);
 
 
-  const addUnit = async (unitName: string) => {
+  const addUnit = async (unitData: Omit<Unit, 'id' | 'createdAt' | 'services'>) => {
     if (!db) return;
     try {
       await addDoc(collection(db, 'units'), {
-        name: unitName,
-        rooms: [],
+        ...unitData,
         createdAt: serverTimestamp()
       });
       toast({ title: "Sucesso", description: "Unidade criada." });
@@ -132,24 +142,48 @@ export function UnitProvider({ children }: { children: ReactNode }) {
       toast({ variant: "destructive", title: "Erro", description: "Não foi possível criar a unidade." });
     }
   };
-
-  const addRoomToUnit = async (unitId: string, roomName: string) => {
+  
+  const deleteUnit = async (unitId: string) => {
     if (!db) return;
     try {
-      const unitRef = doc(db, 'units', unitId);
-      await updateDoc(unitRef, {
-        rooms: arrayUnion(roomName)
-      });
-      toast({ title: "Sucesso", description: "Sala adicionada." });
+        // This is a simplified deletion. In a real app, you'd handle deleting subcollections and associated data.
+        await deleteDoc(doc(db, 'units', unitId));
+        toast({ title: "Sucesso", description: "Unidade excluída." });
+        await fetchUnits();
+    } catch(error) {
+        console.error("Error deleting unit: ", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a unidade." });
+    }
+  }
+
+  const addServiceToUnit = async (unitId: string, serviceData: Omit<Service, 'id' | 'unitId'>) => {
+    if (!db) return;
+    try {
+      const servicesCollection = collection(db, 'units', unitId, 'services');
+      await addDoc(servicesCollection, serviceData);
+      toast({ title: "Sucesso", description: "Serviço adicionado." });
       await fetchUnits();
     } catch (error) {
-      console.error("Error adding room: ", error);
-      toast({ variant: "destructive", title: "Erro", description: "Não foi possível adicionar a sala." });
+      console.error("Error adding service: ", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível adicionar o serviço." });
     }
   };
+  
+  const deleteService = async (unitId: string, serviceId: string) => {
+    if (!db) return;
+    try {
+        const serviceRef = doc(db, 'units', unitId, 'services', serviceId);
+        await deleteDoc(serviceRef);
+        toast({ title: 'Sucesso', description: 'Serviço removido.'});
+        await fetchUnits();
+    } catch (error) {
+         console.error("Error deleting service: ", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível remover o serviço." });
+    }
+  }
 
   return (
-    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, addRoomToUnit, selectedUnitId, setSelectedUnitId: handleSetSelectedUnitId, fetchUnits }}>
+    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, deleteUnit, addServiceToUnit, deleteService, selectedUnitId, setSelectedUnitId: handleSetSelectedUnitId, fetchUnits }}>
       {children}
     </UnitContext.Provider>
   );

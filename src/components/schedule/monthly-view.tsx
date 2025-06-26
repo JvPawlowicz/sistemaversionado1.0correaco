@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -42,7 +43,7 @@ export function MonthlyView({ appointments, date, setDate }: { appointments: App
                                         <p className="font-semibold text-sm">{appointment.patientName}</p>
                                         <p className="text-sm text-muted-foreground">{appointment.time} - Sala {appointment.room}</p>
                                     </div>
-                                    <Badge variant={appointment.discipline === 'Physiotherapy' ? 'default' : 'secondary'}>{appointment.discipline}</Badge>
+                                    <Badge variant={'outline'}>{appointment.serviceName}</Badge>
                                 </div>
                             ))
                         ) : (

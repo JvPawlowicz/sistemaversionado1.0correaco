@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -12,21 +13,30 @@ import {
   SidebarSeparator
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { LayoutDashboard, Users, HeartPulse, Settings, LogOut, Calendar, BarChart3, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, HeartPulse, LogOut, Calendar, BarChart3, Bell, Building, SlidersHorizontal, Users2, LineChart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
+  
+  const isAdmin = currentUser?.role === 'Admin';
+  const isCoordinator = currentUser?.role === 'Coordinator';
 
   const menuItems = [
-    { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
-    { href: '/schedule', label: 'Agenda', icon: Calendar },
-    { href: '/patients', label: 'Pacientes', icon: HeartPulse },
-    { href: '/reports', label: 'Relatórios', icon: BarChart3 },
-    { href: '/users', label: 'Usuários', icon: Users, adminOnly: true },
-    { href: '/notifications', label: 'Notificações', icon: Bell, adminOnly: true },
+    { href: '/dashboard', label: 'Painel', icon: LayoutDashboard, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
+    { href: '/schedule', label: 'Agenda', icon: Calendar, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
+    { href: '/patients', label: 'Pacientes', icon: HeartPulse, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
+    { href: '/groups', label: 'Grupos', icon: Users2, roles: ['Admin', 'Coordinator', 'Therapist'] },
+    { href: '/reports', label: 'Relatórios', icon: BarChart3, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
+    { href: '/analysis', label: 'Análise', icon: LineChart, roles: ['Admin', 'Coordinator'] },
+    { href: '/planning', label: 'Planejamento', icon: SlidersHorizontal, roles: ['Admin', 'Coordinator'] },
+    { href: '/units', label: 'Unidades', icon: Building, roles: ['Admin'] },
+    { href: '/users', label: 'Usuários', icon: Users, roles: ['Admin'] },
+    { href: '/notifications', label: 'Notificações', icon: Bell, roles: ['Admin'] },
   ];
+  
+  const userHasAccess = (roles: string[]) => currentUser && roles.includes(currentUser.role);
 
   return (
     <Sidebar>
@@ -38,7 +48,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarMenu className="flex-1">
         {menuItems.map((item) => (
-          (!item.adminOnly || currentUser?.role === 'Admin') && (
+          userHasAccess(item.roles) && (
             <SidebarMenuItem key={item.href}>
                <Link href={item.href} passHref>
                   <SidebarMenuButton
@@ -56,14 +66,6 @@ export function AppSidebar() {
       <SidebarSeparator />
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <Link href="/settings" passHref>
-              <SidebarMenuButton isActive={pathname.startsWith('/settings')} tooltip="Configurações">
-                <Settings />
-                <span>Configurações</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip="Sair" onClick={logout} className="cursor-pointer">
                 <LogOut />

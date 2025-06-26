@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -8,7 +9,6 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Appointment } from '@/lib/types';
 import { startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 
@@ -27,13 +27,13 @@ export function AppointmentsChart({ appointments }: AppointmentsChartProps) {
     );
 
     const counts = monthlyAppointments.reduce((acc, app) => {
-        const discipline = app.discipline || 'Não especificada';
-        acc[discipline] = (acc[discipline] || 0) + 1;
+        const serviceName = app.serviceName || 'Não especificado';
+        acc[serviceName] = (acc[serviceName] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
 
-    return Object.entries(counts).map(([discipline, count]) => ({
-      discipline,
+    return Object.entries(counts).map(([serviceName, count]) => ({
+      serviceName,
       count,
     }));
   }, [appointments]);
@@ -43,8 +43,8 @@ export function AppointmentsChart({ appointments }: AppointmentsChartProps) {
       label: 'Atendimentos',
       color: 'hsl(var(--primary))',
     },
-    discipline: {
-      label: 'Disciplina',
+    serviceName: {
+      label: 'Serviço',
     },
   } satisfies ChartConfig;
 
@@ -61,7 +61,7 @@ export function AppointmentsChart({ appointments }: AppointmentsChartProps) {
       <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
         <CartesianGrid vertical={false} />
         <XAxis
-          dataKey="discipline"
+          dataKey="serviceName"
           tickLine={false}
           tickMargin={10}
           axisLine={false}
