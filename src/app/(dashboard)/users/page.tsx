@@ -13,7 +13,7 @@ import { NewUserDialog } from '@/components/users/new-user-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function UsersPage() {
-  const { users, loading: usersLoading, error, fetchUsers } = useUser();
+  const { users, loading: usersLoading, error } = useUser();
   const { currentUser, loading: authLoading } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const router = useRouter();
@@ -60,7 +60,7 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <NewUserDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} onUserAdded={fetchUsers} />
+      <NewUserDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
           Gestão de Usuários

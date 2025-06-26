@@ -45,6 +45,7 @@ export type EvolutionRecord = {
   title: string;
   details: string;
   author: string;
+  createdAt?: any; // For Firestore serverTimestamp
 };
 
 export type Report = {

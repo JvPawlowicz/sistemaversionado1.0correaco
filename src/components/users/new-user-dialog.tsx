@@ -27,7 +27,6 @@ import { createUserAction } from '@/lib/actions';
 interface NewUserDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onUserAdded: () => void;
 }
 
 const initialState = {
@@ -46,7 +45,7 @@ function SubmitButton() {
   );
 }
 
-export function NewUserDialog({ isOpen, onOpenChange, onUserAdded }: NewUserDialogProps) {
+export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
   const [state, formAction] = useFormState(createUserAction, initialState);
   const { toast } = useToast();
   const { units, loading: unitsLoading } = useUnit();
@@ -58,17 +57,15 @@ export function NewUserDialog({ isOpen, onOpenChange, onUserAdded }: NewUserDial
   React.useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
-      onUserAdded();
       onOpenChange(false);
     } else if (state.message && !state.errors) {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
-  }, [state, onOpenChange, toast, onUserAdded]);
+  }, [state, onOpenChange, toast]);
   
   const resetForm = () => {
       formRef.current?.reset();
       setSelectedUnitIds([]);
-      // Reset form state if needed, although remounting on close/open handles this
   };
 
   const selectedUnits = units.filter(unit => selectedUnitIds.includes(unit.id));

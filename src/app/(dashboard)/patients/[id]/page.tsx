@@ -4,22 +4,55 @@ import { useRouter } from 'next/navigation';
 import { PatientDetailView } from '@/components/patients/patient-detail-view';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import type { Patient, EvolutionRecord } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function PatientProfilePage({ params }: { params: { id: string } }) {
-  const { patients, loading } = usePatient();
+  const { patients, loading: patientsLoading } = usePatient();
   const router = useRouter();
+  const [records, setRecords] = useState<EvolutionRecord[]>([]);
+  const [recordsLoading, setRecordsLoading] = useState(true);
 
   const patient = patients.find((p) => p.id === params.id);
 
-  useEffect(() => {
-    if (!loading && !patient) {
-      // After loading is complete, if patient is still not found, redirect.
-      router.push('/patients');
+  const fetchRecords = useCallback(async () => {
+    if (!patient || !db) return;
+    setRecordsLoading(true);
+    try {
+      const recordsCollectionRef = collection(db, 'patients', patient.id, 'evolutionRecords');
+      const q = query(recordsCollectionRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const fetchedRecords = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          const date = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.date);
+          return {
+              id: doc.id,
+              ...data,
+              date: format(date, 'PPP p', { locale: ptBR }),
+          } as EvolutionRecord;
+      });
+      setRecords(fetchedRecords);
+    } catch (error) {
+        console.error("Error fetching evolution records: ", error);
+    } finally {
+        setRecordsLoading(false);
     }
-  }, [loading, patient, router]);
+  }, [patient]);
 
-  if (loading || !patient) {
+
+  useEffect(() => {
+    if (!patientsLoading && !patient) {
+      router.push('/patients');
+    } else if (patient) {
+      fetchRecords();
+    }
+  }, [patientsLoading, patient, router, fetchRecords]);
+
+  if (patientsLoading || !patient) {
     return (
        <div className="space-y-6">
         <Skeleton className="h-48 w-full" />
@@ -30,6 +63,6 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   }
 
   return (
-    <PatientDetailView patient={patient} />
+    <PatientDetailView patient={patient} records={records} recordsLoading={recordsLoading} />
   );
 }

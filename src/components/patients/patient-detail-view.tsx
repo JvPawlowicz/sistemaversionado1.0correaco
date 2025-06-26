@@ -8,22 +8,40 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, Loader2 } from 'lucide-react';
 import type { Patient, EvolutionRecord, Report } from '@/lib/types';
 import Link from 'next/link';
+import { Skeleton } from '../ui/skeleton';
+import { Badge } from '../ui/badge';
 
-// NOTE: In a real app, records and reports would be fetched based on patient.id
-const records: EvolutionRecord[] = [];
+// Reports are not implemented yet, so we keep this empty.
 const reports: Report[] = [];
 
-export function PatientDetailView({ patient }: { patient: Patient }) {
+export function PatientDetailView({ 
+  patient, 
+  records, 
+  recordsLoading 
+}: { 
+  patient: Patient;
+  records: EvolutionRecord[];
+  recordsLoading: boolean;
+}) {
+
+  const getInitials = (name: string) => {
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+  
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-col items-start gap-4 sm:flex-row">
           <Avatar className="h-24 w-24">
             <AvatarImage src={patient.avatarUrl} alt={patient.name} />
-            <AvatarFallback className="text-3xl">{patient.name.charAt(0)}</AvatarFallback>
+            <AvatarFallback className="text-3xl">{getInitials(patient.name)}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <CardTitle className="text-3xl">{patient.name}</CardTitle>
@@ -37,6 +55,9 @@ export function PatientDetailView({ patient }: { patient: Patient }) {
               <span>Email: {patient.email}</span>
             </div>
           </div>
+           <Badge variant={patient.status === 'Active' ? 'default' : 'secondary'}>
+            {patient.status === 'Active' ? 'Ativo' : 'Inativo'}
+          </Badge>
         </CardHeader>
       </Card>
 
@@ -53,20 +74,26 @@ export function PatientDetailView({ patient }: { patient: Patient }) {
               <CardDescription>Registro cronológico do progresso e sessões do paciente.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Registro
+              <Button asChild>
+                <Link href="/ai-notes">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Registro com IA
+                </Link>
               </Button>
               <div className="space-y-4">
-                {records.length > 0 ? (
+                {recordsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : records.length > 0 ? (
                   records.map(record => (
-                    <div key={record.id} className="rounded-lg border bg-secondary p-4">
+                    <div key={record.id} className="rounded-lg border bg-card p-4 shadow-sm">
                       <div className="flex items-center justify-between">
                           <h3 className="font-semibold">{record.title}</h3>
                           <span className="text-sm text-muted-foreground">{record.date}</span>
                       </div>
-                      <p className="mt-2 text-sm">{record.details}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">Por: {record.author}</p>
+                      <p className="mt-2 text-sm whitespace-pre-wrap">{record.details}</p>
+                      <p className="mt-4 text-xs text-muted-foreground text-right">Por: {record.author}</p>
                     </div>
                   ))
                 ) : (
@@ -108,7 +135,7 @@ export function PatientDetailView({ patient }: { patient: Patient }) {
                   </ul>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p>Nenhum relatório encontrado.</p>
+                    <p>Nenhum relatório encontrado. (Funcionalidade em desenvolvimento)</p>
                   </div>
                 )}
             </CardContent>
@@ -120,8 +147,37 @@ export function PatientDetailView({ patient }: { patient: Patient }) {
               <CardTitle>Perfil Completo do Paciente</CardTitle>
               <CardDescription>Todas as informações detalhadas do paciente.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p>Informações detalhadas do perfil serão exibidas aqui.</p>
+            <CardContent className="space-y-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                  <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">Nome Completo</p>
+                      <p>{patient.name}</p>
+                  </div>
+                   <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">Data de Nascimento</p>
+                      <p>{patient.dob}</p>
+                  </div>
+                   <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">Gênero</p>
+                      <p>{patient.gender === 'Female' ? 'Feminino' : patient.gender === 'Male' ? 'Masculino' : 'Outro'}</p>
+                  </div>
+                   <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">Status</p>
+                      <p>{patient.status === 'Active' ? 'Ativo' : 'Inativo'}</p>
+                  </div>
+                   <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">E-mail</p>
+                      <p>{patient.email}</p>
+                  </div>
+                   <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">Telefone</p>
+                      <p>{patient.phone}</p>
+                  </div>
+                     <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground">Última visita</p>
+                      <p>{patient.lastVisit}</p>
+                  </div>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>
