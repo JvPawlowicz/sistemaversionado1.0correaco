@@ -62,6 +62,52 @@ export async function createUserAction(prevState: any, formData: FormData) {
   return { success: true, message: 'Usuário criado com sucesso!', errors: null };
 }
 
+// --- Update User Action ---
+
+const UpdateUserSchema = z.object({
+  uid: z.string().min(1, { message: 'ID do usuário é obrigatório.' }),
+  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
+  role: z.enum(['Admin', 'Therapist', 'Receptionist', 'Coordinator']),
+  unitIds: z.array(z.string()).min(1, { message: 'Selecione pelo menos uma unidade.' }),
+});
+
+export async function updateUserAction(prevState: any, formData: FormData) {
+  const validatedFields = UpdateUserSchema.safeParse({
+    uid: formData.get('uid'),
+    name: formData.get('name'),
+    role: formData.get('role'),
+    unitIds: formData.getAll('unitIds'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos. Verifique os campos em vermelho.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+  
+  const { uid, name, role, unitIds } = validatedFields.data;
+
+  try {
+    // Also update the display name in Firebase Auth
+    await auth.updateUser(uid, { displayName: name });
+    // Update the user document in Firestore
+    await db.collection('users').doc(uid).update({
+      name,
+      role,
+      unitIds,
+    });
+
+  } catch (error: any) {
+    console.error('Error updating user:', error);
+    return { success: false, message: 'Ocorreu um erro desconhecido ao atualizar o usuário.', errors: null };
+  }
+
+  revalidatePath('/users');
+  return { success: true, message: 'Usuário atualizado com sucesso!', errors: null };
+}
+
 
 // --- Update User Password Action ---
 

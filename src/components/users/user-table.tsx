@@ -17,6 +17,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import type { User } from '@/lib/types';
 import { ResetPasswordDialog } from './reset-password-dialog';
 import { DeleteUserDialog } from './delete-user-dialog';
+import { EditUserDialog } from './edit-user-dialog';
+import { useUnit } from '@/contexts/UnitContext';
 
 interface UserTableProps {
   users: User[];
@@ -33,7 +35,9 @@ const roleNames: Record<User['role'], string> = {
 export function UserTable({ users, onAddUser }: UserTableProps) {
   const [isResetPasswordOpen, setIsResetPasswordOpen] = React.useState(false);
   const [isDeleteUserOpen, setIsDeleteUserOpen] = React.useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const { units } = useUnit();
 
   const handleResetPasswordClick = (user: User) => {
     setSelectedUser(user);
@@ -43,6 +47,11 @@ export function UserTable({ users, onAddUser }: UserTableProps) {
   const handleDeleteClick = (user: User) => {
     setSelectedUser(user);
     setIsDeleteUserOpen(true);
+  };
+
+  const handleEditClick = (user: User) => {
+    setSelectedUser(user);
+    setIsEditDialogOpen(true);
   };
 
   if (users.length === 0) {
@@ -70,13 +79,19 @@ export function UserTable({ users, onAddUser }: UserTableProps) {
         onOpenChange={setIsDeleteUserOpen}
         user={selectedUser}
       />
+      <EditUserDialog
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        user={selectedUser}
+      />
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Usuário</TableHead>
               <TableHead>Função</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="hidden lg:table-cell">Unidades</TableHead>
+              <TableHead className="hidden md:table-cell">Status</TableHead>
               <TableHead>
                 <span className="sr-only">Ações</span>
               </TableHead>
@@ -98,7 +113,15 @@ export function UserTable({ users, onAddUser }: UserTableProps) {
                   </div>
                 </TableCell>
                 <TableCell>{roleNames[user.role] || user.role}</TableCell>
-                <TableCell>
+                <TableCell className="hidden lg:table-cell">
+                    <div className="flex flex-wrap gap-1">
+                        {(user.unitIds || []).map(unitId => {
+                            const unit = units.find(u => u.id === unitId);
+                            return unit ? <Badge key={unitId} variant="secondary">{unit.name}</Badge> : null;
+                        })}
+                    </div>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
                   <Badge variant={user.status === 'Active' ? 'secondary' : 'outline'}>
                     {user.status === 'Active' ? 'Ativo' : 'Inativo'}
                   </Badge>
@@ -113,6 +136,9 @@ export function UserTable({ users, onAddUser }: UserTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleEditClick(user)}>
+                            Editar
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleResetPasswordClick(user)}>
                             Resetar Senha
                           </DropdownMenuItem>
