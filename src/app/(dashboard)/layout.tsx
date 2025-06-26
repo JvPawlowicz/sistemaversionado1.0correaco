@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 import { UserProvider } from '@/contexts/UserContext';
 import { UnitProvider } from '@/contexts/UnitContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
+import { AuthorPopup } from '@/components/layout/author-popup';
 
 export default function DashboardLayout({
   children,
@@ -59,6 +60,7 @@ export default function DashboardLayout({
                       Desenvolvido por: JVGP- João Pawlowicz
                   </footer>
                 </SidebarInset>
+                <AuthorPopup />
               </SidebarProvider>
             </NotificationProvider>
           </ScheduleProvider>

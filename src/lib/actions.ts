@@ -108,39 +108,58 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
 
 // --- Create Notification Action ---
 
-const CreateNotificationSchema = z.object({
-  title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres.' }),
-  content: z.string().min(10, { message: 'O conteúdo deve ter pelo menos 10 caracteres.' }),
+const NotificationSchema = z.object({
+  title: z.string().min(3, 'O título deve ter pelo menos 3 caracteres.'),
+  content: z.string().min(10, 'O conteúdo deve ter pelo menos 10 caracteres.'),
+  targetType: z.enum(['ALL', 'ROLE', 'UNIT', 'SPECIFIC']),
+  targetRole: z.string().optional(),
+  targetUnitId: z.string().optional(),
+  targetUserIds: z.array(z.string()).optional(),
 });
 
 export async function createNotificationAction(prevState: any, formData: FormData) {
-  const validatedFields = CreateNotificationSchema.safeParse({
+  const validatedFields = NotificationSchema.safeParse({
     title: formData.get('title'),
     content: formData.get('content'),
+    targetType: formData.get('targetType'),
+    targetRole: formData.get('targetRole'),
+    targetUnitId: formData.get('targetUnitId'),
+    targetUserIds: formData.getAll('targetUserIds'),
   });
 
   if (!validatedFields.success) {
-    return {
-      success: false,
-      message: 'Dados inválidos.',
-      errors: validatedFields.error.flatten().fieldErrors,
-    };
+    return { success: false, message: 'Dados inválidos.', errors: validatedFields.error.flatten().fieldErrors };
   }
   
-  const { title, content } = validatedFields.data;
+  const { title, content, targetType, targetRole, targetUnitId, targetUserIds } = validatedFields.data;
+
+  const notificationData: any = {
+    title,
+    content,
+    targetType,
+    createdAt: FieldValue.serverTimestamp(),
+  };
+
+  switch (targetType) {
+    case 'ROLE':
+      if (!targetRole) return { success: false, message: 'A função do público-alvo é obrigatória.' };
+      notificationData.targetValue = targetRole;
+      break;
+    case 'UNIT':
+      if (!targetUnitId) return { success: false, message: 'A unidade do público-alvo é obrigatória.' };
+      notificationData.targetValue = targetUnitId;
+      break;
+    case 'SPECIFIC':
+      if (!targetUserIds || targetUserIds.length === 0) return { success: false, message: 'Pelo menos um usuário deve ser selecionado.' };
+      notificationData.targetValue = targetUserIds;
+      break;
+  }
 
   try {
-    await db.collection('notifications').add({
-      title,
-      content,
-      createdAt: FieldValue.serverTimestamp(),
-    });
+    await db.collection('notifications').add(notificationData);
+    return { success: true, message: 'Notificação criada com sucesso!', errors: null };
   } catch (error: any) {
     console.error('Error creating notification:', error);
     return { success: false, message: "Ocorreu um erro ao salvar a notificação.", errors: null };
   }
-
-  // Not revalidating any specific path, as notifications might appear globally.
-  // Client-side will be responsible for fetching and showing them.
-  return { success: true, message: 'Notificação criada com sucesso!', errors: null };
 }

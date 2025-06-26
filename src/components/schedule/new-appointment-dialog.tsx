@@ -129,7 +129,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   }
   
   const isLoading = usersLoading || unitsLoading || patientsLoading;
-  const isTherapist = currentUser?.role === 'Therapist';
+  const canEditProfessional = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator' || currentUser?.role === 'Receptionist';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -195,7 +195,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="professional" className="text-right">Profissional</Label>
-              <Select onValueChange={setProfessionalName} value={professionalName} required disabled={isLoading || isTherapist}>
+              <Select onValueChange={setProfessionalName} value={professionalName} required disabled={isLoading || !canEditProfessional}>
                  <SelectTrigger className="col-span-3">
                    <SelectValue placeholder="Selecione um profissional" />
                  </SelectTrigger>

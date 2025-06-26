@@ -67,4 +67,6 @@ export type Notification = {
   title: string;
   content: string;
   createdAt?: any;
+  targetType?: 'ALL' | 'ROLE' | 'UNIT' | 'SPECIFIC';
+  targetValue?: string | string[];
 };
