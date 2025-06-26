@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
 import { useUnit } from '@/contexts/UnitContext';
 import { cn } from '@/lib/utils';
+import { useNotification } from '@/contexts/NotificationContext';
 
 
 const initialState = {
@@ -52,6 +53,7 @@ export default function NotificationsPage() {
   const formRef = React.useRef<HTMLFormElement>(null);
   const { currentUser, loading } = useAuth();
   const router = useRouter();
+  const { fetchNotifications } = useNotification();
   
   const { users, loading: usersLoading } = useUser();
   const { units, loading: unitsLoading } = useUnit();
@@ -63,13 +65,14 @@ export default function NotificationsPage() {
   React.useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
+      fetchNotifications();
       formRef.current?.reset();
       setTargetType('ALL');
       setSelectedUserIds([]);
     } else if (state.message && !state.errors) {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
-  }, [state, toast]);
+  }, [state, toast, fetchNotifications]);
 
   if (loading) {
     return <div>Carregando...</div>;

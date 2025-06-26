@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { updateUserAction } from '@/lib/actions';
 import type { User } from '@/lib/types';
+import { useUser } from '@/contexts/UserContext';
 
 interface EditUserDialogProps {
   isOpen: boolean;
@@ -52,6 +53,7 @@ export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogPro
   const [state, formAction] = useActionState(updateUserAction, initialState);
   const { toast } = useToast();
   const { units, loading: unitsLoading } = useUnit();
+  const { fetchUsers } = useUser();
 
   const [selectedUnitIds, setSelectedUnitIds] = React.useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
@@ -66,11 +68,12 @@ export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogPro
   React.useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
+      fetchUsers(); // Refetch users to update the table
       onOpenChange(false);
     } else if (state.message && !state.errors) {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
-  }, [state, onOpenChange, toast]);
+  }, [state, onOpenChange, toast, fetchUsers]);
 
   const handleClose = () => {
     formRef.current?.reset();
