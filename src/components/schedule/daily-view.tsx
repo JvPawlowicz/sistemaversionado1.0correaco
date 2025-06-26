@@ -8,10 +8,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useSchedule } from '@/contexts/ScheduleContext';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Badge } from '../ui/badge';
+import { AppointmentActionsDialog } from './appointment-actions-dialog';
 
 const HOUR_HEIGHT = 60; // height of one hour in pixels
 
@@ -26,9 +25,8 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
   const hours = Array.from({ length: 13 }, (_, i) => i + 7); // 7 AM to 7 PM
   const days = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)); // Mon to Fri
 
-  const { deleteAppointment } = useSchedule();
   const { currentUser } = useAuth();
-  const [isAlertOpen, setIsAlertOpen] = React.useState(false);
+  const [isActionsDialogOpen, setIsActionsDialogOpen] = React.useState(false);
   const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
 
   const handleNextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
@@ -39,37 +37,18 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
     return appointments.filter(appointment => isSameDay(new Date(appointment.date + 'T00:00:00'), day));
   };
 
-  const handleDeleteClick = (appointment: Appointment) => {
+  const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
-    setIsAlertOpen(true);
+    setIsActionsDialogOpen(true);
   };
-
-  const handleConfirmDelete = async () => {
-    if (selectedAppointment) {
-      await deleteAppointment(selectedAppointment.id);
-    }
-    setIsAlertOpen(false);
-    setSelectedAppointment(null);
-  };
-
+  
   return (
     <>
-      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você tem certeza que deseja excluir o agendamento para <span className="font-bold">{selectedAppointment?.patientName}</span> às <span className="font-bold">{selectedAppointment?.time}</span>? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AppointmentActionsDialog
+        isOpen={isActionsDialogOpen}
+        onOpenChange={setIsActionsDialogOpen}
+        appointment={selectedAppointment}
+      />
 
       <Card>
         <CardHeader>
@@ -114,20 +93,25 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
                     const top = ((timeToMinutes(app.time) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
                     const height = ((timeToMinutes(app.endTime) - timeToMinutes(app.time)) / 60) * HOUR_HEIGHT - 2;
 
-                    const canDelete = currentUser && (
+                    const canInteract = currentUser && (
                         currentUser.role === 'Admin' ||
                         currentUser.role === 'Coordinator' ||
                         currentUser.role === 'Receptionist' ||
                         (currentUser.role === 'Therapist' && currentUser.name === app.professionalName)
                     );
                     
+                    const isPastAndPending = new Date() > new Date(`${app.date}T${app.endTime}`) && app.status === 'Agendado';
+
                     return (
                       <div
                         key={app.id}
-                        onClick={() => canDelete && handleDeleteClick(app)}
+                        onClick={() => canInteract && handleAppointmentClick(app)}
                         className={cn(
-                          "absolute w-full p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-opacity",
-                          canDelete ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed"
+                          "absolute w-full p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-all",
+                          canInteract ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed",
+                          (app.status === 'Faltou' || app.status === 'Cancelado') && "opacity-60",
+                          app.status === 'Cancelado' && "line-through",
+                           isPastAndPending && "ring-2 ring-offset-1 ring-yellow-400"
                         )}
                         style={{
                           top: `${top}px`,

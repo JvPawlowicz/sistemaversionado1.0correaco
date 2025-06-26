@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { Appointment } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { colors } from '@/lib/placeholder-data';
 import { useUnit } from './UnitContext';
@@ -15,6 +15,7 @@ interface ScheduleContextType {
   error: string | null;
   addAppointment: (data: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color' | 'status'>; repeat: boolean }) => Promise<void>;
   deleteAppointment: (appointmentId: string) => Promise<void>;
+  updateAppointmentStatus: (appointmentId: string, status: 'Realizado' | 'Faltou' | 'Cancelado') => Promise<void>;
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
@@ -154,9 +155,30 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateAppointmentStatus = async (appointmentId: string, status: 'Realizado' | 'Faltou' | 'Cancelado') => {
+    if (!db) {
+      toast({ variant: 'destructive', title: 'Erro de Configuração' });
+      return;
+    }
+    try {
+      const appointmentRef = doc(db, 'appointments', appointmentId);
+      await updateDoc(appointmentRef, { status: status });
+      toast({
+        title: 'Sucesso',
+        description: 'Status do agendamento foi atualizado.',
+      });
+      await fetchAppointments();
+    } catch (error) {
+      console.error('Error updating appointment status: ', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao atualizar status',
+      });
+    }
+  };
 
   return (
-    <ScheduleContext.Provider value={{ appointments, loading, error, addAppointment, deleteAppointment }}>
+    <ScheduleContext.Provider value={{ appointments, loading, error, addAppointment, deleteAppointment, updateAppointmentStatus }}>
       {children}
     </ScheduleContext.Provider>
   );
