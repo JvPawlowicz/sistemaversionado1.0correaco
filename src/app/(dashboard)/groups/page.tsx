@@ -18,7 +18,7 @@ export default function GroupsPage() {
         <CardHeader className="items-center text-center">
           <Users2 className="h-12 w-12 text-primary" />
           <CardTitle className="text-2xl">Módulo em Construção</CardTitle>
-        </Header>
+        </CardHeader>
         <CardContent className="text-center">
             <p className="text-muted-foreground">
                 Esta seção permitirá criar grupos de terapia, vincular pacientes e profissionais,
