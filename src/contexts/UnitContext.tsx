@@ -80,14 +80,22 @@ export function UnitProvider({ children }: { children: ReactNode }) {
       
       setUnits(availableUnits);
       
-      if (!availableUnits.some(u => u.id === selectedUnitId)) {
-        setSelectedUnitId(availableUnits.length > 0 ? availableUnits[0].id : null);
-      }
+      // Use the functional form of setState to avoid dependency issues.
+      // This ensures that when the available units change, we validate the
+      // current selection without overriding a valid user selection.
+      setSelectedUnitId(currentSelectedId => {
+        if (availableUnits.some(u => u.id === currentSelectedId)) {
+          return currentSelectedId; // The current selection is still valid
+        }
+        // The current selection is invalid or null, so reset to the first available unit
+        return availableUnits.length > 0 ? availableUnits[0].id : null;
+      });
+
     } else {
       setUnits([]);
       setSelectedUnitId(null);
     }
-  }, [currentUser, allUnits, authLoading, selectedUnitId]);
+  }, [currentUser, allUnits, authLoading]);
 
 
   const addUnit = async (unitName: string) => {
