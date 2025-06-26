@@ -38,7 +38,8 @@ export function ReportsView() {
   const rooms = units.find(u => u.id === selectedUnitId)?.rooms || [];
 
   const handleFilterChange = (key: keyof typeof filters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    // When "all" is selected, we clear the filter by setting it to an empty string.
+    setFilters(prev => ({ ...prev, [key]: value === 'all' ? '' : value }));
   };
 
   const applyFilters = React.useCallback(() => {
@@ -125,7 +126,7 @@ export function ReportsView() {
             <Select onValueChange={value => handleFilterChange('patientId', value)} value={filters.patientId} disabled={isLoading}>
               <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -135,7 +136,7 @@ export function ReportsView() {
             <Select onValueChange={value => handleFilterChange('professionalName', value)} value={filters.professionalName} disabled={isLoading}>
               <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {professionals.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -145,7 +146,7 @@ export function ReportsView() {
             <Select onValueChange={value => handleFilterChange('room', value)} value={filters.room} disabled={isLoading || rooms.length === 0}>
               <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                  {rooms.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -155,7 +156,7 @@ export function ReportsView() {
             <Select onValueChange={value => handleFilterChange('status', value)} value={filters.status}>
               <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="Agendado">Agendado</SelectItem>
                 <SelectItem value="Realizado">Realizado</SelectItem>
                 <SelectItem value="Faltou">Faltou</SelectItem>
