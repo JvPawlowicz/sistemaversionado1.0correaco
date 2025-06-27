@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -48,7 +47,7 @@ export function UnitDetailView({
 }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
     const { currentUser } = useAuth();
-    const canManageRooms = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
+    const isAdmin = currentUser?.role === 'Admin';
     
     return (
         <div className="space-y-6">
@@ -90,73 +89,81 @@ export function UnitDetailView({
                             <span>Telefone: {unit.phone || 'Não informado'}</span>
                          </div>
                     </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => setIsDeleteDialogOpen(true)}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Excluir Unidade
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {isAdmin && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => setIsDeleteDialogOpen(true)}>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Excluir Unidade
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                 </CardHeader>
             </Card>
 
-            <Tabs defaultValue="services">
-                <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="services">Serviços</TabsTrigger>
-                    <TabsTrigger value="rooms">Salas</TabsTrigger>
-                    <TabsTrigger value="details">Dados Cadastrais</TabsTrigger>
-                    <TabsTrigger value="documents">Documentos</TabsTrigger>
-                </TabsList>
-                <TabsContent value="services">
-                    <Card>
-                    <CardHeader>
-                        <CardTitle>Serviços Oferecidos</CardTitle>
-                        <CardDescription>Gerencie os serviços prestados nesta unidade e os profissionais vinculados a cada um.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                       <ServiceManager unit={unit} onServiceChange={onServiceChange} />
-                    </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="rooms">
-                    <Card>
+            {isAdmin ? (
+                <Tabs defaultValue="services">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="services">Serviços</TabsTrigger>
+                        <TabsTrigger value="rooms">Salas</TabsTrigger>
+                        <TabsTrigger value="details">Dados Cadastrais</TabsTrigger>
+                        <TabsTrigger value="documents">Documentos</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="services">
+                        <Card>
                         <CardHeader>
-                            <CardTitle>Gestão de Salas</CardTitle>
-                            <CardDescription>Cadastre e gerencie as salas de atendimento disponíveis nesta unidade.</CardDescription>
+                            <CardTitle>Serviços Oferecidos</CardTitle>
+                            <CardDescription>Gerencie os serviços prestados nesta unidade e os profissionais vinculados a cada um.</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            {canManageRooms ? (
+                        <CardContent className="space-y-4">
+                           <ServiceManager unit={unit} onServiceChange={onServiceChange} />
+                        </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="rooms">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Gestão de Salas</CardTitle>
+                                <CardDescription>Cadastre e gerencie as salas de atendimento disponíveis nesta unidade.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
                                 <RoomManager unit={unit} />
-                            ) : (
-                                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-                                    <p>Você não tem permissão para gerenciar as salas.</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="details">
-                     <UnitForm unit={unit} onUnitUpdated={onUnitUpdated} />
-                </TabsContent>
-                 <TabsContent value="documents">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Documentos Institucionais</CardTitle>
-                            <CardDescription>Gerencie alvarás, CNES e outros documentos da unidade.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted-foreground/30 p-8 text-center">
-                            <Upload className="h-10 w-10 text-muted-foreground" />
-                            <p className="text-muted-foreground">Funcionalidade de upload em breve.</p>
-                        </CardContent>
-                    </Card>
-                 </TabsContent>
-            </Tabs>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="details">
+                         <UnitForm unit={unit} onUnitUpdated={onUnitUpdated} />
+                    </TabsContent>
+                     <TabsContent value="documents">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Documentos Institucionais</CardTitle>
+                                <CardDescription>Gerencie alvarás, CNES e outros documentos da unidade.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted-foreground/30 p-8 text-center">
+                                <Upload className="h-10 w-10 text-muted-foreground" />
+                                <p className="text-muted-foreground">Funcionalidade de upload em breve.</p>
+                            </CardContent>
+                        </Card>
+                     </TabsContent>
+                </Tabs>
+            ) : (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Gestão de Salas</CardTitle>
+                        <CardDescription>Cadastre e gerencie as salas de atendimento disponíveis nesta unidade.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <RoomManager unit={unit} />
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }
