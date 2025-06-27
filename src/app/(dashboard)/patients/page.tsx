@@ -10,13 +10,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { NewTherapyGroupDialog } from '@/components/groups/new-therapy-group-dialog';
 
 export default function PatientsPage() {
   const { patients, loading, error } = usePatient();
   const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [isGroupDialogOpen, setIsGroupDialogOpen] = React.useState(false);
 
   const filteredPatients = patients.filter(patient => 
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -27,7 +25,6 @@ export default function PatientsPage() {
   
   return (
     <div className="space-y-6">
-      <NewTherapyGroupDialog isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} />
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
           Gestão de Pacientes
@@ -44,9 +41,11 @@ export default function PatientsPage() {
                 />
             </div>
             {canManageGroups && (
-                <Button variant="outline" onClick={() => setIsGroupDialogOpen(true)}>
+                <Button asChild variant="outline">
+                  <Link href="/groups">
                     <Users2 className="mr-2 h-4 w-4" />
-                    Novo Grupo
+                    Gerenciar Grupos
+                  </Link>
                 </Button>
             )}
             <Button asChild>
