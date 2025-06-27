@@ -1,8 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import {
   Dialog,
   DialogContent,
@@ -48,7 +47,7 @@ function SubmitButton() {
 }
 
 export function NewUserDialog({ isOpen, onOpenChange }: NewUserDialogProps) {
-  const [state, formAction] = useActionState(createUserAction, initialState);
+  const [state, formAction] = useFormState(createUserAction, initialState);
   const { toast } = useToast();
   const { units, loading: unitsLoading } = useUnit();
   const { fetchUsers } = useUser();

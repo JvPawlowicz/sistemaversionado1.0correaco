@@ -1,8 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import {
   Card,
   CardContent,
@@ -50,7 +49,7 @@ function SubmitButton() {
 }
 
 export default function NotificationsPage() {
-  const [state, formAction] = useActionState(createNotificationAction, initialState);
+  const [state, formAction] = useFormState(createNotificationAction, initialState);
   const { toast } = useToast();
   const formRef = React.useRef<HTMLFormElement>(null);
   const { currentUser, loading: authLoading } = useAuth();

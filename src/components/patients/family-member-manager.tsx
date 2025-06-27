@@ -20,8 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { addFamilyMemberAction, deleteFamilyMemberAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -48,7 +47,7 @@ export function FamilyMemberManager({ patientId, familyMembers, isLoading, onFam
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
   const { toast } = useToast();
 
-  const [addState, formAction] = useActionState(addFamilyMemberAction.bind(null, patientId), addInitialState);
+  const [addState, formAction] = useFormState(addFamilyMemberAction.bind(null, patientId), addInitialState);
   const formRef = React.useRef<HTMLFormElement>(null);
 
   React.useEffect(() => {
