@@ -44,12 +44,20 @@ export default function ChatPage() {
     const threadsRef = collection(db, 'chatThreads');
     const q = query(
       threadsRef,
-      where('participantIds', 'array-contains', currentUser.id),
-      orderBy('lastUpdatedAt', 'desc')
+      where('participantIds', 'array-contains', currentUser.id)
+      // orderBy('lastUpdatedAt', 'desc') // This requires a composite index. We'll sort on the client.
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedThreads = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatThread));
+      
+      // Sort threads by the most recent message on the client
+      fetchedThreads.sort((a, b) => {
+          const timeA = a.lastUpdatedAt?.toDate ? a.lastUpdatedAt.toDate().getTime() : 0;
+          const timeB = b.lastUpdatedAt?.toDate ? b.lastUpdatedAt.toDate().getTime() : 0;
+          return timeB - timeA;
+      });
+      
       setThreads(fetchedThreads);
       setLoadingThreads(false);
     });
