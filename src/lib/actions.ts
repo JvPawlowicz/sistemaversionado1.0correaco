@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { auth, db, storageAdmin } from '@/lib/firebase-admin';
 import { FieldValue, WriteResult } from 'firebase-admin/firestore';
-import type { Unit, Service } from './types';
+import type { Unit, Service, Availability } from './types';
 import { revalidatePath } from 'next/cache';
 
 // --- Helper for checking Firebase Admin initialization ---
@@ -64,6 +64,7 @@ export async function createUserAction(prevState: any, formData: FormData) {
       status: 'Active',
       avatarUrl: `https://i.pravatar.cc/150?u=${userRecord.uid}`,
       createdAt: FieldValue.serverTimestamp(),
+      availability: [],
     });
     revalidatePath('/users');
   } catch (error: any) {
@@ -663,7 +664,7 @@ export async function createTimeBlockAction(prevState: any, formData: FormData) 
   }
   
   try {
-    const dataToSave = {
+    const dataToSave: any = {
       ...validatedFields.data,
       createdAt: FieldValue.serverTimestamp(),
     };
@@ -679,5 +680,30 @@ export async function createTimeBlockAction(prevState: any, formData: FormData) 
   } catch (error: any) {
     console.error('Error creating time block:', error);
     return { success: false, message: "Ocorreu um erro ao salvar o bloqueio.", errors: null };
+  }
+}
+
+const AvailabilitySchema = z.object({
+  type: z.enum(['Free', 'Planning', 'Supervision']),
+  dayOfWeek: z.coerce.number().min(0).max(6),
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+}).refine(data => data.endTime > data.startTime, {
+  message: "O horário final deve ser após o horário inicial.",
+  path: ["endTime"],
+});
+
+export async function updateUserAvailabilityAction(userId: string, availability: z.infer<typeof AvailabilitySchema>[]): Promise<{ success: boolean, message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  try {
+    await db.collection('users').doc(userId).update({ availability });
+    revalidatePath('/planning');
+    revalidatePath('/schedule');
+    return { success: true, message: 'Disponibilidade atualizada com sucesso!' };
+  } catch (error) {
+    console.error("Error updating availability:", error);
+    return { success: false, message: 'Ocorreu um erro ao salvar a disponibilidade.' };
   }
 }

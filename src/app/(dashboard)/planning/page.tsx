@@ -1,7 +1,8 @@
+
 'use client';
 
 import * as React from 'react';
-import { useActionState } from 'react';
+import { useActionState } from 'react-dom';
 import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,6 +23,9 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { ManageAvailabilityDialog } from '@/components/planning/manage-availability-dialog';
+import type { User } from '@/lib/types';
+
 
 const initialState = {
   success: false,
@@ -41,7 +45,7 @@ function SubmitButton() {
 }
 
 export default function PlanningPage() {
-  const { users, loading: usersLoading } = useUser();
+  const { users, loading: usersLoading, fetchUsers } = useUser();
   const { units, selectedUnitId } = useUnit();
   const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Coordinator');
   
@@ -49,10 +53,18 @@ export default function PlanningPage() {
   const { toast } = useToast();
   const formRef = React.useRef<HTMLFormElement>(null);
   const [date, setDate] = React.useState<Date | undefined>(new Date());
+  
+  const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = React.useState(false);
+  const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
 
   const [blockType, setBlockType] = React.useState<'UNIT' | 'USERS'>('UNIT');
   const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+  
+  const handleManageAvailability = (user: User) => {
+    setSelectedUser(user);
+    setIsAvailabilityDialogOpen(true);
+  }
 
   React.useEffect(() => {
     if (state.success) {
@@ -65,13 +77,6 @@ export default function PlanningPage() {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
   }, [state, toast]);
-  
-  const handleManageAvailability = () => {
-    toast({
-      title: 'Em breve!',
-      description: 'A funcionalidade de gerenciamento de horários individuais está em desenvolvimento.',
-    });
-  };
 
   const getInitials = (name: string) => {
     if (!name) return '';
@@ -87,6 +92,14 @@ export default function PlanningPage() {
 
   return (
     <div className="space-y-6">
+      {selectedUser && (
+        <ManageAvailabilityDialog
+          isOpen={isAvailabilityDialogOpen}
+          onOpenChange={setIsAvailabilityDialogOpen}
+          user={selectedUser}
+          onAvailabilityUpdated={fetchUsers}
+        />
+      )}
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
           Planejamento e Disponibilidade
@@ -134,15 +147,10 @@ export default function PlanningPage() {
                               <p className="text-sm text-muted-foreground">{pro.role}</p>
                           </div>
                       </div>
-                      <Button variant="outline" onClick={handleManageAvailability}>Gerenciar Horários</Button>
+                      <Button variant="outline" onClick={() => handleManageAvailability(pro)}>Gerenciar Horários</Button>
                   </div>
                 ))}
               </CardContent>
-              <CardFooter>
-                  <p className="text-xs text-muted-foreground">
-                      * Funcionalidade de gerenciamento de horários individuais em breve.
-                  </p>
-              </CardFooter>
             </Card>
           </TabsContent>
           <TabsContent value="blocks">

@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -11,9 +12,11 @@ import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Link from 'next/link';
 import { usePatient } from '@/contexts/PatientContext';
-import type { EvolutionRecord } from '@/lib/types';
+import type { EvolutionRecord, Appointment } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function EvolutionsPage() {
@@ -22,6 +25,8 @@ export default function EvolutionsPage() {
   const [evolutions, setEvolutions] = React.useState<EvolutionRecord[]>([]);
   const [loadingEvolutions, setLoadingEvolutions] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [selectedAppointments, setSelectedAppointments] = React.useState<string[]>([]);
+  const { toast } = useToast();
   
   const loading = scheduleLoading || patientsLoading || loadingEvolutions;
 
@@ -66,13 +71,11 @@ export default function EvolutionsPage() {
     const appointmentsToConsider = appointments.filter(app => app.status === 'Realizado');
 
     const appointmentsWithPendingEvolution = appointmentsToConsider.filter(app => {
-        const appDate = startOfDay(new Date(app.date + 'T00:00:00'));
-        const evolutionExists = evolutions.some(evo => {
-            if (!evo.createdAt || evo.patientId !== app.patientId) return false;
-            const evoDate = startOfDay(evo.createdAt.toDate());
-            return evoDate.getTime() >= appDate.getTime();
-        });
-        return !evolutionExists;
+      const evolutionForAppointment = evolutions.find(evo =>
+        evo.patientId === app.patientId &&
+        evo.createdAt && startOfDay(evo.createdAt.toDate()) >= startOfDay(new Date(app.date + 'T00:00:00'))
+      );
+      return !evolutionForAppointment;
     });
     
     return appointmentsWithPendingEvolution
@@ -82,6 +85,31 @@ export default function EvolutionsPage() {
       )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [appointments, evolutions, searchTerm]);
+  
+  const handleSelectAll = (checked: boolean | 'indeterminate') => {
+    if (checked === true) {
+      setSelectedAppointments(pendingEvolutions.map(app => app.id));
+    } else {
+      setSelectedAppointments([]);
+    }
+  };
+  
+  const handleSelectOne = (appId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedAppointments(prev => [...prev, appId]);
+    } else {
+      setSelectedAppointments(prev => prev.filter(id => id !== appId));
+    }
+  };
+
+  const handleSendReminders = () => {
+    // Placeholder for actual notification logic
+    toast({
+      title: "Lembretes Enviados (Simulação)",
+      description: `Lembretes foram enviados para os responsáveis de ${selectedAppointments.length} evoluções pendentes.`
+    });
+    setSelectedAppointments([]);
+  }
 
   return (
     <div className="space-y-6">
@@ -105,7 +133,7 @@ export default function EvolutionsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" disabled>Lembrar Selecionados</Button>
+          <Button variant="outline" onClick={handleSendReminders} disabled={selectedAppointments.length === 0}>Lembrar Selecionados ({selectedAppointments.length})</Button>
         </div>
       </div>
       <Card>
@@ -120,6 +148,12 @@ export default function EvolutionsPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="w-[50px]">
+                               <Checkbox
+                                  checked={selectedAppointments.length === pendingEvolutions.length && pendingEvolutions.length > 0}
+                                  onCheckedChange={handleSelectAll}
+                                />
+                            </TableHead>
                             <TableHead>Data</TableHead>
                             <TableHead>Paciente</TableHead>
                             <TableHead className="hidden md:table-cell">Profissional</TableHead>
@@ -129,10 +163,16 @@ export default function EvolutionsPage() {
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            <TableRow><TableCell colSpan={5} className="h-24 text-center"><Loader2 className="mx-auto animate-spin" /></TableCell></TableRow>
+                            <TableRow><TableCell colSpan={6} className="h-24 text-center"><Loader2 className="mx-auto animate-spin" /></TableCell></TableRow>
                         ) : pendingEvolutions.length > 0 ? (
                             pendingEvolutions.map(app => (
-                                <TableRow key={app.id}>
+                                <TableRow key={app.id} data-state={selectedAppointments.includes(app.id) && "selected"}>
+                                    <TableCell>
+                                        <Checkbox
+                                            checked={selectedAppointments.includes(app.id)}
+                                            onCheckedChange={(checked) => handleSelectOne(app.id, checked as boolean)}
+                                        />
+                                    </TableCell>
                                     <TableCell>{format(new Date(app.date + 'T00:00'), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                                     <TableCell className="font-medium">{app.patientName}</TableCell>
                                     <TableCell className="hidden md:table-cell">{app.professionalName}</TableCell>
@@ -148,7 +188,7 @@ export default function EvolutionsPage() {
                                 </TableRow>
                             ))
                         ) : (
-                            <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhuma evolução pendente encontrada.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={6} className="h-24 text-center">Nenhuma evolução pendente encontrada.</TableCell></TableRow>
                         )}
                     </TableBody>
                 </Table>

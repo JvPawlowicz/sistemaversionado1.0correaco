@@ -1,10 +1,11 @@
+
 'use client';
 
 import * as React from 'react';
-import type { Appointment, TimeBlock } from '@/lib/types';
+import type { Appointment, TimeBlock, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, Lock, User, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, User as UserIcon, Users, Edit3, Briefcase } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { AppointmentActionsDialog } from './appointment-actions-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useUser } from '@/contexts/UserContext';
+import { usePatient } from '@/contexts/PatientContext';
 
 const HOUR_HEIGHT = 60; // height of one hour in pixels
 
@@ -22,72 +24,79 @@ const timeToMinutes = (time: string) => {
 };
 
 // This function calculates the layout for appointments on a given day to handle overlaps.
-function calculateAppointmentLayout(appointmentsOnDay: Appointment[]) {
-  if (!appointmentsOnDay || appointmentsOnDay.length === 0) {
+function calculateAppointmentLayout<T extends { time: string; endTime: string }>(items: T[]): (T & { layout: { col: number, totalCols: number } })[] {
+  if (!items || items.length === 0) {
     return [];
   }
 
-  const sortedApps = [...appointmentsOnDay].sort((a, b) => {
+  const sortedItems = [...items].sort((a, b) => {
     const startDiff = timeToMinutes(a.time) - timeToMinutes(b.time);
     if (startDiff !== 0) return startDiff;
     return timeToMinutes(a.endTime) - timeToMinutes(b.endTime);
   });
 
-  const withLayout = sortedApps.map(app => ({
-    ...app,
+  let withLayout = sortedItems.map(item => ({
+    ...item,
     layout: { col: 0, totalCols: 1 },
   }));
 
-  for (let i = 0; i < withLayout.length; i++) {
-    const currentApp = withLayout[i];
-    let column = 0;
-    let placed = false;
-    while (!placed) {
-      let hasOverlapInColumn = false;
-      for (let j = 0; j < i; j++) {
-        const prevApp = withLayout[j];
-        if (prevApp.layout.col === column) {
-          if (timeToMinutes(currentApp.time) < timeToMinutes(prevApp.endTime)) {
-            hasOverlapInColumn = true;
-            break;
-          }
-        }
-      }
-      if (!hasOverlapInColumn) {
-        currentApp.layout.col = column;
-        placed = true;
-      } else {
-        column++;
-      }
-    }
-  }
-  
-  for (let i = 0; i < withLayout.length; i++) {
-      const app1 = withLayout[i];
-      let groupMaxCols = app1.layout.col + 1;
-       for (let j = 0; j < withLayout.length; j++) {
-           const app2 = withLayout[j];
-            if (timeToMinutes(app1.time) < timeToMinutes(app2.endTime) && timeToMinutes(app1.endTime) > timeToMinutes(app2.time)) {
-                groupMaxCols = Math.max(groupMaxCols, app2.layout.col + 1);
-            }
-       }
-       app1.layout.totalCols = groupMaxCols;
+  if (withLayout.length === 0) {
+    return [];
   }
 
-   for (let i = 0; i < withLayout.length; i++) {
-      const app1 = withLayout[i];
-      let finalMaxCols = app1.layout.totalCols;
-       for (let j = 0; j < withLayout.length; j++) {
-           if (i === j) continue;
-           const app2 = withLayout[j];
-            if (timeToMinutes(app1.time) < timeToMinutes(app2.endTime) && timeToMinutes(app1.endTime) > timeToMinutes(app2.time)) {
-                finalMaxCols = Math.max(finalMaxCols, app2.layout.totalCols)
-            }
-       }
-       app1.layout.totalCols = finalMaxCols;
+  const columns: (T & { layout: { col: number, totalCols: number } })[][] = [];
+  let lastEventEnding: number | null = null;
+
+  withLayout.forEach(event => {
+    if (lastEventEnding !== null && timeToMinutes(event.time) >= lastEventEnding) {
+      packColumns(columns);
+      columns.length = 0;
+      lastEventEnding = null;
+    }
+
+    let placed = false;
+    for (let i = 0; i < columns.length; i++) {
+      const col = columns[i];
+      if (!isOverlapping(col[col.length - 1], event)) {
+        col.push(event);
+        placed = true;
+        break;
+      }
+    }
+
+    if (!placed) {
+      columns.push([event]);
+    }
+    
+    if (lastEventEnding === null || timeToMinutes(event.endTime) > lastEventEnding) {
+        lastEventEnding = timeToMinutes(event.endTime);
+    }
+  });
+
+  if (columns.length > 0) {
+      packColumns(columns);
   }
 
   return withLayout;
+}
+
+function packColumns(columns: any[][]) {
+  const numColumns = columns.length;
+  columns.forEach((col, i) => {
+    col.forEach(event => {
+      event.layout.totalCols = numColumns;
+      event.layout.col = i;
+    });
+  });
+}
+
+function isOverlapping(eventA: { endTime: string }, eventB: { time: string }) {
+  return timeToMinutes(eventA.endTime) > timeToMinutes(eventB.time);
+}
+
+interface RenderableAppointment extends Appointment {
+    isGroup: boolean;
+    groupPatientNames?: string[];
 }
 
 interface DailyViewProps {
@@ -104,30 +113,63 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
 
   const { currentUser } = useAuth();
   const { users } = useUser();
+  const { patients } = usePatient();
   const [isActionsDialogOpen, setIsActionsDialogOpen] = React.useState(false);
   const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
 
   const laidOutAppointmentsByDay = React.useMemo(() => {
-    const dayMap = new Map<string, (Appointment & { layout: { col: number; totalCols: number } })[]>();
+    const dayMap = new Map<string, (RenderableAppointment & { layout: { col: number; totalCols: number } })[]>();
     days.forEach(day => {
-      const appointmentsOnDay = appointments.filter(appointment =>
-        isSameDay(new Date(appointment.date + 'T00:00:00'), day)
-      );
-      dayMap.set(day.toISOString(), calculateAppointmentLayout(appointmentsOnDay));
+        const appointmentsOnDay = appointments.filter(app => isSameDay(new Date(app.date + 'T00:00:00'), day));
+        
+        const processedGroupIds = new Set<string>();
+        const renderableAppointments: RenderableAppointment[] = [];
+        
+        appointmentsOnDay.forEach(app => {
+            if (app.groupId) {
+                if (processedGroupIds.has(app.groupId)) return;
+
+                const groupAppointments = appointmentsOnDay.filter(a => a.groupId === app.groupId);
+                const patientNames = groupAppointments.map(a => a.patientName);
+                
+                renderableAppointments.push({
+                    ...app, // Use the first appointment of the group as the base
+                    isGroup: true,
+                    groupPatientNames: patientNames,
+                    patientName: `${groupAppointments.length} Pacientes`,
+                });
+                processedGroupIds.add(app.groupId);
+            } else {
+                renderableAppointments.push({ ...app, isGroup: false });
+            }
+        });
+
+      dayMap.set(day.toISOString(), calculateAppointmentLayout(renderableAppointments));
     });
     return dayMap;
   }, [appointments, days]);
-
 
   const handleNextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
   const handlePrevWeek = () => setCurrentDate(subWeeks(currentDate, 1));
   const handleToday = () => setCurrentDate(new Date());
 
   const handleAppointmentClick = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
+    if (appointment.groupId) {
+        // In a real app, you might want a different dialog for group appointments
+        // For now, we find the specific appointment for the logged-in user if they are a patient, otherwise the first.
+        const specificAppointment = appointments.find(a => a.groupId === appointment.groupId && a.patientId === currentUser?.id) || appointments.find(a => a.groupId === appointment.groupId);
+        setSelectedAppointment(specificAppointment || appointment);
+    } else {
+        setSelectedAppointment(appointment);
+    }
     setIsActionsDialogOpen(true);
   };
   
+  const availabilityColors = {
+    Planning: 'bg-blue-500/10 border-blue-500',
+    Supervision: 'bg-purple-500/10 border-purple-500',
+  };
+
   return (
     <TooltipProvider>
       <AppointmentActionsDialog
@@ -176,6 +218,43 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
                       <div key={hour} className={`h-[60px] ${index > 0 ? 'border-t border-border/70' : ''}`}></div>
                   ))}
                   
+                  {users.map(user => 
+                    (user.availability || []).map((slot, index) => {
+                        if (slot.dayOfWeek !== day.getDay() || slot.type === 'Free') return null;
+                        if (currentUser?.role === 'Therapist' && user.id !== currentUser.id) return null;
+
+                        const top = ((timeToMinutes(slot.startTime) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
+                        const height = ((timeToMinutes(slot.endTime) - timeToMinutes(slot.startTime)) / 60) * HOUR_HEIGHT - 2;
+
+                        return (
+                            <Tooltip key={`${user.id}-${index}`}>
+                                <TooltipTrigger asChild>
+                                <div
+                                    className={cn("absolute p-2 rounded-lg text-muted-foreground overflow-hidden text-xs shadow-sm flex items-center gap-2 z-0", availabilityColors[slot.type as keyof typeof availabilityColors])}
+                                    style={{
+                                        top: `${top}px`,
+                                        height: `${height}px`,
+                                        width: `calc(100% - 4px)`,
+                                        left: '2px',
+                                    }}
+                                >
+                                    {slot.type === 'Planning' && <Edit3 className="h-4 w-4 shrink-0" />}
+                                    {slot.type === 'Supervision' && <Briefcase className="h-4 w-4 shrink-0" />}
+                                     <div className="flex-1 overflow-hidden">
+                                        <p className="font-bold whitespace-nowrap overflow-hidden text-ellipsis">{currentUser?.role !== 'Therapist' ? user.name : slot.type}</p>
+                                    </div>
+                                </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p className="font-semibold">{slot.type} de {user.name}</p>
+                                    <p>{slot.startTime} - {slot.endTime}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        )
+                    })
+                  )}
+
+
                   {timeBlocks.filter(block => isSameDay(new Date(block.date + 'T00:00:00'), day)).map(block => {
                      const top = ((timeToMinutes(block.startTime) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
                      const height = ((timeToMinutes(block.endTime) - timeToMinutes(block.startTime)) / 60) * HOUR_HEIGHT - 2;
@@ -211,7 +290,7 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
                      )
                   })}
 
-                  {(laidOutAppointmentsByDay.get(day.toISOString()) || []).map(app => {
+                  {(laidOutAppointmentsByDay.get(day.toISOString()) || []).map((app, idx) => {
                     const top = ((timeToMinutes(app.time) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
                     const height = ((timeToMinutes(app.endTime) - timeToMinutes(app.time)) / 60) * HOUR_HEIGHT - 2;
 
@@ -228,32 +307,53 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
                     const isPastAndPending = new Date() > new Date(`${app.date}T${app.endTime}`) && app.status === 'Agendado';
 
                     return (
-                      <div
-                        key={app.id}
-                        onClick={() => canInteract && handleAppointmentClick(app)}
-                        className={cn(
-                          "absolute p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-all",
-                          canInteract ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed",
-                          (app.status === 'Faltou' || app.status === 'Cancelado') && "opacity-60",
-                          app.status === 'Cancelado' && "line-through",
-                           isPastAndPending && "ring-2 ring-offset-1 ring-yellow-400"
-                        )}
-                        style={{
-                          top: `${top}px`,
-                          height: `${height}px`,
-                          width: `calc(${widthPercentage}% - 4px)`,
-                          left: `calc(${leftPercentage}% + 2px)`,
-                          zIndex: 10 + app.layout.col,
-                          backgroundColor: app.color,
-                        }}
-                      >
-                        <p className="font-bold whitespace-nowrap overflow-hidden text-ellipsis">{app.patientName}</p>
-                        <p className="whitespace-nowrap overflow-hidden text-ellipsis">{app.professionalName}</p>
-                        <p className="opacity-80 mt-1">{app.time} - {app.endTime}</p>
-                        <div className="absolute bottom-1 right-1 bg-black/20 text-white text-[10px] px-1.5 rounded-sm">
-                            {app.status}
-                        </div>
-                      </div>
+                        <Tooltip key={app.id + idx}>
+                          <TooltipTrigger asChild>
+                            <div
+                                onClick={() => canInteract && handleAppointmentClick(app)}
+                                className={cn(
+                                "absolute p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-all flex flex-col justify-between",
+                                canInteract ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed",
+                                (app.status === 'Faltou' || app.status === 'Cancelado') && "opacity-60",
+                                app.status === 'Cancelado' && "line-through",
+                                isPastAndPending && "ring-2 ring-offset-1 ring-yellow-400"
+                                )}
+                                style={{
+                                top: `${top}px`,
+                                height: `${height}px`,
+                                width: `calc(${widthPercentage}% - 4px)`,
+                                left: `calc(${leftPercentage}% + 2px)`,
+                                zIndex: 10 + app.layout.col,
+                                backgroundColor: app.color,
+                                }}
+                            >
+                                <div>
+                                    <p className="font-bold whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-1">{app.isGroup && <Users className="h-3 w-3"/>} {app.patientName}</p>
+                                    <p className="whitespace-nowrap overflow-hidden text-ellipsis">{app.professionalName}</p>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <p className="opacity-80">{app.time}</p>
+                                    <div className="bg-black/20 text-white text-[10px] px-1.5 rounded-sm">
+                                        {app.status}
+                                    </div>
+                                </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                                {app.isGroup ? (
+                                    <>
+                                        <p className="font-semibold">Grupo: {app.serviceName}</p>
+                                        <p className="text-muted-foreground">Pacientes:</p>
+                                        <ul className="list-disc pl-4">
+                                            {app.groupPatientNames?.map((name, i) => <li key={i}>{name}</li>)}
+                                        </ul>
+                                    </>
+                                ) : (
+                                    <p className="font-semibold">{app.patientName}</p>
+                                )}
+                                <p className="text-xs text-muted-foreground">{app.professionalName}</p>
+                          </TooltipContent>
+                        </Tooltip>
                     );
                   })}
                 </div>

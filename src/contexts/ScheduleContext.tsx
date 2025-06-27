@@ -16,9 +16,18 @@ interface ScheduleContextType {
   timeBlocks: TimeBlock[];
   loading: boolean;
   error: string | null;
-  addAppointment: (data: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color' | 'status'>; repeat: boolean }) => Promise<void>;
+  addAppointment: (data: AddAppointmentData) => Promise<void>;
   deleteAppointment: (appointmentId: string) => Promise<void>;
   updateAppointmentStatus: (appointmentId: string, status: 'Realizado' | 'Faltou' | 'Cancelado') => Promise<void>;
+}
+
+export interface AddAppointmentData {
+  baseAppointment: Omit<Appointment, 'id' | 'createdAt' | 'color' | 'status' | 'patientId' | 'patientName'>;
+  patientId?: string;
+  patientIds?: string[];
+  patientNames?: { [id: string]: string };
+  isGroup: boolean;
+  repeat: boolean;
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
@@ -92,61 +101,73 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     fetchScheduleData();
   }, [fetchScheduleData]);
 
-  const addAppointment = async ({ appointment: appointmentData, repeat }: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color' | 'status'>; repeat: boolean }) => {
+  const addAppointment = async (data: AddAppointmentData) => {
     if (!db) {
+      toast({ variant: "destructive", title: "Erro de Configuração" });
+      return;
+    }
+
+    const { baseAppointment, isGroup, patientId, patientIds, patientNames, repeat } = data;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const batch = writeBatch(db);
+    
+    const createAppointmentsForDate = (date: string) => {
+        if (isGroup && patientIds && patientNames) {
+            patientIds.forEach(pId => {
+                const newAppRef = doc(collection(db, 'appointments'));
+                batch.set(newAppRef, {
+                    ...baseAppointment,
+                    patientId: pId,
+                    patientName: patientNames[pId],
+                    attendees: patientIds,
+                    date,
+                    status: 'Agendado',
+                    color,
+                    createdAt: serverTimestamp(),
+                });
+            });
+        } else if (!isGroup && patientId && patientNames) {
+            const newAppRef = doc(collection(db, 'appointments'));
+            batch.set(newAppRef, {
+                ...baseAppointment,
+                patientId: patientId,
+                patientName: patientNames[patientId],
+                date,
+                status: 'Agendado',
+                color,
+                createdAt: serverTimestamp(),
+            });
+        }
+    };
+
+    try {
+        createAppointmentsForDate(baseAppointment.date);
+
+        if (repeat) {
+            for (let i = 1; i <= 4; i++) {
+                const originalDate = new Date(baseAppointment.date + 'T12:00:00Z');
+                const nextDate = addWeeks(originalDate, i);
+                const formattedNextDate = format(nextDate, 'yyyy-MM-dd');
+                createAppointmentsForDate(formattedNextDate);
+            }
+        }
+        
+        await batch.commit();
+
+        toast({
+            title: "Sucesso",
+            description: "Agendamento(s) criado(s) com sucesso.",
+        });
+        await fetchScheduleData();
+    } catch (error) {
+        console.error("Error adding appointment(s): ", error);
         toast({
             variant: "destructive",
-            title: "Erro de Configuração",
-            description: "A configuração do Firebase está ausente.",
+            title: "Erro ao criar agendamento",
         });
-        return;
     }
-    try {
-      const appointmentsCollection = collection(db, 'appointments');
-      const color = colors[Math.floor(Math.random() * colors.length)];
+};
 
-      const appointmentsToAdd = [];
-      appointmentsToAdd.push({
-        ...appointmentData,
-        status: 'Agendado',
-        color,
-        createdAt: serverTimestamp()
-      });
-
-      if (repeat) {
-        for (let i = 1; i <= 4; i++) {
-          const originalDate = new Date(appointmentData.date + 'T12:00:00Z'); // Use a fixed time to avoid timezone issues
-          const nextDate = addWeeks(originalDate, i);
-          const formattedNextDate = format(nextDate, 'yyyy-MM-dd');
-          
-          appointmentsToAdd.push({
-            ...appointmentData,
-            date: formattedNextDate,
-            status: 'Agendado',
-            color,
-            createdAt: serverTimestamp()
-          });
-        }
-      }
-
-      for (const app of appointmentsToAdd) {
-        await addDoc(appointmentsCollection, app);
-      }
-      
-      toast({
-        title: "Sucesso",
-        description: `Agendamento${appointmentsToAdd.length > 1 ? 's' : ''} criado${appointmentsToAdd.length > 1 ? 's' : ''} com sucesso.`,
-      });
-      await fetchScheduleData();
-    } catch (error) {
-      console.error("Error adding appointment(s): ", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao criar agendamento",
-        description: "Ocorreu um erro ao tentar salvar o(s) agendamento(s).",
-      });
-    }
-  };
 
   const deleteAppointment = async (appointmentId: string) => {
     if (!db) {
