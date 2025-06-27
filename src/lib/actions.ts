@@ -62,9 +62,12 @@ export async function createUserAction(prevState: any, formData: FormData) {
       role,
       unitIds,
       status: 'Active',
-      avatarUrl: `https://i.pravatar.cc/150?u=${userRecord.uid}`,
+      avatarUrl: 'https://placehold.co/150x150.png',
       createdAt: FieldValue.serverTimestamp(),
       availability: [],
+      professionalCouncil: null,
+      councilNumber: null,
+      specialties: [],
     });
     revalidatePath('/users');
   } catch (error: any) {
@@ -123,6 +126,51 @@ export async function updateUserAction(prevState: any, formData: FormData) {
   }
 
   return { success: true, message: 'Usuário atualizado com sucesso!', errors: null };
+}
+
+// --- Update User Professional Details Action ---
+
+const ProfessionalDetailsSchema = z.object({
+  userId: z.string().min(1),
+  professionalCouncil: z.string().min(2, { message: 'O conselho profissional é obrigatório.' }),
+  councilNumber: z.string().min(1, { message: 'O número do conselho é obrigatório.' }),
+  specialties: z.string().optional(),
+});
+
+export async function updateUserProfessionalDetailsAction(prevState: any, formData: FormData) {
+    const adminCheck = checkAdminInit();
+    if (adminCheck) return adminCheck;
+
+    const validatedFields = ProfessionalDetailsSchema.safeParse({
+        userId: formData.get('userId'),
+        professionalCouncil: formData.get('professionalCouncil'),
+        councilNumber: formData.get('councilNumber'),
+        specialties: formData.get('specialties'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            success: false,
+            message: 'Dados inválidos. Verifique os campos em vermelho.',
+            errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+
+    const { userId, professionalCouncil, councilNumber, specialties } = validatedFields.data;
+    const specialtiesArray = specialties ? specialties.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+    try {
+        await db.collection('users').doc(userId).update({
+            professionalCouncil,
+            councilNumber,
+            specialties: specialtiesArray,
+        });
+        revalidatePath('/profile');
+        return { success: true, message: 'Dados profissionais atualizados com sucesso!', errors: null };
+    } catch (error) {
+        console.error('Error updating professional details:', error);
+        return { success: false, message: 'Ocorreu um erro ao salvar os dados.', errors: null };
+    }
 }
 
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -56,14 +57,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             description: 'Detectamos que este é o primeiro login. Seu perfil de administrador foi criado automaticamente.',
           });
 
-          const newUserPayload = {
+          const newUserPayload: Omit<User, 'id'> = {
             name: authUser.email?.split('@')[0] || 'Admin',
-            email: authUser.email,
+            email: authUser.email!,
             role: 'Admin' as const,
             status: 'Active' as const,
             unitIds: [],
-            avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
-            createdAt: serverTimestamp()
+            avatarUrl: 'https://placehold.co/150x150.png',
+            createdAt: serverTimestamp(),
+            professionalCouncil: null,
+            councilNumber: null,
+            specialties: [],
+            availability: [],
           };
           
           const newUserDocRef = await addDoc(usersCollectionRef, newUserPayload);

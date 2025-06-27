@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -7,9 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CircleAlert, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
+import { updateUserProfessionalDetailsAction } from '@/lib/actions';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
 
 const roleNames: Record<string, string> = {
   Admin: 'Administrador',
@@ -18,8 +24,25 @@ const roleNames: Record<string, string> = {
   Coordinator: 'Coordenador',
 };
 
+const professionalInitialState = {
+  success: false,
+  message: '',
+  errors: null,
+};
+
+function ProfessionalSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      Salvar Dados Profissionais
+    </Button>
+  );
+}
+
+
 export default function ProfilePage() {
-  const { currentUser, loading, updateAvatar, updateUserName } = useAuth();
+  const { currentUser, loading, updateAvatar, updateUserName, refetchCurrentUser } = useAuth();
   const [isAvatarUpdating, setIsAvatarUpdating] = React.useState(false);
   const [isNameUpdating, setIsNameUpdating] = React.useState(false);
   const [name, setName] = React.useState(currentUser?.name || '');
@@ -28,12 +51,24 @@ export default function ProfilePage() {
   const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
   const { toast } = useToast();
+  
+  const [professionalState, professionalFormAction] = useActionState(updateUserProfessionalDetailsAction, professionalInitialState);
+  const professionalFormRef = React.useRef<HTMLFormElement>(null);
 
   React.useEffect(() => {
     if (currentUser) {
       setName(currentUser.name);
     }
   }, [currentUser]);
+
+  React.useEffect(() => {
+    if (professionalState.success) {
+        toast({ title: 'Sucesso!', description: professionalState.message });
+        refetchCurrentUser();
+    } else if (professionalState.message && !professionalState.errors) {
+        toast({ variant: 'destructive', title: 'Erro', description: professionalState.message });
+    }
+  }, [professionalState, toast, refetchCurrentUser]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -89,6 +124,9 @@ export default function ProfilePage() {
     }
     return name.substring(0, 2).toUpperCase();
   };
+  
+  const isProfessional = currentUser.role === 'Therapist' || currentUser.role === 'Coordinator';
+  const hasIncompleteProfessionalData = isProfessional && (!currentUser.professionalCouncil || !currentUser.councilNumber);
 
   return (
     <div className="space-y-6">
@@ -154,6 +192,51 @@ export default function ProfilePage() {
               </CardFooter>
             </form>
           </Card>
+
+           {isProfessional && (
+            <Card>
+                <form action={professionalFormAction} ref={professionalFormRef}>
+                    <input type="hidden" name="userId" value={currentUser.id} />
+                    <CardHeader>
+                        <CardTitle>Informações Profissionais</CardTitle>
+                        <CardDescription>
+                            Mantenha seus dados de conselho e especialidades atualizados.
+                        </CardDescription>
+                         {hasIncompleteProfessionalData && (
+                            <Alert variant="destructive" className="mt-4">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Dados Profissionais Pendentes</AlertTitle>
+                                <AlertDescription>
+                                    É obrigatório o preenchimento dos seus dados de conselho profissional para utilizar a plataforma.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                             <Label htmlFor="professionalCouncil">Conselho</Label>
+                             <Input id="professionalCouncil" name="professionalCouncil" defaultValue={currentUser.professionalCouncil || ''} placeholder="Ex: CREFITO, CRP" />
+                             {professionalState.errors?.professionalCouncil && <p className="text-xs text-destructive mt-1">{professionalState.errors.professionalCouncil[0]}</p>}
+                          </div>
+                           <div className="space-y-2">
+                             <Label htmlFor="councilNumber">Número do Conselho</Label>
+                             <Input id="councilNumber" name="councilNumber" defaultValue={currentUser.councilNumber || ''} />
+                              {professionalState.errors?.councilNumber && <p className="text-xs text-destructive mt-1">{professionalState.errors.councilNumber[0]}</p>}
+                          </div>
+                       </div>
+                       <div className="space-y-2">
+                          <Label htmlFor="specialties">Especialidades</Label>
+                          <Textarea id="specialties" name="specialties" defaultValue={currentUser.specialties?.join(', ') || ''} placeholder="Ex: Terapia Ocupacional, Fisioterapia Motora" />
+                          <p className="text-xs text-muted-foreground">Separe as especialidades por vírgula.</p>
+                       </div>
+                    </CardContent>
+                    <CardFooter className="border-t px-6 py-4">
+                        <ProfessionalSubmitButton />
+                    </CardFooter>
+                </form>
+            </Card>
+           )}
 
           <Card>
             <CardHeader>

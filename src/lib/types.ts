@@ -69,6 +69,9 @@ export type User = {
   avatarUrl: string;
   unitIds: string[];
   availability?: Availability[];
+  professionalCouncil?: string | null;
+  councilNumber?: string | null;
+  specialties?: string[] | null;
   createdAt?: any;
 };
 

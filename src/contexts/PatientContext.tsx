@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -106,7 +107,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         ...patientData,
         status: 'Active',
         lastVisit: null,
-        avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
+        avatarUrl: 'https://placehold.co/150x150.png',
         createdAt: serverTimestamp(),
         imageUseConsent: false,
       });
