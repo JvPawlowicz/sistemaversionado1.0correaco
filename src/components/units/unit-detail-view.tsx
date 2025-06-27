@@ -8,20 +8,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Edit, MoreHorizontal, Trash2, Building, Upload } from 'lucide-react';
+import { MoreHorizontal, Trash2, Upload } from 'lucide-react';
 import type { Unit, Service } from '@/lib/types';
-import { Skeleton } from '../ui/skeleton';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-    DropdownMenuLabel,
-    DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import {
     AlertDialog,
@@ -36,6 +32,8 @@ import {
 import Image from 'next/image';
 import { ServiceManager } from './service-manager';
 import { UnitForm } from './unit-form';
+import { RoomManager } from './room-manager';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function UnitDetailView({
   unit,
@@ -49,6 +47,8 @@ export function UnitDetailView({
   onServiceChange: (unitId: string, service: Omit<Service, 'id' | 'unitId'>) => Promise<void>;
 }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+    const { currentUser } = useAuth();
+    const canManageRooms = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
     
     return (
         <div className="space-y-6">
@@ -107,8 +107,9 @@ export function UnitDetailView({
             </Card>
 
             <Tabs defaultValue="services">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="services">Serviços</TabsTrigger>
+                    <TabsTrigger value="rooms">Salas</TabsTrigger>
                     <TabsTrigger value="details">Dados Cadastrais</TabsTrigger>
                     <TabsTrigger value="documents">Documentos</TabsTrigger>
                 </TabsList>
@@ -121,6 +122,23 @@ export function UnitDetailView({
                     <CardContent className="space-y-4">
                        <ServiceManager unit={unit} onServiceChange={onServiceChange} />
                     </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="rooms">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Gestão de Salas</CardTitle>
+                            <CardDescription>Cadastre e gerencie as salas de atendimento disponíveis nesta unidade.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {canManageRooms ? (
+                                <RoomManager unit={unit} />
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                                    <p>Você não tem permissão para gerenciar as salas.</p>
+                                </div>
+                            )}
+                        </CardContent>
                     </Card>
                 </TabsContent>
                 <TabsContent value="details">
@@ -142,4 +160,3 @@ export function UnitDetailView({
         </div>
     );
 }
-

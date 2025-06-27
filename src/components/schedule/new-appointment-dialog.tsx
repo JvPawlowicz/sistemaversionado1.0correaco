@@ -17,7 +17,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSchedule, type AddAppointmentData } from '@/contexts/ScheduleContext';
 import { Loader2, ChevronsUpDown, Check, User as UserIcon, Users as UsersIcon } from 'lucide-react';
-import type { Appointment, Service, User } from '@/lib/types';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
@@ -55,13 +54,14 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   const [date, setDate] = React.useState(format(new Date(), 'yyyy-MM-dd'));
   const [time, setTime] = React.useState('09:00');
   const [endTime, setEndTime] = React.useState('10:00');
-  const [room, setRoom] = React.useState('Sala 1');
+  const [room, setRoom] = React.useState('');
   const [repeat, setRepeat] = React.useState(false);
 
   const [isPatientPopoverOpen, setIsPatientPopoverOpen] = React.useState(false);
   
   const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
   const availableServices = selectedUnit?.services || [];
+  const availableRooms = selectedUnit?.rooms || [];
   
   const selectedGroup = React.useMemo(() => therapyGroups.find(g => g.id === groupId), [therapyGroups, groupId]);
   
@@ -86,7 +86,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     setDate(format(new Date(), 'yyyy-MM-dd'));
     setTime('09:00');
     setEndTime('10:00');
-    setRoom('Sala 1');
+    setRoom('');
     setRepeat(false);
   };
   
@@ -94,6 +94,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     setServiceId('');
     setProfessionalName('');
     setGroupId('');
+    setRoom('');
   }, [selectedUnitId]);
 
   React.useEffect(() => {
@@ -261,6 +262,15 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
                         <Input id="endTime" type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required disabled={isLoading}/>
                     </div>
                 </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="room">Sala</Label>
+              <Select onValueChange={setRoom} value={room} required disabled={isLoading || availableRooms.length === 0}>
+                 <SelectTrigger id="room"><SelectValue placeholder="Selecione uma sala" /></SelectTrigger>
+                 <SelectContent>
+                   {availableRooms.sort().map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                 </SelectContent>
+               </Select>
             </div>
             <div className="flex items-center space-x-2">
               <Switch id="repeat" checked={repeat} onCheckedChange={setRepeat} disabled={isLoading} />

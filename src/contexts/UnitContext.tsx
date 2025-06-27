@@ -14,10 +14,11 @@ interface UnitContextType {
   error: string | null;
   selectedUnitId: string | null;
   setSelectedUnitId: (id: string | null) => void;
-  addUnit: (unitData: Omit<Unit, 'id' | 'createdAt' | 'services'>) => Promise<void>;
+  addUnit: (unitData: Omit<Unit, 'id' | 'createdAt' | 'services' | 'rooms'>) => Promise<void>;
   deleteUnit: (unitId: string) => Promise<void>;
   addServiceToUnit: (unitId: string, serviceData: Omit<Service, 'id' | 'unitId'>) => Promise<void>;
   deleteService: (unitId: string, serviceId: string) => Promise<void>;
+  updateUnitRooms: (unitId: string, rooms: string[]) => Promise<void>;
   fetchUnits: () => Promise<void>;
 }
 
@@ -128,7 +129,7 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   }, [currentUser, allUnits, authLoading]);
 
 
-  const addUnit = async (unitData: Omit<Unit, 'id' | 'createdAt' | 'services'>) => {
+  const addUnit = async (unitData: Omit<Unit, 'id' | 'createdAt' | 'services' | 'rooms'>) => {
     if (!db) return;
     try {
       await addDoc(collection(db, 'units'), {
@@ -181,9 +182,22 @@ export function UnitProvider({ children }: { children: ReactNode }) {
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível remover o serviço." });
     }
   }
+  
+  const updateUnitRooms = async (unitId: string, rooms: string[]) => {
+    if (!db) return;
+    try {
+      const unitRef = doc(db, 'units', unitId);
+      await updateDoc(unitRef, { rooms });
+      toast({ title: "Sucesso", description: "Lista de salas atualizada com sucesso." });
+      await fetchUnits();
+    } catch (error) {
+      console.error("Error updating unit rooms: ", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível atualizar as salas da unidade." });
+    }
+  };
 
   return (
-    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, deleteUnit, addServiceToUnit, deleteService, selectedUnitId, setSelectedUnitId: handleSetSelectedUnitId, fetchUnits }}>
+    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, deleteUnit, addServiceToUnit, deleteService, selectedUnitId, setSelectedUnitId: handleSetSelectedUnitId, fetchUnits, updateUnitRooms }}>
       {children}
     </UnitContext.Provider>
   );

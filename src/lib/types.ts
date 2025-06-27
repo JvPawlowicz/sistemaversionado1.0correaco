@@ -30,6 +30,7 @@ export type Unit = {
   photoUrl?: string;
   institutionalDocuments?: InstitutionalDocument[];
   services?: Service[]; // Populado no frontend
+  rooms?: string[];
   createdAt?: any;
 };
 
