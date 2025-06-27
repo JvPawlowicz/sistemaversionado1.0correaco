@@ -150,3 +150,23 @@ export type Notification = {
   targetValue?: string | string[];
   seenBy?: string[];
 };
+
+
+export type ChatThread = {
+  id: string;
+  participantIds: string[];
+  participantNames: { [key: string]: string };
+  participantAvatars: { [key: string]: string };
+  lastMessage?: string;
+  lastMessageSender?: string;
+  lastUpdatedAt: any; // Firestore Timestamp
+};
+
+export type ChatMessage = {
+  id: string;
+  threadId: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: any; // Firestore Timestamp
+};
