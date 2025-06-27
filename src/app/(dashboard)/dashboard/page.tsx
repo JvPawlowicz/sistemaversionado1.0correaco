@@ -65,7 +65,7 @@ export default function DashboardPage() {
   // General Stats (for Admin/Coordinator/Receptionist)
   const totalActivePatients = patients.filter(p => p.status === 'Active').length;
   const todaysAppointmentsTotal = appointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length;
-  const totalTherapists = users.filter(u => u.role === 'Therapist' && selectedUnitId && u.unitIds.includes(selectedUnitId)).length;
+  const totalTherapists = users.filter(u => u.role === 'Therapist' && selectedUnitId && Array.isArray(u.unitIds) && u.unitIds.includes(selectedUnitId)).length;
 
   // Therapist-specific Stats & Upcoming Appointments
   const myAppointments = React.useMemo(() => {

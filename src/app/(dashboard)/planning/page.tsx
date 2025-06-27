@@ -87,7 +87,7 @@ export default function PlanningPage() {
   };
   
   const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
-  const professionalsInUnit = users.filter(user => user.unitIds.includes(selectedUnitId || ''));
+  const professionalsInUnit = users.filter(user => Array.isArray(user.unitIds) && user.unitIds.includes(selectedUnitId || ''));
 
   return (
     <div className="space-y-6">
