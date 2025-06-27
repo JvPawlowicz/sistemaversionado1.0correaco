@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useEffect, useRef, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import {
   Dialog,
   DialogContent,
@@ -50,23 +50,23 @@ function SubmitButton() {
 }
 
 export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogProps) {
-  const [state, formAction] = useFormState(updateUserAction, initialState);
+  const [state, formAction] = useActionState(updateUserAction, initialState);
   const { toast } = useToast();
   const { units, loading: unitsLoading } = useUnit();
   const { fetchUsers } = useUser();
   const { currentUser, refetchCurrentUser } = useAuth();
 
-  const [selectedUnitIds, setSelectedUnitIds] = React.useState<string[]>([]);
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       setSelectedUnitIds(user.unitIds || []);
     }
   }, [user]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
       fetchUsers();

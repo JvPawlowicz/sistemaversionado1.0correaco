@@ -1,8 +1,8 @@
 
 'use client';
 
-import * as React from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useEffect, useRef, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,21 +45,21 @@ function SubmitButton() {
 }
 
 export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpdated }: EditPatientDialogProps) {
-  const [state, formAction] = useFormState(updatePatientDetailsAction, initialState);
+  const [state, formAction] = useActionState(updatePatientDetailsAction, initialState);
   const { toast } = useToast();
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const { units, loading: unitsLoading } = useUnit();
 
-  const [selectedUnitIds, setSelectedUnitIds] = React.useState<string[]>([]);
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (patient) {
         setSelectedUnitIds(patient.unitIds || []);
     }
   }, [patient]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
       onPatientUpdated();

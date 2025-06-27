@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,27 +32,27 @@ function SubmitButton() {
 }
 
 export function NewTherapyGroupDialog({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange: (isOpen: boolean) => void; }) {
-  const [state, formAction] = useFormState(createTherapyGroupAction, initialState);
+  const [state, formAction] = useActionState(createTherapyGroupAction, initialState);
   const { toast } = useToast();
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const { units, selectedUnitId } = useUnit();
   const { users, loading: usersLoading } = useUser();
   const { patients, loading: patientsLoading } = usePatient();
   const { fetchTherapyGroups } = useTherapyGroup();
 
-  const [serviceId, setServiceId] = React.useState('');
-  const [selectedProfessionalIds, setSelectedProfessionalIds] = React.useState<string[]>([]);
-  const [selectedPatientIds, setSelectedPatientIds] = React.useState<string[]>([]);
+  const [serviceId, setServiceId] = useState('');
+  const [selectedProfessionalIds, setSelectedProfessionalIds] = useState<string[]>([]);
+  const [selectedPatientIds, setSelectedPatientIds] = useState<string[]>([]);
   
-  const [isProfPopoverOpen, setIsProfPopoverOpen] = React.useState(false);
-  const [isPatientPopoverOpen, setIsPatientPopoverOpen] = React.useState(false);
+  const [isProfPopoverOpen, setIsProfPopoverOpen] = useState(false);
+  const [isPatientPopoverOpen, setIsPatientPopoverOpen] = useState(false);
 
-  const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
+  const selectedUnit = useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
   const availableServices = selectedUnit?.services || [];
-  const selectedService = React.useMemo(() => availableServices.find(s => s.id === serviceId), [availableServices, serviceId]);
+  const selectedService = useMemo(() => availableServices.find(s => s.id === serviceId), [availableServices, serviceId]);
   
-  const availableProfessionals = React.useMemo(() => {
+  const availableProfessionals = useMemo(() => {
     if (!selectedService) return [];
     return users.filter(user => selectedService.professionalIds.includes(user.id));
   }, [users, selectedService]);
@@ -64,13 +64,13 @@ export function NewTherapyGroupDialog({ isOpen, onOpenChange }: { isOpen: boolea
     setSelectedPatientIds([]);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) {
       resetForm();
     }
   }, [isOpen]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
       fetchTherapyGroups();

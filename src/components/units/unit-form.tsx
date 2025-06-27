@@ -1,12 +1,11 @@
 
 'use client';
 
-import * as React from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter } from 'next/navigation';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -49,11 +48,11 @@ function SubmitButton() {
 }
 
 export function UnitForm({ unit, onUnitUpdated }: { unit: Unit, onUnitUpdated: () => void }) {
-  const [state, formAction] = useFormState(updateUnitAction, initialState);
+  const [state, formAction] = useActionState(updateUnitAction, initialState);
   const { toast } = useToast();
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
       onUnitUpdated();

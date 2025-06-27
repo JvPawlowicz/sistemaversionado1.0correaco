@@ -1,8 +1,8 @@
 
 'use client';
 
-import * as React from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useEffect, useRef, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,24 +48,24 @@ export default function PlanningPage() {
   const { units, selectedUnitId } = useUnit();
   const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Coordinator');
   
-  const [state, formAction] = useFormState(createTimeBlockAction, initialState);
+  const [state, formAction] = useActionState(createTimeBlockAction, initialState);
   const { toast } = useToast();
-  const formRef = React.useRef<HTMLFormElement>(null);
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const formRef = useRef<HTMLFormElement>(null);
+  const [date, setDate] = useState<Date | undefined>(new Date());
   
-  const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = React.useState(false);
-  const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const [blockType, setBlockType] = React.useState<'UNIT' | 'USERS'>('UNIT');
-  const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+  const [blockType, setBlockType] = useState<'UNIT' | 'USERS'>('UNIT');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   
   const handleManageAvailability = (user: User) => {
     setSelectedUser(user);
     setIsAvailabilityDialogOpen(true);
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
       formRef.current?.reset();
@@ -168,7 +168,7 @@ export default function PlanningPage() {
                         <p>{state.message}</p>
                     </div>
                    )}
-                   {Object.values(state.errors || {}).map((error: any) => (
+                   {state.errors && Object.values(state.errors).map((error: any) => (
                         <div key={error[0]} className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                             <CircleAlert className="h-4 w-4" />
                             <p>{error[0]}</p>

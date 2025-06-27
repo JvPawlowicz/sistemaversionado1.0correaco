@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useEffect, useRef, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import {
   Card,
   CardContent,
@@ -49,9 +49,9 @@ function SubmitButton() {
 }
 
 export default function NotificationsPage() {
-  const [state, formAction] = useFormState(createNotificationAction, initialState);
+  const [state, formAction] = useActionState(createNotificationAction, initialState);
   const { toast } = useToast();
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const { currentUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const { notifications, loading: notificationsLoading, fetchNotifications } = useNotification();
@@ -59,11 +59,11 @@ export default function NotificationsPage() {
   const { users, loading: usersLoading } = useUser();
   const { units, loading: unitsLoading } = useUnit();
 
-  const [targetType, setTargetType] = React.useState('ALL');
-  const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
-  const [isUserPopoverOpen, setIsUserPopoverOpen] = React.useState(false);
+  const [targetType, setTargetType] = useState('ALL');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [isUserPopoverOpen, setIsUserPopoverOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
       fetchNotifications();

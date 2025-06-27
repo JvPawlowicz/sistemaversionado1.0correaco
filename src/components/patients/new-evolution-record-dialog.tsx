@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useEffect, useRef } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,12 +36,12 @@ function SubmitButton() {
 }
 
 export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patientId, onRecordAdded }: NewEvolutionRecordDialogProps) {
-  const [state, formAction] = useFormState(createEvolutionRecordAction, initialState);
+  const [state, formAction] = useActionState(createEvolutionRecordAction, initialState);
   const { toast } = useToast();
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const { currentUser } = useAuth();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
       onRecordAdded();

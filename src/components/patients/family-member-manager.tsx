@@ -1,6 +1,7 @@
 'use client';
 
-import * as React from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import type { FamilyMember } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +21,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { useFormState, useFormStatus } from 'react-dom';
 import { addFamilyMemberAction, deleteFamilyMemberAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,13 +44,13 @@ function AddSubmitButton() {
 }
 
 export function FamilyMemberManager({ patientId, familyMembers, isLoading, onFamilyMemberChange }: FamilyMemberManagerProps) {
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const [addState, formAction] = useFormState(addFamilyMemberAction.bind(null, patientId), addInitialState);
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const [addState, formAction] = useActionState(addFamilyMemberAction.bind(null, patientId), addInitialState);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (addState.success) {
       toast({ title: 'Sucesso!', description: addState.message });
       onFamilyMemberChange();
