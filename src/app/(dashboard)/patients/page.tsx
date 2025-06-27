@@ -3,21 +3,25 @@
 import Link from 'next/link';
 import { PatientTable } from '@/components/patients/patient-table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Terminal, Search } from 'lucide-react';
+import { PlusCircle, Terminal, Search, Users2 } from 'lucide-react';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PatientsPage() {
   const { patients, loading, error } = usePatient();
+  const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = React.useState('');
 
   const filteredPatients = patients.filter(patient => 
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const canManageGroups = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
   
   return (
     <div className="space-y-6">
@@ -36,6 +40,12 @@ export default function PatientsPage() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
+            {canManageGroups && (
+                <Button variant="outline" disabled>
+                    <Users2 className="mr-2 h-4 w-4" />
+                    Novo Grupo
+                </Button>
+            )}
             <Button asChild>
             <Link href="/patients/new">
                 <PlusCircle className="mr-2 h-4 w-4" />

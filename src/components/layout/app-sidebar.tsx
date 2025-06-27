@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -13,7 +12,7 @@ import {
   SidebarSeparator
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { LayoutDashboard, Users, HeartPulse, LogOut, Calendar, BarChart3, Bell, Building, SlidersHorizontal, Users2, LineChart } from 'lucide-react';
+import { LayoutDashboard, Users, HeartPulse, LogOut, Calendar, Bell, Building, SlidersHorizontal, LineChart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function AppSidebar() {
@@ -27,7 +26,6 @@ export function AppSidebar() {
     { href: '/dashboard', label: 'Painel', icon: LayoutDashboard, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
     { href: '/schedule', label: 'Agenda', icon: Calendar, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
     { href: '/patients', label: 'Pacientes', icon: HeartPulse, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
-    { href: '/groups', label: 'Grupos', icon: Users2, roles: ['Admin', 'Coordinator', 'Therapist'] },
     { href: '/analysis', label: 'Análise e Relatórios', icon: LineChart, roles: ['Admin', 'Coordinator'] },
     { href: '/planning', label: 'Planejamento', icon: SlidersHorizontal, roles: ['Admin', 'Coordinator'] },
     { href: '/units', label: 'Unidades', icon: Building, roles: ['Admin'] },
