@@ -23,13 +23,16 @@ import {
   SlidersHorizontal, 
   LineChart, 
   FileText, 
-  MessageSquare 
+  MessageSquare,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnit } from '@/contexts/UnitContext';
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { logout, currentUser } = useAuth();
+  const { selectedUnitId } = useUnit();
   
   const userHasAccess = (roles: string[]) => currentUser && roles.includes(currentUser.role);
 
@@ -50,9 +53,15 @@ export function AppSidebar() {
     { href: '/notifications', label: 'Notificações', icon: Bell, roles: ['Admin'] },
   ];
 
-  const visibleCoreItems = coreItems.filter(item => userHasAccess(item.roles));
   const visibleManagementItems = managementItems.filter(item => userHasAccess(item.roles));
-  const visibleAdminItems = adminItems.filter(item => userHasAccess(item.roles));
+  
+  const isCoordinator = userHasAccess(['Coordinator']);
+  const showCoordinatorSettings = isCoordinator && selectedUnitId && selectedUnitId !== 'central';
+  
+  const hasCoreItems = coreItems.some(item => userHasAccess(item.roles));
+  const hasManagementItems = visibleManagementItems.length > 0 || showCoordinatorSettings;
+  const hasAdminItems = adminItems.some(item => userHasAccess(item.roles));
+
 
   const renderMenuItems = (items: typeof coreItems) => {
     return items.map((item) => (
@@ -60,7 +69,7 @@ export function AppSidebar() {
         <SidebarMenuItem key={item.href}>
             <Link href={item.href} passHref>
               <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href)}
+                  isActive={item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)}
                   tooltip={item.label}
               >
                   <item.icon />
@@ -81,15 +90,32 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarMenu className="flex-1">
-        {visibleCoreItems.length > 0 && <div className="flex flex-col gap-1">{renderMenuItems(visibleCoreItems)}</div>}
+        {hasCoreItems && <div className="flex flex-col gap-1">{renderMenuItems(coreItems)}</div>}
         
-        {visibleCoreItems.length > 0 && visibleManagementItems.length > 0 && <SidebarSeparator className="my-1" />}
+        {hasCoreItems && hasManagementItems && <SidebarSeparator className="my-1" />}
         
-        {visibleManagementItems.length > 0 && <div className="flex flex-col gap-1">{renderMenuItems(visibleManagementItems)}</div>}
+        {hasManagementItems && (
+          <div className="flex flex-col gap-1">
+            {renderMenuItems(managementItems)}
+            {showCoordinatorSettings && (
+              <SidebarMenuItem>
+                <Link href={`/units/${selectedUnitId}`} passHref>
+                  <SidebarMenuButton
+                      isActive={pathname === `/units/${selectedUnitId}`}
+                      tooltip="Configurar Unidade"
+                  >
+                      <Settings />
+                      <span>Configurar Unidade</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            )}
+          </div>
+        )}
         
-        {(visibleCoreItems.length > 0 || visibleManagementItems.length > 0) && visibleAdminItems.length > 0 && <SidebarSeparator className="my-1" />}
+        {hasManagementItems && hasAdminItems && <SidebarSeparator className="my-1" />}
         
-        {visibleAdminItems.length > 0 && <div className="flex flex-col gap-1">{renderMenuItems(visibleAdminItems)}</div>}
+        {hasAdminItems && <div className="flex flex-col gap-1">{renderMenuItems(adminItems)}</div>}
       </SidebarMenu>
       <SidebarSeparator />
       <SidebarFooter>
