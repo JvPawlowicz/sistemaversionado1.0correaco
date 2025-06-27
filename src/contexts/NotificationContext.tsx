@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { Notification } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from './AuthContext';
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -20,39 +21,58 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { currentUser } = useAuth();
 
   const fetchNotifications = useCallback(async () => {
-    if (!db) {
-        setError("A configuração do Firebase está ausente.");
-        setLoading(false);
-        return;
+    if (!db || !currentUser) {
+      setNotifications([]);
+      setLoading(false);
+      return;
     }
     try {
       setLoading(true);
       setError(null);
       const notificationsCollection = collection(db, 'notifications');
-      // Fetch latest 10 notifications for example
-      const q = query(notificationsCollection, orderBy('createdAt', 'desc'), limit(10));
+      
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const q = query(notificationsCollection, where('createdAt', '>=', thirtyDaysAgo), orderBy('createdAt', 'desc'));
+      
       const notificationSnapshot = await getDocs(q);
-      const notificationList = notificationSnapshot.docs.map(doc => ({
+      const allNotifications = notificationSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Notification));
       
-      setNotifications(notificationList);
+      const userNotifications = allNotifications.filter(notification => {
+          if (notification.seenBy?.includes(currentUser.id)) {
+              return false;
+          }
+          
+          switch(notification.targetType) {
+              case 'ALL':
+                  return true;
+              case 'ROLE':
+                  return notification.targetValue === currentUser.role;
+              case 'UNIT':
+                  return Array.isArray(currentUser.unitIds) && currentUser.unitIds.includes(notification.targetValue as string);
+              case 'SPECIFIC':
+                  return Array.isArray(notification.targetValue) && notification.targetValue.includes(currentUser.id);
+              default:
+                  return false;
+          }
+      });
+      
+      setNotifications(userNotifications.slice(0, 10));
     } catch (err: any) {
       console.error("Error fetching notifications: ", err);
-      const userFriendlyError = "Falha ao buscar notificações.";
-      setError(userFriendlyError);
+      setError("Falha ao buscar notificações.");
       setNotifications([]);
-      toast({
-        variant: "destructive",
-        title: "Erro ao buscar notificações",
-      });
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchNotifications();

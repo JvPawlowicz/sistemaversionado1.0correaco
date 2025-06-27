@@ -281,6 +281,29 @@ export async function createNotificationAction(prevState: any, formData: FormDat
   }
 }
 
+// --- Mark Notification as Seen ---
+export async function markNotificationAsSeenAction(notificationId: string, userId: string) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return { success: false, message: adminCheck.message };
+
+  if (!notificationId || !userId) {
+    return { success: false, message: 'ID da Notificação e ID do Usuário são obrigatórios.' };
+  }
+
+  try {
+    const notificationRef = db.collection('notifications').doc(notificationId);
+    await notificationRef.update({
+      seenBy: FieldValue.arrayUnion(userId),
+    });
+    revalidatePath('/(dashboard)', 'layout'); // Revalidate the layout to update the header
+    return { success: true, message: 'Notificação marcada como lida.' };
+  } catch (error) {
+    console.error('Error marking notification as seen:', error);
+    return { success: false, message: 'Falha ao marcar notificação como lida.' };
+  }
+}
+
+
 // --- Create Evolution Record Action ---
 
 const CreateEvolutionRecordSchema = z.object({
