@@ -74,7 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             title: 'Perfil não encontrado',
             description: 'Sua conta de login existe, mas não há um perfil de usuário associado. Contate um administrador.',
           });
-          await signOut(auth);
+          if (auth) {
+            await signOut(auth);
+          }
           setCurrentUser(null);
         }
       }
@@ -128,12 +130,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithEmailAndPassword(auth, email, pass);
       router.push('/dashboard');
     } catch (error: any) {
+      let description = 'Verifique seu e-mail e senha.';
+      if (error.code === 'auth/too-many-requests') {
+          description = 'Acesso temporariamente bloqueado devido a muitas tentativas. Tente novamente mais tarde.';
+      } else if (error.code === 'auth/network-request-failed') {
+          description = 'Erro de rede. Verifique sua conexão com a internet.';
+      } else if (error.code !== 'auth/invalid-credential') {
+          console.error("Unexpected login error:", error);
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Falha no login',
-        description: 'Verifique seu e-mail e senha.',
+        description: description,
       });
-      console.error("Login error:", error);
+
+      if (error.code === 'auth/invalid-credential') {
+        console.error("Login error: Invalid credential provided.");
+      } else {
+        console.error("Login error:", error);
+      }
     }
   };
 
