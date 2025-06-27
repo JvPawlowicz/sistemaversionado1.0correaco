@@ -11,8 +11,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, Loader2, ChevronDown, MoreHorizontal, Trash2, Edit } from 'lucide-react';
-import type { Patient, EvolutionRecord, PatientDocument, FamilyMember } from '@/lib/types';
+import { FileText, Plus, Loader2, ChevronDown, MoreHorizontal, Trash2, Edit, Users2 } from 'lucide-react';
+import type { Patient, EvolutionRecord, PatientDocument, FamilyMember, TherapyGroup } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
@@ -40,6 +40,8 @@ export function PatientDetailView({
   familyMembers,
   familyMembersLoading,
   onFamilyMemberChange,
+  therapyGroups,
+  groupsLoading,
   onPatientDeleted,
   onPatientUpdated
 }: {
@@ -53,6 +55,8 @@ export function PatientDetailView({
   familyMembers: FamilyMember[];
   familyMembersLoading: boolean;
   onFamilyMemberChange: () => void;
+  therapyGroups: TherapyGroup[];
+  groupsLoading: boolean;
   onPatientDeleted: () => void;
   onPatientUpdated: () => void;
 }) {
@@ -65,6 +69,10 @@ export function PatientDetailView({
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
 
   const canEdit = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
+
+  const patientGroups = React.useMemo(() => {
+    return therapyGroups.filter(g => g.patientIds.includes(patient.id));
+  }, [therapyGroups, patient.id]);
 
   const handleStatusChange = async (newStatus: 'Active' | 'Inactive') => {
       if (patient.status === newStatus || isUpdatingStatus) return;
@@ -193,8 +201,9 @@ export function PatientDetailView({
         </Card>
 
         <Tabs defaultValue="evolution">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="evolution">Evolução</TabsTrigger>
+            <TabsTrigger value="groups">Grupos</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
             <TabsTrigger value="family">Familiares</TabsTrigger>
             <TabsTrigger value="profile">Perfil Completo</TabsTrigger>
@@ -237,6 +246,41 @@ export function PatientDetailView({
                   )}
                 </div>
               </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="groups">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Grupos de Terapia</CardTitle>
+                    <CardDescription>Grupos de terapia em que o paciente está incluído.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {groupsLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    ) : patientGroups.length > 0 ? (
+                        <div className="space-y-3">
+                            {patientGroups.map(group => (
+                                <Card key={group.id} className="bg-secondary/50">
+                                    <CardHeader className="p-4 flex flex-row items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Users2 className="h-5 w-5 text-primary" />
+                                            <CardTitle className="text-lg">{group.name}</CardTitle>
+                                        </div>
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={`/groups`}>Ver Grupo</Link>
+                                        </Button>
+                                    </CardHeader>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                            <p>O paciente não está participando de nenhum grupo de terapia.</p>
+                        </div>
+                    )}
+                </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="documents">
