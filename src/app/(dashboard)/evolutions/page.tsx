@@ -3,27 +3,85 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, Link as LinkIcon, AlertTriangle } from 'lucide-react';
+import { Search, Loader2, Link as LinkIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Link from 'next/link';
+import { usePatient } from '@/contexts/PatientContext';
+import type { EvolutionRecord } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+
 
 export default function EvolutionsPage() {
-  const { appointments, loading } = useSchedule();
+  const { appointments, loading: scheduleLoading } = useSchedule();
+  const { patients, loading: patientsLoading } = usePatient();
+  const [evolutions, setEvolutions] = React.useState<EvolutionRecord[]>([]);
+  const [loadingEvolutions, setLoadingEvolutions] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState('');
+  
+  const loading = scheduleLoading || patientsLoading || loadingEvolutions;
+
+  React.useEffect(() => {
+    const fetchAllEvolutions = async () => {
+        if (patientsLoading || patients.length === 0) {
+            setLoadingEvolutions(false);
+            return;
+        }
+
+        setLoadingEvolutions(true);
+        const allEvolutions: EvolutionRecord[] = [];
+
+        try {
+            for (const patient of patients) {
+                const recordsCollectionRef = collection(db, 'patients', patient.id, 'evolutionRecords');
+                const q = query(recordsCollectionRef, orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+                const fetchedRecords = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...(data as Omit<EvolutionRecord, 'id' | 'patientId' | 'patientName'>),
+                        patientName: patient.name,
+                        patientId: patient.id,
+                    };
+                });
+                allEvolutions.push(...fetchedRecords);
+            }
+            setEvolutions(allEvolutions);
+        } catch (error) {
+            console.error("Error fetching all evolution records: ", error);
+        } finally {
+            setLoadingEvolutions(false);
+        }
+    };
+    fetchAllEvolutions();
+  }, [patients, patientsLoading]);
+
 
   const pendingEvolutions = React.useMemo(() => {
-    return appointments
-      .filter(app => app.status === 'Realizado')
+    const appointmentsToConsider = appointments.filter(app => app.status === 'Realizado');
+
+    const appointmentsWithPendingEvolution = appointmentsToConsider.filter(app => {
+        const appDate = startOfDay(new Date(app.date + 'T00:00:00'));
+        const evolutionExists = evolutions.some(evo => {
+            if (!evo.createdAt || evo.patientId !== app.patientId) return false;
+            const evoDate = startOfDay(evo.createdAt.toDate());
+            return evoDate.getTime() >= appDate.getTime();
+        });
+        return !evolutionExists;
+    });
+    
+    return appointmentsWithPendingEvolution
       .filter(app => 
         app.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         app.professionalName.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [appointments, searchTerm]);
+  }, [appointments, evolutions, searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -52,9 +110,9 @@ export default function EvolutionsPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Atendimentos Realizados Aguardando Evolução</CardTitle>
+          <CardTitle>Atendimentos Aguardando Evolução</CardTitle>
           <CardDescription>
-            Esta lista mostra os atendimentos concluídos. Clique em "Registrar" para adicionar a evolução no prontuário do paciente.
+            Esta lista mostra os atendimentos concluídos que ainda não tiveram uma evolução registrada na mesma data ou em data posterior.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -94,15 +152,6 @@ export default function EvolutionsPage() {
                         )}
                     </TableBody>
                 </Table>
-            </div>
-             <div className="flex items-start gap-3 mt-4 p-3 rounded-lg bg-secondary/50 text-secondary-foreground">
-                <AlertTriangle className="h-5 w-5 mt-1 flex-shrink-0" />
-                <div className="text-sm">
-                    <p className="font-semibold">Nota sobre a Lógica de Pendência</p>
-                    <p className="text-muted-foreground">
-                        Atualmente, a lista exibe todos os atendimentos marcados como "Realizado". A funcionalidade para remover automaticamente um item da lista após o registro da evolução está em desenvolvimento.
-                    </p>
-                </div>
             </div>
         </CardContent>
       </Card>
