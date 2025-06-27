@@ -98,6 +98,8 @@ export type EvolutionRecord = {
   author: string;
   groupId?: string | null; // To link evolution to a group session
   createdAt?: any;
+  patientName: string;
+  patientId: string;
 };
 
 export type PatientDocument = {
@@ -138,6 +140,7 @@ export type TimeBlock = {
     startTime: string; // HH:mm
     endTime: string; // HH:mm
     createdAt?: any;
+    userIds?: string[];
 };
 
 

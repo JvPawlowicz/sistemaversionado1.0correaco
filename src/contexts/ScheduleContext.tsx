@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import type { Appointment } from '@/lib/types';
+import type { Appointment, TimeBlock } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc, updateDoc, getDoc, writeBatch, type Query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,7 @@ import { useAuth } from './AuthContext';
 
 interface ScheduleContextType {
   appointments: Appointment[];
+  timeBlocks: TimeBlock[];
   loading: boolean;
   error: string | null;
   addAppointment: (data: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color' | 'status'>; repeat: boolean }) => Promise<void>;
@@ -24,61 +25,63 @@ const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined
 
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { selectedUnitId } = useUnit();
   const { currentUser } = useAuth();
 
-  const fetchAppointments = useCallback(async () => {
+  const fetchScheduleData = useCallback(async () => {
     if (!db) {
-        setError("A configuração do Firebase está ausente. Não é possível buscar agendamentos.");
+        setError("A configuração do Firebase está ausente.");
         setLoading(false);
         return;
     }
     if (!selectedUnitId) {
       setAppointments([]);
+      setTimeBlocks([]);
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
       setError(null);
-      const appointmentsCollection = collection(db, 'appointments');
-      
-      let q: Query;
-      if (selectedUnitId === 'central' && currentUser?.role === 'Admin') {
-        q = query(appointmentsCollection);
-      } else {
-        q = query(appointmentsCollection, where('unitId', '==', selectedUnitId));
-      }
-      
-      const appointmentSnapshot = await getDocs(q);
-      const appointmentList = appointmentSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data
-        } as Appointment
-      });
-      
-      appointmentList.sort((a, b) => {
-        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
-        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      });
 
+      // Fetch Appointments
+      const appointmentsCollection = collection(db, 'appointments');
+      let appQuery: Query;
+      if (selectedUnitId === 'central' && currentUser?.role === 'Admin') {
+        appQuery = query(appointmentsCollection);
+      } else {
+        appQuery = query(appointmentsCollection, where('unitId', '==', selectedUnitId));
+      }
+      const appointmentSnapshot = await getDocs(appQuery);
+      const appointmentList = appointmentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+      appointmentList.sort((a, b) => (b.createdAt?.toDate()?.getTime() || 0) - (a.createdAt?.toDate()?.getTime() || 0));
       setAppointments(appointmentList);
-    } catch (err: any)
-    {
-      console.error("Error fetching appointments: ", err);
-      const userFriendlyError = "Falha ao buscar agendamentos. Verifique as regras de segurança e se o índice necessário foi criado no Firestore.";
+
+      // Fetch Time Blocks
+      const timeBlocksCollection = collection(db, 'timeBlocks');
+      let blockQuery: Query;
+       if (selectedUnitId === 'central' && currentUser?.role === 'Admin') {
+        blockQuery = query(timeBlocksCollection);
+      } else {
+        blockQuery = query(timeBlocksCollection, where('unitId', '==', selectedUnitId));
+      }
+      const timeBlockSnapshot = await getDocs(blockQuery);
+      const timeBlockList = timeBlockSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TimeBlock));
+      setTimeBlocks(timeBlockList);
+
+    } catch (err: any) {
+      console.error("Error fetching schedule data: ", err);
+      const userFriendlyError = "Falha ao buscar dados da agenda. Verifique as regras de segurança e se os índices necessários foram criados no Firestore.";
       setError(userFriendlyError);
       setAppointments([]);
+      setTimeBlocks([]);
       toast({
         variant: "destructive",
-        title: "Erro ao buscar agendamentos",
-        description: "Não foi possível carregar a lista de agendamentos.",
+        title: "Erro ao buscar dados da agenda",
       });
     } finally {
       setLoading(false);
@@ -86,8 +89,8 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   }, [toast, selectedUnitId, currentUser]);
 
   useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+    fetchScheduleData();
+  }, [fetchScheduleData]);
 
   const addAppointment = async ({ appointment: appointmentData, repeat }: { appointment: Omit<Appointment, 'id' | 'createdAt' | 'color' | 'status'>; repeat: boolean }) => {
     if (!db) {
@@ -134,7 +137,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         title: "Sucesso",
         description: `Agendamento${appointmentsToAdd.length > 1 ? 's' : ''} criado${appointmentsToAdd.length > 1 ? 's' : ''} com sucesso.`,
       });
-      await fetchAppointments();
+      await fetchScheduleData();
     } catch (error) {
       console.error("Error adding appointment(s): ", error);
       toast({
@@ -156,7 +159,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         title: "Sucesso",
         description: "Agendamento excluído.",
       });
-      await fetchAppointments();
+      await fetchScheduleData();
     } catch (error) {
       console.error("Error deleting appointment: ", error);
       toast({
@@ -199,7 +202,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         description: toastDescription,
       });
 
-      await fetchAppointments();
+      await fetchScheduleData();
     } catch (error) {
       console.error('Error updating appointment status: ', error);
       toast({
@@ -210,7 +213,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ScheduleContext.Provider value={{ appointments, loading, error, addAppointment, deleteAppointment, updateAppointmentStatus }}>
+    <ScheduleContext.Provider value={{ appointments, timeBlocks, loading, error, addAppointment, deleteAppointment, updateAppointmentStatus }}>
       {children}
     </ScheduleContext.Provider>
   );

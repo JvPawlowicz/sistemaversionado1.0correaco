@@ -11,12 +11,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useUser } from '@/contexts/UserContext';
-import { Loader2, Plus, SlidersHorizontal, UserCheck, CircleAlert } from 'lucide-react';
+import { Loader2, Plus, SlidersHorizontal, UserCheck, CircleAlert, ChevronsUpDown, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { createTimeBlockAction } from '@/lib/actions';
 import { useUnit } from '@/contexts/UnitContext';
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfDay } from 'date-fns';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const initialState = {
   success: false,
@@ -37,7 +42,7 @@ function SubmitButton() {
 
 export default function PlanningPage() {
   const { users, loading: usersLoading } = useUser();
-  const { selectedUnitId } = useUnit();
+  const { units, selectedUnitId } = useUnit();
   const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Coordinator');
   
   const [state, formAction] = useActionState(createTimeBlockAction, initialState);
@@ -45,15 +50,28 @@ export default function PlanningPage() {
   const formRef = React.useRef<HTMLFormElement>(null);
   const [date, setDate] = React.useState<Date | undefined>(new Date());
 
+  const [blockType, setBlockType] = React.useState<'UNIT' | 'USERS'>('UNIT');
+  const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+
   React.useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
       formRef.current?.reset();
       setDate(new Date());
+      setBlockType('UNIT');
+      setSelectedUserIds([]);
     } else if (state.message && !state.errors) {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
   }, [state, toast]);
+  
+  const handleManageAvailability = () => {
+    toast({
+      title: 'Em breve!',
+      description: 'A funcionalidade de gerenciamento de horários individuais está em desenvolvimento.',
+    });
+  };
 
   const getInitials = (name: string) => {
     if (!name) return '';
@@ -64,6 +82,9 @@ export default function PlanningPage() {
     return name.substring(0, 2).toUpperCase();
   };
   
+  const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
+  const professionalsInUnit = users.filter(user => user.unitIds.includes(selectedUnitId || ''));
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -75,15 +96,15 @@ export default function PlanningPage() {
         </p>
       </div>
 
-       <Tabs defaultValue="availability">
+       <Tabs defaultValue="blocks">
           <TabsList className="grid w-full grid-cols-2">
+             <TabsTrigger value="blocks">
+              <SlidersHorizontal className="mr-2" />
+              Bloqueios Gerais
+            </TabsTrigger>
             <TabsTrigger value="availability">
               <UserCheck className="mr-2" />
               Disponibilidade de Profissionais
-            </TabsTrigger>
-            <TabsTrigger value="blocks">
-              <SlidersHorizontal className="mr-2" />
-              Bloqueios Gerais
             </TabsTrigger>
           </TabsList>
 
@@ -113,7 +134,7 @@ export default function PlanningPage() {
                               <p className="text-sm text-muted-foreground">{pro.role}</p>
                           </div>
                       </div>
-                      <Button variant="outline" disabled>Gerenciar Horários</Button>
+                      <Button variant="outline" onClick={handleManageAvailability}>Gerenciar Horários</Button>
                   </div>
                 ))}
               </CardContent>
@@ -128,12 +149,12 @@ export default function PlanningPage() {
             <form action={formAction} ref={formRef}>
               <Card>
                 <CardHeader>
-                  <CardTitle>Bloqueios na Agenda</CardTitle>
+                  <CardTitle>Criar Bloqueio na Agenda</CardTitle>
                   <CardDescription>
-                      Crie bloqueios para eventos como reuniões, feriados ou formações, que se aplicarão a toda a unidade.
+                      Crie bloqueios para eventos como reuniões, feriados ou formações.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   {state.message && !state.success && !state.errors && (
                     <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                         <CircleAlert className="h-4 w-4" />
@@ -167,6 +188,55 @@ export default function PlanningPage() {
                       <Input id="block-end" name="endTime" type="time" defaultValue="10:00" required/>
                     </div>
                   </div>
+
+                  <div className="space-y-4 rounded-md border p-4">
+                    <Label>Aplicar Bloqueio Para</Label>
+                    <RadioGroup value={blockType} onValueChange={(v) => setBlockType(v as any)} className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="UNIT" id="r-unit" />
+                        <Label htmlFor="r-unit">Toda a Unidade</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="USERS" id="r-users" />
+                        <Label htmlFor="r-users">Profissionais Específicos</Label>
+                      </div>
+                    </RadioGroup>
+                    
+                    {blockType === 'USERS' && (
+                       <div className="space-y-2 pt-2">
+                          <Label htmlFor="professionals">Profissionais</Label>
+                          {selectedUserIds.map(id => <input key={id} type="hidden" name="userIds" value={id} />)}
+                          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" role="combobox" className="w-full justify-between h-auto min-h-10" disabled={usersLoading}>
+                                    <div className="flex gap-1 flex-wrap">
+                                        {selectedUsers.length > 0 ? selectedUsers.map(u => <Badge variant="secondary" key={u.id}>{u.name}</Badge>) : "Selecione..."}
+                                    </div>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                    <CommandInput placeholder="Buscar profissional..." />
+                                    <CommandList>
+                                        <CommandEmpty>Nenhum profissional.</CommandEmpty>
+                                        <CommandGroup>
+                                            {professionalsInUnit.map(u => (
+                                                <CommandItem key={u.id} value={u.name} onSelect={() => setSelectedUserIds(p => p.includes(u.id) ? p.filter(id => id !== u.id) : [...p, u.id])}>
+                                                    <Check className={cn('mr-2 h-4 w-4', selectedUserIds.includes(u.id) ? 'opacity-100' : 'opacity-0')} />
+                                                    {u.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                          </Popover>
+                       </div>
+                    )}
+
+                  </div>
+
                 </CardContent>
                 <CardFooter className="justify-end">
                    <SubmitButton />

@@ -21,7 +21,7 @@ export function ScheduleView() {
   const [currentDate, setCurrentDate] = React.useState<Date>(new Date());
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const { appointments, loading, error } = useSchedule();
+  const { appointments, timeBlocks, loading, error } = useSchedule();
 
   const handleExportPdf = async () => {
     setIsExporting(true);
@@ -119,7 +119,7 @@ export function ScheduleView() {
             ) : (
                 <>
                     <TabsContent value="week" >
-                        <DailyView appointments={appointments} currentDate={currentDate} setCurrentDate={setCurrentDate} />
+                        <DailyView appointments={appointments} timeBlocks={timeBlocks} currentDate={currentDate} setCurrentDate={setCurrentDate} />
                     </TabsContent>
                     <TabsContent value="month">
                         <MonthlyView appointments={appointments} date={currentDate} setDate={setCurrentDate} />

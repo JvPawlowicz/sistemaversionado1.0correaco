@@ -635,6 +635,7 @@ const CreateTimeBlockSchema = z.object({
   date: z.string().min(1, { message: 'Selecione uma data.' }),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Formato de hora inválido.' }),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Formato de hora inválido.' }),
+  userIds: z.array(z.string()).optional(),
 }).refine(data => data.endTime > data.startTime, {
   message: "O horário final deve ser após o horário inicial.",
   path: ["endTime"],
@@ -650,6 +651,7 @@ export async function createTimeBlockAction(prevState: any, formData: FormData) 
     date: formData.get('date'),
     startTime: formData.get('startTime'),
     endTime: formData.get('endTime'),
+    userIds: formData.getAll('userIds'),
   });
 
   if (!validatedFields.success) {
@@ -661,10 +663,16 @@ export async function createTimeBlockAction(prevState: any, formData: FormData) 
   }
   
   try {
-    await db.collection('timeBlocks').add({
+    const dataToSave = {
       ...validatedFields.data,
       createdAt: FieldValue.serverTimestamp(),
-    });
+    };
+
+    if (dataToSave.userIds && dataToSave.userIds.length === 0) {
+      delete dataToSave.userIds;
+    }
+
+    await db.collection('timeBlocks').add(dataToSave);
     revalidatePath('/planning');
     revalidatePath('/schedule');
     return { success: true, message: 'Bloqueio de horário criado com sucesso!', errors: null };

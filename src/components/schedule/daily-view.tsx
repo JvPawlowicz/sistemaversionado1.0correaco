@@ -1,15 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import type { Appointment } from '@/lib/types';
+import type { Appointment, TimeBlock } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, User, Users } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { AppointmentActionsDialog } from './appointment-actions-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { useUser } from '@/contexts/UserContext';
 
 const HOUR_HEIGHT = 60; // height of one hour in pixels
 
@@ -88,13 +90,20 @@ function calculateAppointmentLayout(appointmentsOnDay: Appointment[]) {
   return withLayout;
 }
 
+interface DailyViewProps {
+    appointments: Appointment[];
+    timeBlocks: TimeBlock[];
+    currentDate: Date;
+    setCurrentDate: (date: Date) => void;
+}
 
-export function DailyView({ appointments, currentDate, setCurrentDate }: { appointments: Appointment[], currentDate: Date, setCurrentDate: (date: Date) => void }) {
+export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDate }: DailyViewProps) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday
   const hours = Array.from({ length: 13 }, (_, i) => i + 7); // 7 AM to 7 PM
   const days = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)); // Mon to Fri
 
   const { currentUser } = useAuth();
+  const { users } = useUser();
   const [isActionsDialogOpen, setIsActionsDialogOpen] = React.useState(false);
   const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
 
@@ -120,7 +129,7 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
   };
   
   return (
-    <>
+    <TooltipProvider>
       <AppointmentActionsDialog
         isOpen={isActionsDialogOpen}
         onOpenChange={setIsActionsDialogOpen}
@@ -166,6 +175,42 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
                   {hours.map((hour, index) => (
                       <div key={hour} className={`h-[60px] ${index > 0 ? 'border-t border-border/70' : ''}`}></div>
                   ))}
+                  
+                  {timeBlocks.filter(block => isSameDay(new Date(block.date + 'T00:00:00'), day)).map(block => {
+                     const top = ((timeToMinutes(block.startTime) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
+                     const height = ((timeToMinutes(block.endTime) - timeToMinutes(block.startTime)) / 60) * HOUR_HEIGHT - 2;
+                     const isUserSpecific = block.userIds && block.userIds.length > 0;
+                     const affectedUsers = isUserSpecific ? users.filter(u => block.userIds!.includes(u.id)).map(u => u.name).join(', ') : '';
+
+                     return (
+                        <Tooltip key={block.id}>
+                          <TooltipTrigger asChild>
+                             <div
+                              className="absolute p-2 rounded-lg bg-muted/70 backdrop-blur-sm border-l-4 border-yellow-500 text-muted-foreground overflow-hidden text-xs shadow-sm flex items-center gap-2"
+                              style={{
+                                top: `${top}px`,
+                                height: `${height}px`,
+                                width: `calc(100% - 4px)`,
+                                left: '2px',
+                                zIndex: 5,
+                              }}
+                            >
+                              <Lock className="h-4 w-4 shrink-0" />
+                              <div className="flex-1 overflow-hidden">
+                                <p className="font-bold whitespace-nowrap overflow-hidden text-ellipsis">{block.title}</p>
+                                {isUserSpecific && <Users className="h-3 w-3 mt-1" />}
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                           <TooltipContent>
+                             <p className="font-semibold">{block.title}</p>
+                             <p>{block.startTime} - {block.endTime}</p>
+                            {isUserSpecific && <p className="text-xs mt-1 max-w-xs">Afeta: {affectedUsers}</p>}
+                          </TooltipContent>
+                        </Tooltip>
+                     )
+                  })}
+
                   {(laidOutAppointmentsByDay.get(day.toISOString()) || []).map(app => {
                     const top = ((timeToMinutes(app.time) - 7 * 60) / 60) * HOUR_HEIGHT + 1;
                     const height = ((timeToMinutes(app.endTime) - timeToMinutes(app.time)) / 60) * HOUR_HEIGHT - 2;
@@ -198,7 +243,7 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
                           height: `${height}px`,
                           width: `calc(${widthPercentage}% - 4px)`,
                           left: `calc(${leftPercentage}% + 2px)`,
-                          zIndex: app.layout.col,
+                          zIndex: 10 + app.layout.col,
                           backgroundColor: app.color,
                         }}
                       >
@@ -217,6 +262,6 @@ export function DailyView({ appointments, currentDate, setCurrentDate }: { appoi
           </div>
         </CardContent>
       </Card>
-    </>
+    </TooltipProvider>
   );
 }
