@@ -1,19 +1,21 @@
-import { ReportsView } from '@/components/reports/reports-view';
+
+'use client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Info } from "lucide-react";
 
 export default function ReportsPage() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-                Relatórios
-            </h1>
-            <p className="text-muted-foreground">
-                Filtre e visualize dados de agendamentos para análise.
-            </p>
-        </div>
-      </div>
-      <ReportsView />
+       <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Info className="text-primary"/> Módulo Unificado</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <CardDescription>
+                A funcionalidade de Relatórios foi unificada com a de Análise para criar uma experiência mais coesa. Você pode encontrar os relatórios detalhados na aba "Relatórios Detalhados" dentro do módulo "Análise e Relatórios".
+            </CardDescription>
+        </CardContent>
+       </Card>
     </div>
   );
 }
