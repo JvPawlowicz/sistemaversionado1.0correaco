@@ -2,15 +2,19 @@
 
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Users, HeartPulse, CalendarCheck, Activity } from 'lucide-react';
+import { Users, HeartPulse, CalendarCheck, Activity, CalendarClock, User } from 'lucide-react';
 import { usePatient } from '@/contexts/PatientContext';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { isToday, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { isToday, startOfMonth, endOfMonth, isWithinInterval, isFuture, parseISO, compareAsc } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnit } from '@/contexts/UnitContext';
 import { AppointmentsChart } from '@/components/dashboard/appointments-chart';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface StatCardProps {
   title: string;
@@ -63,8 +67,27 @@ export default function DashboardPage() {
   const todaysAppointmentsTotal = appointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length;
   const totalTherapists = users.filter(u => u.role === 'Therapist' && selectedUnitId && u.unitIds.includes(selectedUnitId)).length;
 
-  // Therapist-specific Stats
-  const myAppointments = appointments.filter(a => a.professionalName === currentUser?.name);
+  // Therapist-specific Stats & Upcoming Appointments
+  const myAppointments = React.useMemo(() => {
+    return appointments.filter(a => a.professionalName === currentUser?.name);
+  }, [appointments, currentUser]);
+
+  const upcomingAppointments = React.useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    return appointments
+      .filter(a => {
+        const appointmentDate = parseISO(`${a.date}T${a.time}:00`);
+        return compareAsc(appointmentDate, todayStart) >= 0 && (currentUser?.role !== 'Therapist' || a.professionalName === currentUser.name);
+      })
+      .sort((a, b) => {
+        const dateA = parseISO(`${a.date}T${a.time}:00`);
+        const dateB = parseISO(`${b.date}T${b.time}:00`);
+        return compareAsc(dateA, dateB);
+      })
+      .slice(0, 5);
+  }, [appointments, currentUser]);
+
   const myTodaysAppointments = myAppointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length;
   const myMonthlyAppointments = myAppointments.filter(a => isWithinInterval(new Date(a.date + 'T00:00:00'), { start: monthStart, end: monthEnd })).length;
   const myPatientIds = [...new Set(myAppointments.map(a => a.patientId))];
@@ -91,6 +114,13 @@ export default function DashboardPage() {
     );
   };
   
+  const getInitials = (name: string) => {
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   return (
     <div className="space-y-6">
@@ -121,7 +151,34 @@ export default function DashboardPage() {
             <CardDescription>Seus próximos agendamentos na unidade.</CardDescription>
             </CardHeader>
             <CardContent>
-            <p className="text-center text-muted-foreground py-8">(Em breve)</p>
+            {loading ? <Skeleton className="h-48 w-full" /> : 
+             upcomingAppointments.length > 0 ? (
+                <div className="space-y-4">
+                    {upcomingAppointments.map(app => {
+                        const patient = patients.find(p => p.id === app.patientId);
+                        return (
+                            <div key={app.id} className="flex items-center space-x-4">
+                                <Avatar>
+                                    <AvatarImage src={patient?.avatarUrl} />
+                                    <AvatarFallback>{patient ? getInitials(patient.name) : '?'}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 space-y-1">
+                                    <p className="text-sm font-medium leading-none">{app.patientName}</p>
+                                    <p className="text-sm text-muted-foreground">{app.professionalName}</p>
+                                </div>
+                                <div className="text-right">
+                                     <Badge variant="outline">{format(parseISO(`${app.date}T${app.time}`), 'dd/MM, HH:mm')}</Badge>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-lg h-full">
+                    <CalendarClock className="h-10 w-10 text-muted-foreground mb-2"/>
+                    <p className="text-muted-foreground">Nenhum agendamento futuro encontrado.</p>
+                </div>
+            )}
             </CardContent>
         </Card>
       </div>

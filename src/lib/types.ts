@@ -133,11 +133,11 @@ export type TherapyGroup = {
 export type TimeBlock = {
     id: string;
     title: string;
-    unitId?: string; // Block entire unit
-    userIds?: string[]; // Block specific users
+    unitId: string; 
     date: string; // YYYY-MM-DD
     startTime: string; // HH:mm
     endTime: string; // HH:mm
+    createdAt?: any;
 };
 
 

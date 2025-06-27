@@ -617,10 +617,59 @@ export async function createTherapyGroupAction(prevState: any, formData: FormDat
       createdAt: FieldValue.serverTimestamp(),
     });
     revalidatePath('/groups');
+    revalidatePath('/patients');
   } catch (error: any) {
     console.error('Error creating therapy group:', error);
     return { success: false, message: 'Ocorreu um erro desconhecido ao criar o grupo.', errors: null };
   }
 
   return { success: true, message: 'Grupo de terapia criado com sucesso!', errors: null };
+}
+
+
+// --- Create Time Block Action ---
+
+const CreateTimeBlockSchema = z.object({
+  title: z.string().min(3, { message: 'O motivo do bloqueio deve ter pelo menos 3 caracteres.' }),
+  unitId: z.string().min(1, { message: 'ID da unidade é obrigatório.' }),
+  date: z.string().min(1, { message: 'Selecione uma data.' }),
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Formato de hora inválido.' }),
+  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Formato de hora inválido.' }),
+}).refine(data => data.endTime > data.startTime, {
+  message: "O horário final deve ser após o horário inicial.",
+  path: ["endTime"],
+});
+
+export async function createTimeBlockAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+  
+  const validatedFields = CreateTimeBlockSchema.safeParse({
+    title: formData.get('title'),
+    unitId: formData.get('unitId'),
+    date: formData.get('date'),
+    startTime: formData.get('startTime'),
+    endTime: formData.get('endTime'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+  
+  try {
+    await db.collection('timeBlocks').add({
+      ...validatedFields.data,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    revalidatePath('/planning');
+    revalidatePath('/schedule');
+    return { success: true, message: 'Bloqueio de horário criado com sucesso!', errors: null };
+  } catch (error: any) {
+    console.error('Error creating time block:', error);
+    return { success: false, message: "Ocorreu um erro ao salvar o bloqueio.", errors: null };
+  }
 }
