@@ -10,19 +10,19 @@ import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useTherapyGroup } from '@/contexts/TherapyGroupContext';
 
 export default function PatientProfilePage() {
   const params = useParams<{ id: string }>();
   const { patients, loading: patientsLoading, fetchPatients } = usePatient();
+  const { therapyGroups, loading: groupsLoading } = useTherapyGroup();
   const router = useRouter();
   const [records, setRecords] = useState<EvolutionRecord[]>([]);
   const [documents, setDocuments] = useState<PatientDocument[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [therapyGroups, setTherapyGroups] = useState<TherapyGroup[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(true);
   const [documentsLoading, setDocumentsLoading] = useState(true);
   const [familyMembersLoading, setFamilyMembersLoading] = useState(true);
-  const [groupsLoading, setGroupsLoading] = useState(true);
 
   const patient = patients.find((p) => p.id === params.id);
 
@@ -98,25 +98,6 @@ export default function PatientProfilePage() {
     }
   }, [patient]);
 
-  const fetchTherapyGroups = useCallback(async () => {
-    if (!patient || !db) return;
-    setGroupsLoading(true);
-    try {
-      const groupsCollectionRef = collection(db, 'therapyGroups');
-      const querySnapshot = await getDocs(groupsCollectionRef);
-      const fetchedGroups = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as TherapyGroup));
-      setTherapyGroups(fetchedGroups);
-    } catch (error) {
-      console.error("Error fetching therapy groups: ", error);
-    } finally {
-      setGroupsLoading(false);
-    }
-  }, [patient]);
-
-
   useEffect(() => {
     if (!patientsLoading && !patient) {
       router.push('/patients');
@@ -124,9 +105,8 @@ export default function PatientProfilePage() {
       fetchRecords();
       fetchDocuments();
       fetchFamilyMembers();
-      fetchTherapyGroups();
     }
-  }, [patientsLoading, patient, router, fetchRecords, fetchDocuments, fetchFamilyMembers, fetchTherapyGroups]);
+  }, [patientsLoading, patient, router, fetchRecords, fetchDocuments, fetchFamilyMembers]);
 
   if (patientsLoading || !patient) {
     return (

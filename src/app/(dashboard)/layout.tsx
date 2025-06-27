@@ -13,6 +13,7 @@ import { UserProvider } from '@/contexts/UserContext';
 import { UnitProvider } from '@/contexts/UnitContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { AuthorPopup } from '@/components/layout/author-popup';
+import { TherapyGroupProvider } from '@/contexts/TherapyGroupContext';
 
 export default function DashboardLayout({
   children,
@@ -48,21 +49,23 @@ export default function DashboardLayout({
       <UserProvider>
         <PatientProvider>
           <ScheduleProvider>
-            <NotificationProvider>
-              <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset>
-                  <Header />
-                  <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                    {children}
-                  </main>
-                  <footer className="border-t p-4 text-center text-sm text-muted-foreground">
-                      Desenvolvido por: JVGP- João Pawlowicz
-                  </footer>
-                </SidebarInset>
-                <AuthorPopup />
-              </SidebarProvider>
-            </NotificationProvider>
+            <TherapyGroupProvider>
+              <NotificationProvider>
+                <SidebarProvider>
+                  <AppSidebar />
+                  <SidebarInset>
+                    <Header />
+                    <main className="flex-1 p-4 sm:p-6 lg:p-8">
+                      {children}
+                    </main>
+                    <footer className="border-t p-4 text-center text-sm text-muted-foreground">
+                        Desenvolvido por: JVGP- João Pawlowicz
+                    </footer>
+                  </SidebarInset>
+                  <AuthorPopup />
+                </SidebarProvider>
+              </NotificationProvider>
+            </TherapyGroupProvider>
           </ScheduleProvider>
         </PatientProvider>
       </UserProvider>

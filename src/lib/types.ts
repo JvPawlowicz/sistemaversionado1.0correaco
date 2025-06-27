@@ -127,6 +127,7 @@ export type TherapyGroup = {
   unitId: string;
   patientIds: string[];
   professionalIds: string[];
+  createdAt?: any;
 };
 
 export type TimeBlock = {
