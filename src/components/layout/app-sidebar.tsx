@@ -25,7 +25,8 @@ import {
   LineChart, 
   FileText, 
   MessageSquare,
-  Settings
+  Settings,
+  NotebookText
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnit } from '@/contexts/UnitContext';
@@ -42,7 +43,8 @@ export function AppSidebar() {
     { href: '/schedule', label: 'Agenda', icon: Calendar, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
     { href: '/patients', label: 'Pacientes', icon: HeartPulse, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
     { href: '/chat', label: 'Chat', icon: MessageSquare, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
-    { href: '/evolutions', label: 'Evoluções', icon: FileText, roles: ['Admin', 'Coordinator', 'Therapist'] },
+    { href: '/evolutions', label: 'Evoluções Pendentes', icon: FileText, roles: ['Admin', 'Coordinator', 'Therapist'] },
+    { href: '/templates', label: 'Modelos de Evolução', icon: NotebookText, roles: ['Admin', 'Coordinator', 'Therapist'] },
   ];
   const managementItems = [
     { href: '/analysis', label: 'Análise e Relatórios', icon: LineChart, roles: ['Admin', 'Coordinator'] },

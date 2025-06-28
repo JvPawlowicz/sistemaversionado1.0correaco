@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Loader2, CircleAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createEvolutionRecordAction } from '@/lib/actions';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTemplate } from '@/contexts/TemplateContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface NewEvolutionRecordDialogProps {
   isOpen: boolean;
@@ -40,12 +42,16 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patientId, onRe
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const { currentUser } = useAuth();
+  const { templates } = useTemplate();
+
+  const [title, setTitle] = useState('');
+  const [details, setDetails] = useState('');
 
   useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
       onRecordAdded();
-      onOpenChange(false);
+      handleClose();
     } else if (state.message && !state.errors) {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
@@ -53,7 +59,17 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patientId, onRe
 
   const handleClose = () => {
     formRef.current?.reset();
+    setTitle('');
+    setDetails('');
     onOpenChange(false);
+  };
+  
+  const handleTemplateSelect = (templateId: string) => {
+    const selectedTemplate = templates.find(t => t.id === templateId);
+    if (selectedTemplate) {
+      setTitle(selectedTemplate.title);
+      setDetails(selectedTemplate.content);
+    }
   };
 
   return (
@@ -75,14 +91,27 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patientId, onRe
             )}
             <input type="hidden" name="patientId" value={patientId} />
             <input type="hidden" name="author" value={currentUser?.name || 'Sistema'} />
+
+             <div className="space-y-2">
+                <Label htmlFor="template">Usar Modelo (Opcional)</Label>
+                <Select onValueChange={handleTemplateSelect} disabled={templates.length === 0}>
+                    <SelectTrigger><SelectValue placeholder="Selecione um modelo" /></SelectTrigger>
+                    <SelectContent>
+                        {templates.map(template => (
+                            <SelectItem key={template.id} value={template.id}>{template.title}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="title">Título do Registro</Label>
-              <Input id="title" name="title" required />
+              <Input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
               {state.errors?.title && <p className="text-xs text-destructive mt-1">{state.errors.title[0]}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="details">Detalhes</Label>
-              <Textarea id="details" name="details" required rows={8} />
+              <Textarea id="details" name="details" value={details} onChange={(e) => setDetails(e.target.value)} required rows={8} />
               {state.errors?.details && <p className="text-xs text-destructive mt-1">{state.errors.details[0]}</p>}
             </div>
           </div>

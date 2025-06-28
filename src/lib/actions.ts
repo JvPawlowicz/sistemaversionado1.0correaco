@@ -856,3 +856,98 @@ export async function completeAppointmentWithEvolutionAction(prevState: any, for
     return { success: false, message: 'Ocorreu um erro ao concluir o atendimento.', errors: null };
   }
 }
+
+// --- Evolution Template Actions ---
+
+const EvolutionTemplateSchema = z.object({
+  title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres.' }),
+  content: z.string().min(10, { message: 'O conteúdo do modelo deve ter pelo menos 10 caracteres.' }),
+  userId: z.string().min(1, { message: 'ID do usuário é obrigatório.' }),
+});
+
+export async function createEvolutionTemplateAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = EvolutionTemplateSchema.safeParse({
+    title: formData.get('title'),
+    content: formData.get('content'),
+    userId: formData.get('userId'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await db.collection('evolutionTemplates').add({
+      ...validatedFields.data,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    revalidatePath('/templates');
+    return { success: true, message: 'Modelo criado com sucesso!', errors: null };
+  } catch (error) {
+    console.error('Error creating evolution template:', error);
+    return { success: false, message: 'Ocorreu um erro ao salvar o modelo.', errors: null };
+  }
+}
+
+const UpdateEvolutionTemplateSchema = EvolutionTemplateSchema.extend({
+  templateId: z.string().min(1, { message: 'ID do modelo é obrigatório.' }),
+});
+
+export async function updateEvolutionTemplateAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+  
+  const validatedFields = UpdateEvolutionTemplateSchema.safeParse({
+    templateId: formData.get('templateId'),
+    title: formData.get('title'),
+    content: formData.get('content'),
+    userId: formData.get('userId'), // a user can only update their own templates, but we can pass it for consistency
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+  
+  const { templateId, title, content } = validatedFields.data;
+
+  try {
+    await db.collection('evolutionTemplates').doc(templateId).update({
+      title,
+      content,
+    });
+    revalidatePath('/templates');
+    return { success: true, message: 'Modelo atualizado com sucesso!', errors: null };
+  } catch (error) {
+    console.error('Error updating evolution template:', error);
+    return { success: false, message: 'Ocorreu um erro ao atualizar o modelo.', errors: null };
+  }
+}
+
+export async function deleteEvolutionTemplateAction(templateId: string): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+  
+  if (!templateId) {
+    return { success: false, message: 'ID do modelo é obrigatório.' };
+  }
+
+  try {
+    await db.collection('evolutionTemplates').doc(templateId).delete();
+    revalidatePath('/templates');
+    return { success: true, message: 'Modelo excluído com sucesso.' };
+  } catch (error: any) {
+    console.error("Error deleting evolution template:", error);
+    return { success: false, message: 'Falha ao excluir o modelo.' };
+  }
+}
