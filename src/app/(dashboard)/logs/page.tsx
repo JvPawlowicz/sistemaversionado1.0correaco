@@ -11,11 +11,13 @@ import type { Log } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
+import { useUnit } from '@/contexts/UnitContext';
 
 export default function LogsPage() {
   const [logs, setLogs] = React.useState<Log[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const { selectedUnitId } = useUnit();
 
   React.useEffect(() => {
     if (!db) {
@@ -37,11 +39,17 @@ export default function LogsPage() {
     return () => unsubscribe();
   }, []);
   
-  const filteredLogs = logs.filter(log => 
-    log.actorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.details.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLogs = logs.filter(log => {
+    const unitMatch = !selectedUnitId || selectedUnitId === 'central' || !log.unitId || log.unitId === selectedUnitId;
+    
+    if (!unitMatch) return false;
+
+    return (
+        log.actorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.details.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  });
 
   return (
     <div className="space-y-6">

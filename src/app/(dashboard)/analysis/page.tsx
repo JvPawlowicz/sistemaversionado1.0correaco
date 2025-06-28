@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, TrendingUp, TrendingDown, Clock, Activity, Download, SlidersHorizontal, Trash, FileSignature, ListChecks, Users } from 'lucide-react';
+import { PieChart, TrendingUp, TrendingDown, Clock, Activity, Download, SlidersHorizontal, Trash, FileSignature, ListChecks, Users, Shield } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { subDays, isWithinInterval, startOfDay, addDays, isAfter, isBefore, isEqual, format, differenceInYears } from 'date-fns';
@@ -19,7 +19,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useUnit } from '@/contexts/UnitContext';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
-import type { Appointment, Service, EvolutionRecord } from '@/lib/types';
+import type { Appointment, Service, EvolutionRecord, HealthPlan } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -80,6 +80,10 @@ const demographicsGenderChartConfig = {
   naoinformado: { label: 'Não Informado', color: 'hsl(var(--muted))' },
 } satisfies ChartConfig;
 
+const maritalStatusChartConfig = {
+  count: { label: 'Pacientes', color: 'hsl(var(--chart-4))' },
+} satisfies ChartConfig;
+
 
 export default function AnalysisAndReportsPage() {
   const { appointments, loading: scheduleLoading } = useSchedule();
@@ -91,6 +95,8 @@ export default function AnalysisAndReportsPage() {
   const [loadingEvolutions, setLoadingEvolutions] = React.useState(true);
 
   const isLoading = scheduleLoading || patientsLoading || usersLoading || unitsLoading || loadingEvolutions;
+  
+  const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
 
   React.useEffect(() => {
     const fetchAllEvolutions = async () => {
@@ -168,10 +174,11 @@ export default function AnalysisAndReportsPage() {
     professionalName: '',
     serviceId: '',
     status: '',
+    healthPlanId: '',
   });
   
-  const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
   const availableServices = selectedUnit?.services || [];
+  const availableHealthPlans = selectedUnit?.healthPlans || [];
   const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Coordinator' || u.role === 'Admin');
 
   const handleAppointmentFilterChange = (key: keyof typeof appointmentFilters, value: any) => {
@@ -190,6 +197,13 @@ export default function AnalysisAndReportsPage() {
     if (appointmentFilters.professionalName) result = result.filter(app => app.professionalName === appointmentFilters.professionalName);
     if (appointmentFilters.serviceId) result = result.filter(app => app.serviceId === appointmentFilters.serviceId);
     if (appointmentFilters.status) result = result.filter(app => app.status === appointmentFilters.status);
+    if (appointmentFilters.healthPlanId) {
+        if(appointmentFilters.healthPlanId === 'none') {
+            result = result.filter(app => !app.healthPlanId);
+        } else {
+            result = result.filter(app => app.healthPlanId === appointmentFilters.healthPlanId);
+        }
+    }
     
     result.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.time.localeCompare(b.time));
     setFilteredAppointments(result);
@@ -203,6 +217,7 @@ export default function AnalysisAndReportsPage() {
         professionalName: '',
         serviceId: '',
         status: '',
+        healthPlanId: '',
     });
     setFilteredAppointments([]);
   };
@@ -214,13 +229,14 @@ export default function AnalysisAndReportsPage() {
     doc.text('Relatório de Agendamentos', 14, 16);
     (doc as any).autoTable({
         startY: 22,
-        head: [['Data', 'Horário', 'Paciente', 'Profissional', 'Serviço', 'Status']],
+        head: [['Data', 'Horário', 'Paciente', 'Profissional', 'Serviço', 'Plano', 'Status']],
         body: filteredAppointments.map(app => [
             format(new Date(app.date + "T00:00:00"), 'dd/MM/yyyy', { locale: ptBR }),
             `${app.time} - ${app.endTime}`,
             app.patientName,
             app.professionalName,
             app.serviceName,
+            app.healthPlanName || 'Particular',
             app.status
         ]),
         headStyles: { fillColor: [63, 76, 181] },
@@ -310,7 +326,7 @@ export default function AnalysisAndReportsPage() {
   // --- Demographics Logic ---
   const demographicsData = React.useMemo(() => {
     if (!patients || patients.length === 0) {
-      return { ageData: [], genderData: [], diagnosisData: [] };
+      return { ageData: [], genderData: [], diagnosisData: [], maritalStatusData: [], healthPlanData: [] };
     }
 
     const ageGroups: { [key: string]: number } = { '0-3': 0, '4-7': 0, '8-12': 0, '13-17': 0, '18+': 0, 'N/A': 0 };
@@ -360,10 +376,40 @@ export default function AnalysisAndReportsPage() {
       .sort(([, countA], [, countB]) => countB - countA)
       .slice(0, 10)
       .map(([diagnosis, count]) => ({ diagnosis, count }));
+      
+    const maritalStatusCounts = patients.reduce((acc, p) => {
+        const status = (p.maritalStatus || 'Não Informado').trim();
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    const maritalStatusData = Object.entries(maritalStatusCounts).map(([status, count]) => ({ status, count }));
 
-    return { ageData, genderData, diagnosisData };
+    const healthPlanCounts = patients.reduce((acc, p) => {
+        const planName = (p.healthPlanName || 'Particular').trim();
+        acc[planName] = (acc[planName] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const healthPlanData = Object.entries(healthPlanCounts).map(([plan, count]) => ({ plan, count }));
+
+    return { ageData, genderData, diagnosisData, maritalStatusData, healthPlanData };
   }, [patients]);
   
+  const healthPlanChartConfig = React.useMemo(() => {
+    const config: ChartConfig = {};
+    const allUnitPlans = units.flatMap(u => u.healthPlans || []);
+    const uniquePlans = Array.from(new Map(allUnitPlans.map(p => [p.id, p])).values());
+
+    uniquePlans.forEach((plan, index) => {
+      config[plan.name] = {
+        label: plan.name,
+        color: plan.color,
+      };
+    });
+    config['Particular'] = { label: 'Particular', color: 'hsl(var(--muted))' };
+    return config;
+  }, [units]);
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -408,6 +454,7 @@ export default function AnalysisAndReportsPage() {
                 <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Paciente</label><Select onValueChange={value => handleAppointmentFilterChange('patientId', value)} value={appointmentFilters.patientId} disabled={isLoading}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
                 <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Profissional</label><Select onValueChange={value => handleAppointmentFilterChange('professionalName', value)} value={appointmentFilters.professionalName} disabled={isLoading}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{professionals.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent></Select></div>
                 <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Serviço</label><Select onValueChange={value => handleAppointmentFilterChange('serviceId', value)} value={appointmentFilters.serviceId} disabled={isLoading || availableServices.length === 0}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{availableServices.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
+                <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Plano de Saúde</label><Select onValueChange={value => handleAppointmentFilterChange('healthPlanId', value)} value={appointmentFilters.healthPlanId} disabled={isLoading || availableHealthPlans.length === 0}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="none">Particular</SelectItem>{availableHealthPlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
                 <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Status</label><Select onValueChange={value => handleAppointmentFilterChange('status', value)} value={appointmentFilters.status}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="Agendado">Agendado</SelectItem><SelectItem value="Realizado">Realizado</SelectItem><SelectItem value="Faltou">Faltou</SelectItem><SelectItem value="Cancelado">Cancelado</SelectItem></SelectContent></Select></div>
                 <div className="flex items-end gap-2 col-span-full sm:col-span-1 lg:col-span-2 xl:col-span-1"><Button onClick={applyAppointmentFilters} className="w-full sm:w-auto flex-1"><SlidersHorizontal className="mr-2" />Aplicar Filtros</Button><Button onClick={clearAppointmentFilters} className="w-full sm:w-auto" variant="outline"><Trash className="mr-2" />Limpar</Button></div>
               </CardContent>
@@ -460,8 +507,8 @@ export default function AnalysisAndReportsPage() {
         </TabsContent>
 
         <TabsContent value="demographics" className="mt-4">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
+          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+            <Card className="xl:col-span-1">
               <CardHeader>
                 <CardTitle>Distribuição por Faixa Etária</CardTitle>
                 <CardDescription>Número de pacientes por grupo de idade.</CardDescription>
@@ -480,10 +527,9 @@ export default function AnalysisAndReportsPage() {
                 ) : ( <div className="flex h-64 items-center justify-center text-muted-foreground"><p>Nenhum paciente para analisar.</p></div>)}
               </CardContent>
             </Card>
-            <Card>
+            <Card className="xl:col-span-1">
               <CardHeader>
                 <CardTitle>Distribuição por Gênero</CardTitle>
-                <CardDescription>Distribuição de pacientes por gênero.</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? <Skeleton className="h-64 w-full" /> : demographicsData.genderData.length > 0 ? (
@@ -495,7 +541,40 @@ export default function AnalysisAndReportsPage() {
                 ) : ( <div className="flex h-64 items-center justify-center text-muted-foreground"><p>Nenhum paciente para analisar.</p></div>)}
               </CardContent>
             </Card>
-            <Card className="lg:col-span-2">
+            <Card className="xl:col-span-1">
+              <CardHeader>
+                <CardTitle>Distribuição por Estado Civil</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? <Skeleton className="h-64 w-full" /> : demographicsData.maritalStatusData.length > 0 ? (
+                  <ChartContainer config={maritalStatusChartConfig} className="min-h-[200px] w-full h-64">
+                    <BarChart accessibilityLayer data={demographicsData.maritalStatusData} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 20 }}>
+                      <CartesianGrid horizontal={false} />
+                      <YAxis dataKey="status" type="category" tickLine={false} tickMargin={10} axisLine={false} width={80} />
+                      <XAxis type="number" hide />
+                      <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" fill="var(--color-count)" radius={4} layout="vertical" />
+                    </BarChart>
+                  </ChartContainer>
+                ) : ( <div className="flex h-64 items-center justify-center text-muted-foreground"><p>Nenhum paciente para analisar.</p></div>)}
+              </CardContent>
+            </Card>
+            <Card className="lg:col-span-2 xl:col-span-3">
+              <CardHeader>
+                <CardTitle>Distribuição por Plano de Saúde</CardTitle>
+                <CardDescription>Pacientes por plano de saúde ou particular.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                 {isLoading ? <Skeleton className="h-64 w-full" /> : demographicsData.healthPlanData.length > 0 ? (
+                  <ChartContainer config={healthPlanChartConfig} className="mx-auto aspect-square max-h-[300px]">
+                    <ChartPie data={demographicsData.healthPlanData} nameKey="plan" dataKey="count">
+                      <ChartTooltip content={<ChartTooltipContent nameKey="plan" hideLabel />} />
+                    </ChartPie>
+                  </ChartContainer>
+                ) : ( <div className="flex h-64 items-center justify-center text-muted-foreground"><p>Nenhum paciente para analisar.</p></div>)}
+              </CardContent>
+            </Card>
+            <Card className="lg:col-span-2 xl:col-span-3">
               <CardHeader>
                 <CardTitle>Top 10 Diagnósticos</CardTitle>
                 <CardDescription>Os diagnósticos mais comuns entre os pacientes.</CardDescription>

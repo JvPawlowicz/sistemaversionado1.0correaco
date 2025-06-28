@@ -10,6 +10,7 @@ import { colors } from '@/lib/placeholder-data';
 import { useUnit } from './UnitContext';
 import { addWeeks, format } from 'date-fns';
 import { useAuth } from './AuthContext';
+import { usePatient } from './PatientContext';
 
 interface ScheduleContextType {
   appointments: Appointment[];
@@ -40,6 +41,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const { selectedUnitId } = useUnit();
   const { currentUser } = useAuth();
+  const { patients } = usePatient();
 
   const fetchScheduleData = useCallback(async () => {
     if (!db) {
@@ -127,11 +129,14 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
                 });
             });
         } else if (!isGroup && patientId && patientNames) {
+            const patient = patients.find(p => p.id === patientId);
             const newAppRef = doc(collection(db, 'appointments'));
             batch.set(newAppRef, {
                 ...baseAppointment,
                 patientId: patientId,
                 patientName: patientNames[patientId],
+                healthPlanId: patient?.healthPlanId || null,
+                healthPlanName: patient?.healthPlanName || null,
                 date,
                 status: 'Agendado',
                 color,

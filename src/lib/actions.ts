@@ -4,8 +4,41 @@
 import { z } from 'zod';
 import { auth, db, storageAdmin } from '@/lib/firebase-admin';
 import { FieldValue, WriteResult } from 'firebase-admin/firestore';
-import type { Appointment, Unit, Service, Availability } from './types';
+import type { Appointment, Unit, Service, Availability, Log } from './types';
 import { revalidatePath } from 'next/cache';
+
+// --- Helper for creating logs ---
+async function createLog(data: {
+  actorId: string;
+  actorName: string;
+  action: string;
+  details: string;
+  entity?: { type: string, id: string };
+  unitId?: string | null;
+}) {
+  if (!db) return;
+  const { actorId, actorName, action, details, entity, unitId } = data;
+  
+  const logData: Omit<Log, 'id'|'createdAt'> & {createdAt: FieldValue} = {
+    actorId,
+    actorName,
+    action,
+    details,
+    createdAt: FieldValue.serverTimestamp(),
+  };
+
+  if (entity) {
+    logData.entityType = entity.type;
+    logData.entityId = entity.id;
+  }
+
+  if (unitId) {
+    logData.unitId = unitId;
+  }
+
+  await db.collection('logs').add(logData);
+}
+
 
 // --- Helper for checking Firebase Admin initialization ---
 function checkAdminInit() {
@@ -69,6 +102,10 @@ export async function createUserAction(prevState: any, formData: FormData) {
       councilNumber: null,
       specialties: [],
     });
+    
+    // Log this action. Assuming we need an actor, which we don't have here.
+    // For now, we might skip logging for initial creation or decide on a system actor.
+    
     revalidatePath('/users');
   } catch (error: any) {
     let message = 'Ocorreu um erro desconhecido.';
@@ -387,7 +424,8 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
     if (!patientDoc.exists) {
         return { success: false, message: 'Paciente não encontrado.', errors: null };
     }
-    const patientName = patientDoc.data()?.name || '';
+    const patientData = patientDoc.data();
+    const patientName = patientData?.name || '';
 
     await db
       .collection('patients')
@@ -401,6 +439,16 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
         patientName,
         createdAt: FieldValue.serverTimestamp(),
       });
+    
+    await createLog({
+        actorId: 'system', // TODO: Get current user ID
+        actorName: author,
+        action: 'CREATE_EVOLUTION_RECORD',
+        details: `Criou o registro de evolução "${title}" para o paciente ${patientName}.`,
+        entity: { type: 'patient', id: patientId },
+        unitId: patientData?.unitIds?.[0],
+    });
+
     revalidatePath(`/patients/${patientId}`);
     return { success: true, message: 'Registro de evolução salvo com sucesso!', errors: null };
   } catch (error) {
@@ -417,6 +465,15 @@ const UpdatePatientSchema = z.object({
   phone: z.string().optional(),
   dob: z.string().optional(),
   gender: z.enum(['Male', 'Female', 'Other', '']).optional(),
+  cpf: z.string().optional(),
+  rg: z.string().optional(),
+  maritalStatus: z.string().optional(),
+  profession: z.string().optional(),
+  cns: z.string().optional(),
+  healthPlanId: z.string().optional(),
+  motherName: z.string().optional(),
+  fatherName: z.string().optional(),
+  additionalInfo: z.string().optional(),
   diagnosis: z.string().optional(),
   referringProfessional: z.string().optional(),
   imageUseConsent: z.preprocess((val) => val === 'on' || val === true, z.boolean()),
@@ -445,14 +502,43 @@ export async function updatePatientDetailsAction(prevState: any, formData: FormD
     };
   }
 
-  const { patientId, addressCity, addressState, addressStreet, addressZip, ...patientData } = validatedFields.data;
+  const { patientId, addressCity, addressState, addressStreet, addressZip, healthPlanId, ...patientData } = validatedFields.data;
   
   const address = (addressStreet || addressCity || addressState || addressZip) 
     ? { street: addressStreet || '', city: addressCity || '', state: addressState || '', zip: addressZip || '' } 
     : null;
+    
+  const updatePayload: any = { ...patientData, address, healthPlanId: healthPlanId || null };
 
   try {
-    await db.collection('patients').doc(patientId).update({ ...patientData, address });
+    const patientDoc = await db.collection('patients').doc(patientId).get();
+    const currentPatientData = patientDoc.data();
+    
+    if(healthPlanId) {
+        const patientUnitId = currentPatientData?.unitIds?.[0];
+        if (patientUnitId) {
+            const planDoc = await db.collection('units').doc(patientUnitId).collection('healthPlans').doc(healthPlanId).get();
+            if (planDoc.exists) {
+                updatePayload.healthPlanName = planDoc.data()?.name || null;
+            } else {
+                 updatePayload.healthPlanName = null;
+            }
+        }
+    } else {
+        updatePayload.healthPlanName = null;
+    }
+    
+    await db.collection('patients').doc(patientId).update(updatePayload);
+
+    await createLog({
+        actorId: 'system', // TODO: Get current user ID
+        actorName: 'Sistema', // TODO: Get current user name
+        action: 'UPDATE_PATIENT',
+        details: `Atualizou os dados do paciente ${patientData.name}.`,
+        entity: { type: 'patient', id: patientId },
+        unitId: currentPatientData?.unitIds?.[0],
+    });
+
     revalidatePath(`/patients/${patientId}`);
     revalidatePath('/patients');
     return { success: true, message: 'Dados do paciente atualizados com sucesso!', errors: null };
@@ -481,7 +567,20 @@ export async function updatePatientStatusAction(patientId: string, status: 'Acti
   }
 
   try {
+    const patientDoc = await db.collection('patients').doc(patientId).get();
+    if (!patientDoc.exists) return { success: false, message: 'Paciente não encontrado.'};
+    
     await db.collection('patients').doc(patientId).update({ status });
+
+     await createLog({
+        actorId: 'system',
+        actorName: 'Sistema',
+        action: 'UPDATE_PATIENT_STATUS',
+        details: `Alterou o status do paciente ${patientDoc.data()?.name} para ${status}.`,
+        entity: { type: 'patient', id: patientId },
+        unitId: patientDoc.data()?.unitIds?.[0],
+    });
+
     revalidatePath(`/patients/${patientId}`);
     return { success: true, message: 'Status do paciente atualizado com sucesso!' };
   } catch (error) {
@@ -591,6 +690,8 @@ export async function deletePatientAction(patientId: string): Promise<{ success:
 
   try {
     const patientRef = db.collection('patients').doc(patientId);
+    const patientDoc = await patientRef.get();
+    if (!patientDoc.exists) return { success: false, message: 'Paciente não encontrado.'};
 
     await deleteCollection(`patients/${patientId}/evolutionRecords`, 50);
     await deleteCollection(`patients/${patientId}/documents`, 50);
@@ -599,6 +700,15 @@ export async function deletePatientAction(patientId: string): Promise<{ success:
     // TODO: Delete files in Storage
 
     await patientRef.delete();
+    
+     await createLog({
+        actorId: 'system',
+        actorName: 'Sistema',
+        action: 'DELETE_PATIENT',
+        details: `Excluiu o paciente ${patientDoc.data()?.name} (ID: ${patientId}).`,
+        unitId: patientDoc.data()?.unitIds?.[0],
+    });
+
     revalidatePath('/patients');
     return { success: true, message: 'Paciente e todos os seus dados foram excluídos com sucesso.' };
   } catch (error: any) {
@@ -692,10 +802,20 @@ export async function createTherapyGroupAction(prevState: any, formData: FormDat
   }
 
   try {
-    await db.collection('therapyGroups').add({
+    const groupRef = await db.collection('therapyGroups').add({
       ...validatedFields.data,
       createdAt: FieldValue.serverTimestamp(),
     });
+    
+     await createLog({
+        actorId: 'system',
+        actorName: 'Sistema',
+        action: 'CREATE_THERAPY_GROUP',
+        details: `Criou o grupo de terapia "${validatedFields.data.name}".`,
+        entity: { type: 'therapyGroup', id: groupRef.id },
+        unitId: validatedFields.data.unitId,
+    });
+    
     revalidatePath('/groups');
     revalidatePath('/patients');
   } catch (error: any) {
@@ -752,7 +872,17 @@ export async function createTimeBlockAction(prevState: any, formData: FormData) 
       delete dataToSave.userIds;
     }
 
-    await db.collection('timeBlocks').add(dataToSave);
+    const blockRef = await db.collection('timeBlocks').add(dataToSave);
+    
+     await createLog({
+        actorId: 'system',
+        actorName: 'Sistema',
+        action: 'CREATE_TIME_BLOCK',
+        details: `Criou um bloqueio de agenda: "${validatedFields.data.title}" em ${validatedFields.data.date}.`,
+        entity: { type: 'timeBlock', id: blockRef.id },
+        unitId: validatedFields.data.unitId,
+    });
+    
     revalidatePath('/planning');
     revalidatePath('/schedule');
     return { success: true, message: 'Bloqueio de horário criado com sucesso!', errors: null };
@@ -845,6 +975,16 @@ export async function completeAppointmentWithEvolutionAction(prevState: any, for
     });
 
     await batch.commit();
+    
+    await createLog({
+        actorId: 'system',
+        actorName: author,
+        action: 'COMPLETE_APPOINTMENT',
+        details: `Marcou o agendamento com o paciente ${appointmentData.patientName} como "Realizado" e registrou a evolução.`,
+        entity: { type: 'appointment', id: appointmentId },
+        unitId: appointmentData.unitId,
+    });
+
 
     revalidatePath('/schedule');
     revalidatePath('/evolutions');
@@ -1041,6 +1181,16 @@ export async function createAssessmentAction(prevState: any, formData: FormData)
       finalPatientId = newPatientRef.id;
       finalPatientName = newPatientData.name;
       finalUnitId = unitId;
+      
+       await createLog({
+            actorId: authorId,
+            actorName: authorName,
+            action: 'CREATE_PATIENT_VIA_ASSESSMENT',
+            details: `Criou o paciente ${finalPatientName} através de uma avaliação de triagem.`,
+            entity: { type: 'patient', id: finalPatientId },
+            unitId: finalUnitId,
+        });
+
       revalidatePath('/patients');
     } else if (patientId) {
       const patientDoc = await db.collection('patients').doc(patientId).get();
@@ -1062,7 +1212,7 @@ export async function createAssessmentAction(prevState: any, formData: FormData)
       return { success: false, message: 'Formato de respostas inválido.', errors: null };
     }
 
-    await db.collection('assessments').add({
+    const assessmentRef = await db.collection('assessments').add({
       patientId: finalPatientId,
       patientName: finalPatientName,
       unitId: finalUnitId,
@@ -1072,6 +1222,15 @@ export async function createAssessmentAction(prevState: any, formData: FormData)
       authorId,
       authorName,
       createdAt: FieldValue.serverTimestamp(),
+    });
+    
+     await createLog({
+        actorId: authorId,
+        actorName: authorName,
+        action: 'CREATE_ASSESSMENT',
+        details: `Criou a avaliação "${templateTitle}" para o paciente ${finalPatientName}.`,
+        entity: { type: 'assessment', id: assessmentRef.id },
+        unitId: finalUnitId,
     });
     
     revalidatePath('/assessments');

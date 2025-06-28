@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, CircleAlert, ChevronsUpDown, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { updatePatientDetailsAction } from '@/lib/actions';
-import type { Patient } from '@/lib/types';
+import type { Patient, HealthPlan } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
 import { useUnit } from '@/contexts/UnitContext';
@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 interface EditPatientDialogProps {
@@ -52,12 +53,24 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
 
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [healthPlans, setHealthPlans] = useState<HealthPlan[]>([]);
+
 
   useEffect(() => {
     if (patient) {
         setSelectedUnitIds(patient.unitIds || []);
     }
   }, [patient]);
+
+  useEffect(() => {
+    // Collate health plans from all selected units
+    const plans = units
+        .filter(unit => selectedUnitIds.includes(unit.id))
+        .flatMap(unit => unit.healthPlans || []);
+    const uniquePlans = Array.from(new Map(plans.map(plan => [plan.id, plan])).values());
+    setHealthPlans(uniquePlans);
+  }, [selectedUnitIds, units]);
+
 
   useEffect(() => {
     if (state.success) {
@@ -80,7 +93,7 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <form ref={formRef} action={formAction}>
           <DialogHeader>
             <DialogTitle>Editar Paciente</DialogTitle>
@@ -88,7 +101,7 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
               Altere as informações do paciente {patient.name}.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+          <div className="py-4 max-h-[70vh] overflow-y-auto pr-4">
             {state.message && !state.success && !state.errors && (
                 <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                     <CircleAlert className="h-4 w-4" />
@@ -96,68 +109,130 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
                 </div>
             )}
             <input type="hidden" name="patientId" value={patient.id} />
-            
-            <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">Nome Completo</Label>
-                    <Input id="name" name="name" defaultValue={patient.name} required />
-                    {state.errors?.name && <p className="text-xs text-destructive mt-1">{state.errors.name[0]}</p>}
+             <Tabs defaultValue="personal" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
+                <TabsTrigger value="contact">Contato e Endereço</TabsTrigger>
+                <TabsTrigger value="filiation">Filiação</TabsTrigger>
+                <TabsTrigger value="clinical">Dados Clínicos</TabsTrigger>
+              </TabsList>
+              <TabsContent value="personal" className="pt-4 space-y-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Nome Completo</Label>
+                        <Input id="name" name="name" defaultValue={patient.name} required />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="dob">Data de Nascimento</Label>
+                        <Input id="dob" name="dob" type="date" defaultValue={patient.dob || ''} />
+                    </div>
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="cpf">CPF</Label>
+                        <Input id="cpf" name="cpf" defaultValue={patient.cpf || ''} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="rg">RG</Label>
+                        <Input id="rg" name="rg" defaultValue={patient.rg || ''} />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="gender">Gênero</Label>
+                        <Select name="gender" defaultValue={patient.gender || ''}>
+                            <SelectTrigger><SelectValue placeholder="Não informado" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Male">Masculino</SelectItem>
+                                <SelectItem value="Female">Feminino</SelectItem>
+                                <SelectItem value="Other">Outro</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="maritalStatus">Estado Civil</Label>
+                        <Input id="maritalStatus" name="maritalStatus" defaultValue={patient.maritalStatus || ''} />
+                    </div>
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input id="email" name="email" type="email" defaultValue={patient.email || ''} />
-                    {state.errors?.email && <p className="text-xs text-destructive mt-1">{state.errors.email[0]}</p>}
+                    <Label htmlFor="profession">Profissão</Label>
+                    <Input id="profession" name="profession" defaultValue={patient.profession || ''} />
+                </div>
+              </TabsContent>
+              <TabsContent value="contact" className="pt-4 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="email">E-mail</Label>
+                        <Input id="email" name="email" type="email" defaultValue={patient.email || ''} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">Telefone</Label>
+                        <Input id="phone" name="phone" defaultValue={patient.phone || ''} />
+                    </div>
+                 </div>
+                 <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-md border p-4">
+                    <legend className="-ml-1 px-1 text-sm font-medium">Endereço</legend>
+                     <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="addressStreet">Logradouro</Label>
+                        <Input id="addressStreet" name="addressStreet" placeholder="Rua, Av, etc." defaultValue={patient.address?.street || ''} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="addressCity">Cidade</Label>
+                        <Input id="addressCity" name="addressCity" placeholder="Cidade" defaultValue={patient.address?.city || ''} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="addressState">Estado</Label>
+                        <Input id="addressState" name="addressState" placeholder="UF" defaultValue={patient.address?.state || ''} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="addressZip">CEP</Label>
+                        <Input id="addressZip" name="addressZip" placeholder="00000-000" defaultValue={patient.address?.zip || ''} />
+                    </div>
+                 </fieldset>
+              </TabsContent>
+              <TabsContent value="filiation" className="pt-4 space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="motherName">Nome da Mãe</Label>
+                    <Input id="motherName" name="motherName" defaultValue={patient.motherName || ''} />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input id="phone" name="phone" defaultValue={patient.phone || ''} />
+                    <Label htmlFor="fatherName">Nome do Pai</Label>
+                    <Input id="fatherName" name="fatherName" defaultValue={patient.fatherName || ''} />
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="dob">Data de Nascimento</Label>
-                    <Input id="dob" name="dob" type="date" defaultValue={patient.dob || ''} />
+              </TabsContent>
+              <TabsContent value="clinical" className="pt-4 space-y-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="cns">CNS (Cartão Nacional de Saúde)</Label>
+                        <Input id="cns" name="cns" defaultValue={patient.cns || ''} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="healthPlanId">Plano de Saúde</Label>
+                        <Select name="healthPlanId" defaultValue={patient.healthPlanId || ''}>
+                            <SelectTrigger disabled={healthPlans.length === 0}><SelectValue placeholder="Selecione um plano..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">Nenhum</SelectItem>
+                                {healthPlans.map(plan => <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="gender">Gênero</Label>
-                    <Select name="gender" defaultValue={patient.gender || ''}>
-                        <SelectTrigger><SelectValue placeholder="Não informado" /></SelectTrigger>
-                        <SelectContent>
-                             <SelectItem value="Male">Masculino</SelectItem>
-                             <SelectItem value="Female">Feminino</SelectItem>
-                             <SelectItem value="Other">Outro</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <Label htmlFor="referringProfessional">Profissional Indicador</Label>
                     <Input id="referringProfessional" name="referringProfessional" defaultValue={patient.referringProfessional || ''} />
                 </div>
-            </fieldset>
-
-            <div className="space-y-2">
-                <Label htmlFor="diagnosis">Diagnóstico</Label>
-                <Textarea id="diagnosis" name="diagnosis" defaultValue={patient.diagnosis || ''} rows={3} />
-            </div>
-
-            <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="diagnosis">Breve Diagnóstico / Queixa Principal</Label>
+                    <Textarea id="diagnosis" name="diagnosis" defaultValue={patient.diagnosis || ''} rows={3} />
+                </div>
                  <div className="space-y-2">
-                    <Label htmlFor="addressStreet">Endereço</Label>
-                    <Input id="addressStreet" name="addressStreet" placeholder="Rua, Av, etc." defaultValue={patient.address?.street || ''} />
+                    <Label htmlFor="additionalInfo">Informações Adicionais</Label>
+                    <Textarea id="additionalInfo" name="additionalInfo" defaultValue={patient.additionalInfo || ''} rows={3} />
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="addressCity">Cidade</Label>
-                    <Input id="addressCity" name="addressCity" placeholder="Cidade" defaultValue={patient.address?.city || ''} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="addressState">Estado</Label>
-                    <Input id="addressState" name="addressState" placeholder="UF" defaultValue={patient.address?.state || ''} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="addressZip">CEP</Label>
-                    <Input id="addressZip" name="addressZip" placeholder="00000-000" defaultValue={patient.address?.zip || ''} />
-                </div>
-            </fieldset>
-
-            <div className="space-y-2">
+              </TabsContent>
+            </Tabs>
+            
+            <div className="space-y-2 pt-4">
                <Label htmlFor="units">Unidades Vinculadas</Label>
                 {selectedUnitIds.map(id => <input key={id} type="hidden" name="unitIds" value={id} />)}
                 <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>

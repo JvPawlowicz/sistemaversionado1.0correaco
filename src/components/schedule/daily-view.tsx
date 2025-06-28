@@ -1,10 +1,11 @@
+
 'use client';
 
 import * as React from 'react';
 import type { Appointment, TimeBlock, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, Lock, User as UserIcon, Users, Edit3, Briefcase } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, User as UserIcon, Users, Edit3, Briefcase, Shield } from 'lucide-react';
 import { format, addDays, subDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { AppointmentActionsDialog } from './appointment-actions-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useUser } from '@/contexts/UserContext';
+import { useUnit } from '@/contexts/UnitContext';
 
 const HOUR_HEIGHT = 60;
 
@@ -108,8 +110,11 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
 
   const { currentUser } = useAuth();
   const { users } = useUser();
+  const { units, selectedUnitId } = useUnit();
   const [isActionsDialogOpen, setIsActionsDialogOpen] = React.useState(false);
   const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
+
+  const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
 
   const laidOutAppointments = React.useMemo(() => {
     const appointmentsOnDay = appointments.filter(app => isSameDay(new Date(app.date + 'T00:00:00'), currentDate));
@@ -269,14 +274,15 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
                         (currentUser.role === 'Therapist' && currentUser.name === app.professionalName)
                     );
                     const isPastAndPending = new Date() > new Date(`${app.date}T${app.endTime}`) && app.status === 'Agendado';
+                    const healthPlan = selectedUnit?.healthPlans?.find(p => p.id === app.healthPlanId);
 
                     return (
                         <Tooltip key={app.id + idx}>
                           <TooltipTrigger asChild>
                             <div
                                 onClick={() => canInteract && handleAppointmentClick(app)}
-                                className={cn("absolute p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-all flex flex-col justify-between", canInteract ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed", (app.status === 'Faltou' || app.status === 'Cancelado') && "opacity-60", app.status === 'Cancelado' && "line-through", isPastAndPending && "ring-2 ring-offset-1 ring-yellow-400")}
-                                style={{ top: `${top}px`, height: `${height}px`, width: `calc(${widthPercentage}% - 4px)`, left: `calc(${leftPercentage}% + 2px)`, zIndex: 10 + app.layout.col, backgroundColor: app.color }}
+                                className={cn("absolute p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-all flex flex-col justify-between border-l-4", canInteract ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed", (app.status === 'Faltou' || app.status === 'Cancelado') && "opacity-60", app.status === 'Cancelado' && "line-through", isPastAndPending && "ring-2 ring-offset-1 ring-yellow-400")}
+                                style={{ top: `${top}px`, height: `${height}px`, width: `calc(${widthPercentage}% - 4px)`, left: `calc(${leftPercentage}% + 2px)`, zIndex: 10 + app.layout.col, backgroundColor: app.color, borderColor: healthPlan?.color || app.color }}
                             >
                                 <div>
                                     <p className="font-bold whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-1">{app.isGroup && <Users className="h-3 w-3"/>} {app.patientName}</p>
@@ -300,7 +306,10 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
                                         </ul>
                                     </>
                                 ) : (
-                                    <p className="font-semibold">{app.patientName}</p>
+                                    <>
+                                      <p className="font-semibold">{app.patientName}</p>
+                                      {app.healthPlanName && <p className="text-sm flex items-center gap-1"><Shield className="h-3 w-3" /> {app.healthPlanName}</p>}
+                                    </>
                                 )}
                                 <p className="text-xs text-muted-foreground">{app.professionalName}</p>
                           </TooltipContent>

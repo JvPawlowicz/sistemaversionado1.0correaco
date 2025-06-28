@@ -1,10 +1,11 @@
+
 'use client';
 
 import * as React from 'react';
 import type { Appointment, TimeBlock, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, Lock, User as UserIcon, Users, Edit3, Briefcase } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, User as UserIcon, Users, Edit3, Briefcase, Shield } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +14,7 @@ import { AppointmentActionsDialog } from './appointment-actions-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useUser } from '@/contexts/UserContext';
 import { usePatient } from '@/contexts/PatientContext';
+import { useUnit } from '@/contexts/UnitContext';
 
 const HOUR_HEIGHT = 60; // height of one hour in pixels
 
@@ -112,9 +114,11 @@ export function WeeklyView({ appointments, timeBlocks, currentDate, setCurrentDa
 
   const { currentUser } = useAuth();
   const { users } = useUser();
-  const { patients } = usePatient();
+  const { units, selectedUnitId } = useUnit();
   const [isActionsDialogOpen, setIsActionsDialogOpen] = React.useState(false);
   const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
+  
+  const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
 
   const laidOutAppointmentsByDay = React.useMemo(() => {
     const dayMap = new Map<string, (RenderableAppointment & { layout: { col: number; totalCols: number } })[]>();
@@ -305,13 +309,15 @@ export function WeeklyView({ appointments, timeBlocks, currentDate, setCurrentDa
                     
                     const isPastAndPending = new Date() > new Date(`${app.date}T${app.endTime}`) && app.status === 'Agendado';
 
+                    const healthPlan = selectedUnit?.healthPlans?.find(p => p.id === app.healthPlanId);
+
                     return (
                         <Tooltip key={app.id + idx}>
                           <TooltipTrigger asChild>
                             <div
                                 onClick={() => canInteract && handleAppointmentClick(app)}
                                 className={cn(
-                                "absolute p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-all flex flex-col justify-between",
+                                "absolute p-2 rounded-lg text-white overflow-hidden text-xs shadow-md transition-all flex flex-col justify-between border-l-4",
                                 canInteract ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed",
                                 (app.status === 'Faltou' || app.status === 'Cancelado') && "opacity-60",
                                 app.status === 'Cancelado' && "line-through",
@@ -324,6 +330,7 @@ export function WeeklyView({ appointments, timeBlocks, currentDate, setCurrentDa
                                 left: `calc(${leftPercentage}% + 2px)`,
                                 zIndex: 10 + app.layout.col,
                                 backgroundColor: app.color,
+                                borderColor: healthPlan?.color || app.color,
                                 }}
                             >
                                 <div>
@@ -348,7 +355,10 @@ export function WeeklyView({ appointments, timeBlocks, currentDate, setCurrentDa
                                         </ul>
                                     </>
                                 ) : (
-                                    <p className="font-semibold">{app.patientName}</p>
+                                    <>
+                                      <p className="font-semibold">{app.patientName}</p>
+                                      {app.healthPlanName && <p className="text-sm flex items-center gap-1"><Shield className="h-3 w-3" /> {app.healthPlanName}</p>}
+                                    </>
                                 )}
                                 <p className="text-xs text-muted-foreground">{app.professionalName}</p>
                           </TooltipContent>

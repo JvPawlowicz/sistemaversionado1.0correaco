@@ -1,3 +1,4 @@
+'use server';
 
 export type Address = {
   street: string;
@@ -115,6 +116,9 @@ export type Appointment = {
   groupId?: string | null;
   attendees?: string[]; // Array of patientIds for group sessions
   createdAt?: any;
+  healthPlanId?: string;
+  healthPlanName?: string;
+  healthPlanColor?: string;
 };
 
 export type EvolutionRecord = {
@@ -238,5 +242,6 @@ export type Log = {
   details: string;
   entityType?: string;
   entityId?: string;
+  unitId?: string;
   createdAt: any; // Firestore Timestamp
 };
