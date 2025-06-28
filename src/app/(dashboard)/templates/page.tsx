@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -48,10 +49,10 @@ export default function TemplatesPage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Modelos de Evolução
+              Gerenciador de Modelos
             </h1>
             <p className="text-muted-foreground">
-              Crie, edite e gerencie seus modelos para agilizar a documentação clínica.
+              Crie, edite e gerencie seus modelos para agilizar a documentação clínica, avaliações e anamneses.
             </p>
           </div>
           <Button onClick={handleAddNew}>
@@ -110,7 +111,7 @@ export default function TemplatesPage() {
           <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
             <NotebookText className="mx-auto h-12 w-12 mb-4" />
             <h3 className="text-xl font-semibold text-foreground">Nenhum modelo encontrado.</h3>
-            <p className="mb-4">Comece criando seu primeiro modelo de evolução.</p>
+            <p className="mb-4">Comece criando seu primeiro modelo.</p>
             <Button onClick={handleAddNew}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Criar Modelo

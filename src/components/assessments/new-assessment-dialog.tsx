@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -18,6 +19,7 @@ import { Textarea } from '../ui/textarea';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Checkbox } from '../ui/checkbox';
 import { Progress } from '../ui/progress';
+import { useUnit } from '@/contexts/UnitContext';
 
 interface NewAssessmentDialogProps {
   isOpen: boolean;
@@ -42,11 +44,14 @@ export function NewAssessmentDialog({ isOpen, onOpenChange }: NewAssessmentDialo
   const formRef = React.useRef<HTMLFormElement>(null);
   
   const { currentUser } = useAuth();
-  const { patients } = usePatient();
+  const { patients, fetchPatients } = usePatient();
   const { templates } = useTemplate();
+  const { selectedUnitId } = useUnit();
   
   const [step, setStep] = React.useState(1);
+  const [patientSelectionType, setPatientSelectionType] = React.useState<'existing' | 'new'>('existing');
   const [selectedPatient, setSelectedPatient] = React.useState<Patient | null>(null);
+  const [newPatientName, setNewPatientName] = React.useState('');
   const [selectedTemplate, setSelectedTemplate] = React.useState<EvolutionTemplate | null>(null);
   const [formValues, setFormValues] = React.useState<Record<string, any>>({});
   
@@ -57,18 +62,21 @@ export function NewAssessmentDialog({ isOpen, onOpenChange }: NewAssessmentDialo
     setSelectedPatient(null);
     setSelectedTemplate(null);
     setFormValues({});
+    setPatientSelectionType('existing');
+    setNewPatientName('');
     formRef.current?.reset();
   };
 
   React.useEffect(() => {
     if (state.success) {
       toast({ title: 'Sucesso!', description: state.message });
+      fetchPatients();
       onOpenChange(false);
       resetState();
     } else if (state.message && !state.errors) {
       toast({ variant: 'destructive', title: 'Erro', description: state.message });
     }
-  }, [state, onOpenChange, toast]);
+  }, [state, onOpenChange, toast, fetchPatients]);
 
   const handleFormValueChange = (fieldId: string, value: any) => {
     setFormValues(prev => ({ ...prev, [fieldId]: value }));
@@ -90,13 +98,34 @@ export function NewAssessmentDialog({ isOpen, onOpenChange }: NewAssessmentDialo
       case 1:
         return (
           <div className="space-y-4">
-            <Label htmlFor="patient-select">Selecione o Paciente</Label>
-            <Select onValueChange={(id) => setSelectedPatient(patients.find(p => p.id === id) || null)}>
-              <SelectTrigger id="patient-select"><SelectValue placeholder="Escolha um paciente..." /></SelectTrigger>
-              <SelectContent>
-                {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <RadioGroup value={patientSelectionType} onValueChange={(v) => {setPatientSelectionType(v as any); setSelectedPatient(null); setNewPatientName('');}} className="grid grid-cols-2 gap-4">
+                <Label htmlFor="type-existing" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                    <RadioGroupItem value="existing" id="type-existing" className="sr-only peer" />
+                    <User className="mb-3 h-6 w-6" />
+                    Paciente Existente
+                </Label>
+                 <Label htmlFor="type-new" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                    <RadioGroupItem value="new" id="type-new" className="sr-only peer" />
+                    <User className="mb-3 h-6 w-6" />
+                    Novo Paciente (Triagem)
+                </Label>
+            </RadioGroup>
+            {patientSelectionType === 'existing' ? (
+                <div className="space-y-2 pt-4">
+                    <Label htmlFor="patient-select">Selecione o Paciente</Label>
+                    <Select onValueChange={(id) => setSelectedPatient(patients.find(p => p.id === id) || null)}>
+                    <SelectTrigger id="patient-select"><SelectValue placeholder="Escolha um paciente..." /></SelectTrigger>
+                    <SelectContent>
+                        {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                    </Select>
+                </div>
+            ) : (
+                <div className="space-y-2 pt-4">
+                    <Label htmlFor="new-patient-name">Nome do Novo Paciente</Label>
+                    <Input id="new-patient-name" value={newPatientName} onChange={(e) => setNewPatientName(e.target.value)} placeholder="Digite o nome completo" />
+                </div>
+            )}
           </div>
         );
       case 2:
@@ -170,7 +199,10 @@ export function NewAssessmentDialog({ isOpen, onOpenChange }: NewAssessmentDialo
   };
 
   const isNextDisabled = () => {
-    if (step === 1 && !selectedPatient) return true;
+    if (step === 1) {
+        if (patientSelectionType === 'existing' && !selectedPatient) return true;
+        if (patientSelectionType === 'new' && newPatientName.trim().length < 3) return true;
+    }
     if (step === 2 && !selectedTemplate) return true;
     return false;
   };
@@ -185,12 +217,20 @@ export function NewAssessmentDialog({ isOpen, onOpenChange }: NewAssessmentDialo
             <Progress value={(step / 3) * 100} className="mt-2" />
           </DialogHeader>
           <div className="py-4 max-h-[60vh] overflow-y-auto pr-4">
-            {state.message && !state.success && <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md flex items-center gap-2"><CircleAlert className="h-4 w-4" />{state.message}</div>}
-            
+            {state.message && !state.success && !state.errors && <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md flex items-center gap-2"><CircleAlert className="h-4 w-4" />{state.message}</div>}
+             {state.errors?.patientId && <p className="text-xs text-destructive mt-1">{state.errors.patientId[0]}</p>}
+             {state.errors?.newPatientName && <p className="text-xs text-destructive mt-1">{state.errors.newPatientName[0]}</p>}
+
             {/* Hidden fields for submission */}
             {step === 3 && (
               <>
-                <input type="hidden" name="patientId" value={selectedPatient?.id} />
+                <input type="hidden" name="patientSelectionType" value={patientSelectionType} />
+                {patientSelectionType === 'existing' ? (
+                    <input type="hidden" name="patientId" value={selectedPatient?.id} />
+                ) : (
+                    <input type="hidden" name="newPatientName" value={newPatientName} />
+                )}
+                <input type="hidden" name="unitId" value={selectedUnitId || ''} />
                 <input type="hidden" name="templateId" value={selectedTemplate?.id} />
                 <input type="hidden" name="templateTitle" value={selectedTemplate?.title} />
                 <input type="hidden" name="answers" value={JSON.stringify(formValues)} />

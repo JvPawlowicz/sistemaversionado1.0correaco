@@ -988,26 +988,29 @@ export async function deleteEvolutionTemplateAction(templateId: string): Promise
 // --- Assessment Actions ---
 
 const CreateAssessmentSchema = z.object({
-  patientId: z.string().min(1, 'Selecione um paciente.'),
+  patientSelectionType: z.enum(['existing', 'new']),
+  patientId: z.string().optional(),
+  newPatientName: z.string().optional(),
+  unitId: z.string().min(1, { message: 'A unidade é obrigatória.' }),
   templateId: z.string().min(1, 'Selecione um modelo.'),
   templateTitle: z.string().min(1),
   answers: z.string().min(2, 'As respostas não podem estar vazias.'), // JSON string
   authorId: z.string().min(1),
   authorName: z.string().min(1),
+}).superRefine((data, ctx) => {
+  if (data.patientSelectionType === 'existing' && !data.patientId) {
+    ctx.addIssue({ code: 'custom', message: 'Selecione um paciente existente.', path: ['patientId'] });
+  }
+  if (data.patientSelectionType === 'new' && (!data.newPatientName || data.newPatientName.length < 3)) {
+    ctx.addIssue({ code: 'custom', message: 'O nome do novo paciente deve ter pelo menos 3 caracteres.', path: ['newPatientName'] });
+  }
 });
 
 export async function createAssessmentAction(prevState: any, formData: FormData) {
   const adminCheck = checkAdminInit();
   if (adminCheck) return adminCheck;
 
-  const validatedFields = CreateAssessmentSchema.safeParse({
-    patientId: formData.get('patientId'),
-    templateId: formData.get('templateId'),
-    templateTitle: formData.get('templateTitle'),
-    answers: formData.get('answers'),
-    authorId: formData.get('authorId'),
-    authorName: formData.get('authorName'),
-  });
+  const validatedFields = CreateAssessmentSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validatedFields.success) {
     return {
@@ -1017,28 +1020,52 @@ export async function createAssessmentAction(prevState: any, formData: FormData)
     };
   }
   
-  const { patientId, templateId, templateTitle, answers, authorId, authorName } = validatedFields.data;
+  const { patientSelectionType, patientId, newPatientName, unitId, templateId, templateTitle, answers, authorId, authorName } = validatedFields.data;
   
-  let parsedAnswers;
-  try {
-    parsedAnswers = JSON.parse(answers);
-  } catch (e) {
-    return { success: false, message: 'Formato de respostas inválido.', errors: null };
-  }
-
-  const patientDoc = await db.collection('patients').doc(patientId).get();
-  if (!patientDoc.exists) {
-      return { success: false, message: 'Paciente não encontrado.', errors: null };
-  }
-  const patientData = patientDoc.data();
-  const patientName = patientData?.name || '';
-  const unitId = patientData?.unitIds?.[0] || null;
+  let finalPatientId: string;
+  let finalPatientName: string;
+  let finalUnitId: string;
 
   try {
+    if (patientSelectionType === 'new' && newPatientName) {
+      const newPatientData = {
+          name: newPatientName,
+          unitIds: [unitId],
+          status: 'Active' as const,
+          lastVisit: null,
+          avatarUrl: 'https://placehold.co/150x150.png',
+          createdAt: FieldValue.serverTimestamp(),
+          imageUseConsent: false,
+      };
+      const newPatientRef = await db.collection('patients').add(newPatientData);
+      finalPatientId = newPatientRef.id;
+      finalPatientName = newPatientData.name;
+      finalUnitId = unitId;
+      revalidatePath('/patients');
+    } else if (patientId) {
+      const patientDoc = await db.collection('patients').doc(patientId).get();
+      if (!patientDoc.exists) {
+          return { success: false, message: 'Paciente selecionado não encontrado.', errors: null };
+      }
+      const patientData = patientDoc.data();
+      finalPatientId = patientDoc.id;
+      finalPatientName = patientData?.name || '';
+      finalUnitId = patientData?.unitIds?.[0] || unitId;
+    } else {
+        return { success: false, message: 'Nenhum paciente selecionado ou criado.', errors: null };
+    }
+  
+    let parsedAnswers;
+    try {
+      parsedAnswers = JSON.parse(answers);
+    } catch (e) {
+      return { success: false, message: 'Formato de respostas inválido.', errors: null };
+    }
+
     await db.collection('assessments').add({
-      patientId,
-      patientName,
-      unitId,
+      patientId: finalPatientId,
+      patientName: finalPatientName,
+      unitId: finalUnitId,
       templateId,
       templateTitle,
       answers: parsedAnswers,
@@ -1046,9 +1073,11 @@ export async function createAssessmentAction(prevState: any, formData: FormData)
       authorName,
       createdAt: FieldValue.serverTimestamp(),
     });
+    
     revalidatePath('/assessments');
-    revalidatePath(`/patients/${patientId}`);
+    revalidatePath(`/patients/${finalPatientId}`);
     return { success: true, message: 'Avaliação salva com sucesso!', errors: null };
+
   } catch (error) {
     console.error('Error creating assessment:', error);
     return { success: false, message: 'Ocorreu um erro ao salvar a avaliação.', errors: null };

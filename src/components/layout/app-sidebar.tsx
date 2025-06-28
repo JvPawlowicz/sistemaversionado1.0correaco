@@ -46,7 +46,7 @@ export function AppSidebar() {
     { href: '/chat', label: 'Chat', icon: MessageSquare, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
     { href: '/evolutions', label: 'Evoluções Pendentes', icon: FileText, roles: ['Admin', 'Coordinator', 'Therapist'] },
     { href: '/assessments', label: 'Avaliações', icon: ClipboardCheck, roles: ['Admin', 'Coordinator', 'Therapist'] },
-    { href: '/templates', label: 'Modelos de Evolução', icon: NotebookText, roles: ['Admin', 'Coordinator', 'Therapist'] },
+    { href: '/templates', label: 'Modelos', icon: NotebookText, roles: ['Admin', 'Coordinator', 'Therapist'] },
   ];
   const managementItems = [
     { href: '/analysis', label: 'Análise e Relatórios', icon: LineChart, roles: ['Admin', 'Coordinator'] },
