@@ -27,7 +27,8 @@ import {
   MessageSquare,
   Settings,
   NotebookText,
-  ClipboardCheck
+  ClipboardCheck,
+  Terminal
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnit } from '@/contexts/UnitContext';
@@ -56,6 +57,7 @@ export function AppSidebar() {
     { href: '/units', label: 'Unidades', icon: Building, roles: ['Admin'] },
     { href: '/users', label: 'Usuários', icon: Users, roles: ['Admin'] },
     { href: '/notifications', label: 'Notificações', icon: Bell, roles: ['Admin'] },
+    { href: '/logs', label: 'Logs do Sistema', icon: Terminal, roles: ['Admin'] },
   ];
 
   const visibleManagementItems = managementItems.filter(item => userHasAccess(item.roles));
