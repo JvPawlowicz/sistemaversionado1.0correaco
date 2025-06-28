@@ -3,10 +3,10 @@
 
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, TrendingUp, TrendingDown, Clock, Activity, Download, SlidersHorizontal, Trash, FileSignature, ListChecks } from 'lucide-react';
+import { PieChart, TrendingUp, TrendingDown, Clock, Activity, Download, SlidersHorizontal, Trash, FileSignature, ListChecks, Users } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { subDays, isWithinInterval, startOfDay, addDays, isAfter, isBefore, isEqual, format } from 'date-fns';
+import { subDays, isWithinInterval, startOfDay, addDays, isAfter, isBefore, isEqual, format, differenceInYears } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartPie } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -67,6 +67,17 @@ const overviewChartConfig = {
 
 const evolutionsChartConfig = {
     count: { label: 'Evoluções', color: 'hsl(var(--chart-3))' },
+} satisfies ChartConfig;
+
+const demographicsAgeChartConfig = {
+  count: { label: 'Pacientes', color: 'hsl(var(--chart-1))' },
+} satisfies ChartConfig;
+
+const demographicsGenderChartConfig = {
+  masculino: { label: 'Masculino', color: 'hsl(var(--chart-2))' },
+  feminino: { label: 'Feminino', color: 'hsl(var(--chart-4))' },
+  outro: { label: 'Outro', color: 'hsl(var(--chart-3))' },
+  naoinformado: { label: 'Não Informado', color: 'hsl(var(--muted))' },
 } satisfies ChartConfig;
 
 
@@ -296,6 +307,62 @@ export default function AnalysisAndReportsPage() {
     doc.save('relatorio_evolucoes.pdf');
   };
 
+  // --- Demographics Logic ---
+  const demographicsData = React.useMemo(() => {
+    if (!patients || patients.length === 0) {
+      return { ageData: [], genderData: [], diagnosisData: [] };
+    }
+
+    const ageGroups: { [key: string]: number } = { '0-3': 0, '4-7': 0, '8-12': 0, '13-17': 0, '18+': 0, 'N/A': 0 };
+    patients.forEach(p => {
+      if (p.dob) {
+        try {
+          const age = differenceInYears(new Date(), new Date(p.dob));
+          if (age <= 3) ageGroups['0-3']++;
+          else if (age <= 7) ageGroups['4-7']++;
+          else if (age <= 12) ageGroups['8-12']++;
+          else if (age <= 17) ageGroups['13-17']++;
+          else ageGroups['18+']++;
+        } catch (e) {
+          ageGroups['N/A']++;
+        }
+      } else {
+        ageGroups['N/A']++;
+      }
+    });
+    const ageData = Object.entries(ageGroups).map(([group, count]) => ({ group, count }));
+
+    const genderCounts = patients.reduce((acc, p) => {
+      const key = p.gender ? p.gender.toLowerCase() : 'naoinformado';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const genderData = Object.entries(genderCounts).map(([gender, count]) => ({
+      status: gender,
+      count,
+      fill: `var(--color-${gender})`,
+    }));
+
+    const diagnosisCounts = patients.reduce((acc, p) => {
+      if (p.diagnosis) {
+        const diagnoses = p.diagnosis.split(',').map(d => d.trim().toLowerCase());
+        diagnoses.forEach(diag => {
+          if (diag) {
+            acc[diag] = (acc[diag] || 0) + 1;
+          }
+        });
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    const diagnosisData = Object.entries(diagnosisCounts)
+      .sort(([, countA], [, countB]) => countB - countA)
+      .slice(0, 10)
+      .map(([diagnosis, count]) => ({ diagnosis, count }));
+
+    return { ageData, genderData, diagnosisData };
+  }, [patients]);
   
   return (
     <div className="space-y-6">
@@ -305,10 +372,11 @@ export default function AnalysisAndReportsPage() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Visão Geral e KPIs</TabsTrigger>
           <TabsTrigger value="appointments">Agendamentos</TabsTrigger>
           <TabsTrigger value="evolutions">Evoluções</TabsTrigger>
+          <TabsTrigger value="demographics">Demografia</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -391,8 +459,73 @@ export default function AnalysisAndReportsPage() {
            </div>
         </TabsContent>
 
+        <TabsContent value="demographics" className="mt-4">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Distribuição por Faixa Etária</CardTitle>
+                <CardDescription>Número de pacientes por grupo de idade.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? <Skeleton className="h-64 w-full" /> : demographicsData.ageData.length > 0 ? (
+                  <ChartContainer config={demographicsAgeChartConfig} className="min-h-[200px] w-full h-64">
+                    <BarChart accessibilityLayer data={demographicsData.ageData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis dataKey="group" tickLine={false} tickMargin={10} axisLine={false} />
+                      <YAxis />
+                      <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" fill="var(--color-count)" radius={4} />
+                    </BarChart>
+                  </ChartContainer>
+                ) : ( <div className="flex h-64 items-center justify-center text-muted-foreground"><p>Nenhum paciente para analisar.</p></div>)}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Distribuição por Gênero</CardTitle>
+                <CardDescription>Distribuição de pacientes por gênero.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? <Skeleton className="h-64 w-full" /> : demographicsData.genderData.length > 0 ? (
+                  <ChartContainer config={demographicsGenderChartConfig} className="mx-auto aspect-square max-h-[300px]">
+                    <ChartPie data={demographicsData.genderData} nameKey="status" dataKey="count">
+                      <ChartTooltip content={<ChartTooltipContent nameKey="status" hideLabel />} />
+                    </ChartPie>
+                  </ChartContainer>
+                ) : ( <div className="flex h-64 items-center justify-center text-muted-foreground"><p>Nenhum paciente para analisar.</p></div>)}
+              </CardContent>
+            </Card>
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Top 10 Diagnósticos</CardTitle>
+                <CardDescription>Os diagnósticos mais comuns entre os pacientes.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? <Skeleton className="h-64 w-full" /> : demographicsData.diagnosisData.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[80px]">#</TableHead>
+                        <TableHead>Diagnóstico</TableHead>
+                        <TableHead className="text-right">Nº de Pacientes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {demographicsData.diagnosisData.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell className="capitalize">{item.diagnosis}</TableCell>
+                          <TableCell className="text-right">{item.count}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (<div className="flex h-64 items-center justify-center text-muted-foreground"><p>Nenhum diagnóstico informado para os pacientes.</p></div>)}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
-
