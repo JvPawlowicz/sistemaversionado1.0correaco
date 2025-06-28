@@ -37,8 +37,7 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
       const templatesCollection = collection(db, 'evolutionTemplates');
       const q = query(
         templatesCollection,
-        where('userId', '==', currentUser.id),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', currentUser.id)
       );
       
       const querySnapshot = await getDocs(q);
@@ -46,6 +45,12 @@ export function TemplateProvider({ children }: { children: ReactNode }) {
         id: doc.id,
         ...doc.data(),
       } as EvolutionTemplate));
+
+      templateList.sort((a, b) => {
+        const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+        const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+        return timeB - timeA;
+      });
       
       setTemplates(templateList);
 
