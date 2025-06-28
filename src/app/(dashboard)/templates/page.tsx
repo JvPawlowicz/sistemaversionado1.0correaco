@@ -73,7 +73,10 @@ export default function TemplatesPage() {
                 </CardHeader>
                 <CardContent className="flex-grow">
                   <p className="text-sm text-muted-foreground line-clamp-3">
-                    {template.content}
+                     {Array.isArray(template.content)
+                      ? `Campos: ${template.content.map(f => f.label).join(', ')}`
+                      : template.content
+                    }
                   </p>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2 border-t pt-4">

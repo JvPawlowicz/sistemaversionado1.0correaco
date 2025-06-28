@@ -178,10 +178,18 @@ export type ChatMessage = {
   createdAt: any; // Firestore Timestamp
 };
 
+export type TemplateField = {
+  id: string;
+  type: 'header' | 'text' | 'textarea' | 'checkbox' | 'radio';
+  label: string;
+  options?: string[];
+  placeholder?: string;
+};
+
 export type EvolutionTemplate = {
   id: string;
   title: string;
-  content: string;
+  content: TemplateField[] | string; // Support for both old and new format
   userId: string;
   createdAt?: any;
 };

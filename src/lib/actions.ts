@@ -357,7 +357,7 @@ export async function markNotificationAsSeenAction(notificationId: string, userI
 const CreateEvolutionRecordSchema = z.object({
   patientId: z.string().min(1, 'ID do paciente é obrigatório.'),
   title: z.string().min(3, 'O título deve ter pelo menos 3 caracteres.'),
-  details: z.string().min(10, 'Os detalhes devem ter pelo menos 10 caracteres.'),
+  details: z.string().min(1, 'Os detalhes são obrigatórios.'),
   author: z.string().min(1, 'Autor é obrigatório.'),
 });
 
@@ -794,7 +794,7 @@ const CompleteAppointmentSchema = z.object({
   patientId: z.string().min(1, 'ID do paciente é obrigatório.'),
   author: z.string().min(1, 'Autor é obrigatório.'),
   title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres.' }),
-  details: z.string().min(10, { message: 'Os detalhes devem ter pelo menos 10 caracteres.' }),
+  details: z.string().min(1, { message: 'Os detalhes são obrigatórios.' }),
 });
 
 export async function completeAppointmentWithEvolutionAction(prevState: any, formData: FormData) {
@@ -859,9 +859,17 @@ export async function completeAppointmentWithEvolutionAction(prevState: any, for
 
 // --- Evolution Template Actions ---
 
+const TemplateFieldSchema = z.object({
+  id: z.string(),
+  type: z.enum(['header', 'text', 'textarea', 'checkbox', 'radio']),
+  label: z.string().min(1, { message: 'O rótulo do campo não pode estar vazio.' }),
+  options: z.array(z.string()).optional(),
+  placeholder: z.string().optional(),
+});
+
 const EvolutionTemplateSchema = z.object({
   title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres.' }),
-  content: z.string().min(10, { message: 'O conteúdo do modelo deve ter pelo menos 10 caracteres.' }),
+  content: z.string().min(1, 'O conteúdo do modelo é obrigatório.'),
   userId: z.string().min(1, { message: 'ID do usuário é obrigatório.' }),
 });
 
@@ -883,9 +891,19 @@ export async function createEvolutionTemplateAction(prevState: any, formData: Fo
     };
   }
 
+  let parsedContent;
+  try {
+    parsedContent = JSON.parse(validatedFields.data.content);
+    z.array(TemplateFieldSchema).min(1, { message: "O modelo deve ter pelo menos um campo." }).parse(parsedContent);
+  } catch (e) {
+    return { success: false, message: 'Formato de conteúdo do modelo inválido.', errors: null };
+  }
+
   try {
     await db.collection('evolutionTemplates').add({
-      ...validatedFields.data,
+      title: validatedFields.data.title,
+      content: parsedContent,
+      userId: validatedFields.data.userId,
       createdAt: FieldValue.serverTimestamp(),
     });
     revalidatePath('/templates');
@@ -908,7 +926,7 @@ export async function updateEvolutionTemplateAction(prevState: any, formData: Fo
     templateId: formData.get('templateId'),
     title: formData.get('title'),
     content: formData.get('content'),
-    userId: formData.get('userId'), // a user can only update their own templates, but we can pass it for consistency
+    userId: formData.get('userId'),
   });
 
   if (!validatedFields.success) {
@@ -919,12 +937,26 @@ export async function updateEvolutionTemplateAction(prevState: any, formData: Fo
     };
   }
   
-  const { templateId, title, content } = validatedFields.data;
+  const { templateId, title, content, userId } = validatedFields.data;
+
+  let parsedContent;
+  try {
+    parsedContent = JSON.parse(content);
+    z.array(TemplateFieldSchema).min(1, { message: "O modelo deve ter pelo menos um campo." }).parse(parsedContent);
+  } catch (e) {
+    return { success: false, message: 'Formato de conteúdo do modelo inválido.', errors: null };
+  }
 
   try {
+    // Optional: Add a check to ensure the user owns the template they are editing
+    // const doc = await db.collection('evolutionTemplates').doc(templateId).get();
+    // if (!doc.exists || doc.data()?.userId !== userId) {
+    //   return { success: false, message: 'Você não tem permissão para editar este modelo.', errors: null };
+    // }
+
     await db.collection('evolutionTemplates').doc(templateId).update({
       title,
-      content,
+      content: parsedContent,
     });
     revalidatePath('/templates');
     return { success: true, message: 'Modelo atualizado com sucesso!', errors: null };
