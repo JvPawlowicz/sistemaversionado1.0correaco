@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { FileText, Plus, Loader2, ChevronDown, MoreHorizontal, Trash2, Edit, Users2 } from 'lucide-react';
-import type { Patient, EvolutionRecord, PatientDocument, FamilyMember, TherapyGroup } from '@/lib/types';
+import type { Patient, EvolutionRecord, PatientDocument, FamilyMember, TherapyGroup, Assessment } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
@@ -43,7 +43,9 @@ export function PatientDetailView({
   therapyGroups,
   groupsLoading,
   onPatientDeleted,
-  onPatientUpdated
+  onPatientUpdated,
+  assessments,
+  assessmentsLoading,
 }: {
   patient: Patient;
   records: EvolutionRecord[];
@@ -59,6 +61,8 @@ export function PatientDetailView({
   groupsLoading: boolean;
   onPatientDeleted: () => void;
   onPatientUpdated: () => void;
+  assessments: Assessment[];
+  assessmentsLoading: boolean;
 }) {
   const [isNewRecordDialogOpen, setIsNewRecordDialogOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
@@ -201,8 +205,9 @@ export function PatientDetailView({
         </Card>
 
         <Tabs defaultValue="evolution">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="evolution">Evolução</TabsTrigger>
+            <TabsTrigger value="assessments">Avaliações</TabsTrigger>
             <TabsTrigger value="groups">Grupos</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
             <TabsTrigger value="family">Familiares</TabsTrigger>
@@ -245,6 +250,39 @@ export function PatientDetailView({
                     </div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="assessments">
+            <Card>
+              <CardHeader>
+                <CardTitle>Avaliações e Anamneses</CardTitle>
+                <CardDescription>Visualizar todas as avaliações estruturadas do paciente.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {assessmentsLoading ? (
+                  <div className="flex justify-center items-center py-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : assessments.length > 0 ? (
+                  <div className="space-y-3">
+                    {assessments.map(assessment => (
+                      <Card key={assessment.id} className="bg-secondary/50">
+                        <CardHeader className="p-4 flex flex-row items-center justify-between">
+                          <div>
+                            <CardTitle className="text-lg">{assessment.templateTitle}</CardTitle>
+                            <CardDescription>
+                              Preenchido por {assessment.authorName} em {assessment.createdAt ? format(assessment.createdAt.toDate(), 'dd/MM/yyyy') : 'N/A'}
+                            </CardDescription>
+                          </div>
+                          <Button variant="outline" size="sm" disabled>Visualizar</Button>
+                        </CardHeader>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <p>Nenhuma avaliação encontrada para este paciente.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

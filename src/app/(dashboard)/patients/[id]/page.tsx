@@ -5,26 +5,31 @@ import { PatientDetailView } from '@/components/patients/patient-detail-view';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState, useCallback } from 'react';
-import type { Patient, EvolutionRecord, PatientDocument, FamilyMember, TherapyGroup } from '@/lib/types';
+import type { Patient, EvolutionRecord, PatientDocument, FamilyMember, TherapyGroup, Assessment } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useTherapyGroup } from '@/contexts/TherapyGroupContext';
+import { useAssessment } from '@/contexts/AssessmentContext';
 
 export default function PatientProfilePage() {
   const params = useParams<{ id: string }>();
   const { patients, loading: patientsLoading, fetchPatients } = usePatient();
   const { therapyGroups, loading: groupsLoading } = useTherapyGroup();
+  const { assessments, loading: assessmentsLoading } = useAssessment();
+  
   const router = useRouter();
   const [records, setRecords] = useState<EvolutionRecord[]>([]);
   const [documents, setDocuments] = useState<PatientDocument[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  
   const [recordsLoading, setRecordsLoading] = useState(true);
   const [documentsLoading, setDocumentsLoading] = useState(true);
   const [familyMembersLoading, setFamilyMembersLoading] = useState(true);
 
   const patient = patients.find((p) => p.id === params.id);
+  const patientAssessments = assessments.filter(a => a.patientId === params.id);
 
   const handlePatientDeleted = () => {
     router.push('/patients');
@@ -134,6 +139,8 @@ export default function PatientProfilePage() {
       groupsLoading={groupsLoading}
       onPatientDeleted={handlePatientDeleted}
       onPatientUpdated={fetchPatients}
+      assessments={patientAssessments}
+      assessmentsLoading={assessmentsLoading}
     />
   );
 }

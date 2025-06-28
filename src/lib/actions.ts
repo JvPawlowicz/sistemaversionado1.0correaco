@@ -983,3 +983,74 @@ export async function deleteEvolutionTemplateAction(templateId: string): Promise
     return { success: false, message: 'Falha ao excluir o modelo.' };
   }
 }
+
+
+// --- Assessment Actions ---
+
+const CreateAssessmentSchema = z.object({
+  patientId: z.string().min(1, 'Selecione um paciente.'),
+  templateId: z.string().min(1, 'Selecione um modelo.'),
+  templateTitle: z.string().min(1),
+  answers: z.string().min(2, 'As respostas não podem estar vazias.'), // JSON string
+  authorId: z.string().min(1),
+  authorName: z.string().min(1),
+});
+
+export async function createAssessmentAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = CreateAssessmentSchema.safeParse({
+    patientId: formData.get('patientId'),
+    templateId: formData.get('templateId'),
+    templateTitle: formData.get('templateTitle'),
+    answers: formData.get('answers'),
+    authorId: formData.get('authorId'),
+    authorName: formData.get('authorName'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+  
+  const { patientId, templateId, templateTitle, answers, authorId, authorName } = validatedFields.data;
+  
+  let parsedAnswers;
+  try {
+    parsedAnswers = JSON.parse(answers);
+  } catch (e) {
+    return { success: false, message: 'Formato de respostas inválido.', errors: null };
+  }
+
+  const patientDoc = await db.collection('patients').doc(patientId).get();
+  if (!patientDoc.exists) {
+      return { success: false, message: 'Paciente não encontrado.', errors: null };
+  }
+  const patientData = patientDoc.data();
+  const patientName = patientData?.name || '';
+  const unitId = patientData?.unitIds?.[0] || null;
+
+  try {
+    await db.collection('assessments').add({
+      patientId,
+      patientName,
+      unitId,
+      templateId,
+      templateTitle,
+      answers: parsedAnswers,
+      authorId,
+      authorName,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    revalidatePath('/assessments');
+    revalidatePath(`/patients/${patientId}`);
+    return { success: true, message: 'Avaliação salva com sucesso!', errors: null };
+  } catch (error) {
+    console.error('Error creating assessment:', error);
+    return { success: false, message: 'Ocorreu um erro ao salvar a avaliação.', errors: null };
+  }
+}

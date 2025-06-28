@@ -26,7 +26,8 @@ import {
   FileText, 
   MessageSquare,
   Settings,
-  NotebookText
+  NotebookText,
+  ClipboardCheck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnit } from '@/contexts/UnitContext';
@@ -44,6 +45,7 @@ export function AppSidebar() {
     { href: '/patients', label: 'Pacientes', icon: HeartPulse, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
     { href: '/chat', label: 'Chat', icon: MessageSquare, roles: ['Admin', 'Coordinator', 'Therapist', 'Receptionist'] },
     { href: '/evolutions', label: 'Evoluções Pendentes', icon: FileText, roles: ['Admin', 'Coordinator', 'Therapist'] },
+    { href: '/assessments', label: 'Avaliações', icon: ClipboardCheck, roles: ['Admin', 'Coordinator', 'Therapist'] },
     { href: '/templates', label: 'Modelos de Evolução', icon: NotebookText, roles: ['Admin', 'Coordinator', 'Therapist'] },
   ];
   const managementItems = [

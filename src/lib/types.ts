@@ -193,3 +193,16 @@ export type EvolutionTemplate = {
   userId: string;
   createdAt?: any;
 };
+
+export type Assessment = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  unitId: string | null;
+  templateId: string;
+  templateTitle: string;
+  answers: Record<string, any>;
+  authorId: string;
+  authorName: string;
+  createdAt: any;
+};
