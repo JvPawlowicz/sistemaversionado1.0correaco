@@ -4,8 +4,9 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, PlusCircle, Terminal } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DailyView } from './daily-view';
+import { WeeklyView } from './weekly-view';
 import { MonthlyView } from './monthly-view';
+import { DailyView } from './daily-view';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { format, startOfWeek, endOfWeek, isWithinInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -39,7 +40,7 @@ export function ScheduleView() {
         return appointments
             .filter(app => isWithinInterval(new Date(app.date + 'T00:00:00'), { start: weekStart, end: weekEnd }))
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.time.localeCompare(b.time));
-      } else {
+      } else { // 'day' or 'month' tab will export the currently selected day
         return appointments
             .filter(app => isSameDay(new Date(app.date + 'T00:00:00'), currentDate))
             .sort((a, b) => a.time.localeCompare(b.time));
@@ -64,7 +65,7 @@ export function ScheduleView() {
             app.professionalName,
             `Sala ${app.room}`
         ]);
-    } else {
+    } else { // day or month view
         title = `Agenda do Dia: ${format(currentDate, 'dd/MM/yyyy', { locale: ptBR })}`;
         head = [['Horário', 'Paciente', 'Profissional', 'Sala']];
         body = appointmentsToExport.map(app => [
@@ -91,9 +92,10 @@ export function ScheduleView() {
   return (
     <div className="space-y-4">
         <NewAppointmentDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
-        <Tabs defaultValue="week" className="w-full" onValueChange={setActiveTab}>
+        <Tabs defaultValue="week" className="w-full" onValueChange={setActiveTab} value={activeTab}>
             <div className="flex flex-wrap items-center justify-between gap-4 pb-4">
                 <TabsList>
+                    <TabsTrigger value="day">Dia</TabsTrigger>
                     <TabsTrigger value="week">Semana</TabsTrigger>
                     <TabsTrigger value="month">Mês</TabsTrigger>
                 </TabsList>
@@ -118,8 +120,11 @@ export function ScheduleView() {
                 </Alert>
             ) : (
                 <>
-                    <TabsContent value="week" >
+                    <TabsContent value="day">
                         <DailyView appointments={appointments} timeBlocks={timeBlocks} currentDate={currentDate} setCurrentDate={setCurrentDate} />
+                    </TabsContent>
+                    <TabsContent value="week" >
+                        <WeeklyView appointments={appointments} timeBlocks={timeBlocks} currentDate={currentDate} setCurrentDate={setCurrentDate} />
                     </TabsContent>
                     <TabsContent value="month">
                         <MonthlyView appointments={appointments} date={currentDate} setDate={setCurrentDate} />
