@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { auth, db, storageAdmin } from '@/lib/firebase-admin';
 import { FieldValue, WriteResult } from 'firebase-admin/firestore';
-import type { Unit, Service, Availability } from './types';
+import type { Appointment, Unit, Service, Availability } from './types';
 import { revalidatePath } from 'next/cache';
 
 // --- Helper for checking Firebase Admin initialization ---
@@ -383,6 +383,12 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
   const { patientId, title, details, author } = validatedFields.data;
 
   try {
+     const patientDoc = await db.collection('patients').doc(patientId).get();
+    if (!patientDoc.exists) {
+        return { success: false, message: 'Paciente não encontrado.', errors: null };
+    }
+    const patientName = patientDoc.data()?.name || '';
+
     await db
       .collection('patients')
       .doc(patientId)
@@ -391,6 +397,8 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
         title,
         details,
         author,
+        patientId,
+        patientName,
         createdAt: FieldValue.serverTimestamp(),
       });
     revalidatePath(`/patients/${patientId}`);
@@ -776,5 +784,75 @@ export async function updateUserAvailabilityAction(userId: string, availability:
   } catch (error) {
     console.error("Error updating availability:", error);
     return { success: false, message: 'Ocorreu um erro ao salvar a disponibilidade.' };
+  }
+}
+
+// --- Complete Appointment with Evolution Action ---
+
+const CompleteAppointmentSchema = z.object({
+  appointmentId: z.string().min(1, 'ID do agendamento é obrigatório.'),
+  patientId: z.string().min(1, 'ID do paciente é obrigatório.'),
+  author: z.string().min(1, 'Autor é obrigatório.'),
+  title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres.' }),
+  details: z.string().min(10, { message: 'Os detalhes devem ter pelo menos 10 caracteres.' }),
+});
+
+export async function completeAppointmentWithEvolutionAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = CompleteAppointmentSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  const { appointmentId, patientId, author, title, details } = validatedFields.data;
+  const batch = db.batch();
+
+  try {
+    const appointmentRef = db.collection('appointments').doc(appointmentId);
+    const patientRef = db.collection('patients').doc(patientId);
+    const evolutionRecordRef = db.collection('patients').doc(patientId).collection('evolutionRecords').doc();
+    
+    // We need the appointment date to update the patient's lastVisit
+    const appointmentDoc = await appointmentRef.get();
+    if (!appointmentDoc.exists) {
+        return { success: false, message: 'Agendamento não encontrado.', errors: null };
+    }
+    const appointmentData = appointmentDoc.data() as Appointment;
+
+    // Update appointment status
+    batch.update(appointmentRef, { status: 'Realizado' });
+
+    // Update patient's last visit
+    if (appointmentData?.date) {
+        batch.update(patientRef, { lastVisit: appointmentData.date });
+    }
+
+    // Create evolution record
+    batch.set(evolutionRecordRef, {
+      title,
+      details,
+      author,
+      patientId,
+      patientName: appointmentData.patientName,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+
+    revalidatePath('/schedule');
+    revalidatePath('/evolutions');
+    revalidatePath(`/patients/${patientId}`);
+    
+    return { success: true, message: 'Atendimento concluído e evolução registrada!', errors: null };
+  } catch (error) {
+    console.error('Error completing appointment with evolution:', error);
+    return { success: false, message: 'Ocorreu um erro ao concluir o atendimento.', errors: null };
   }
 }
