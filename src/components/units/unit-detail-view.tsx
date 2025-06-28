@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -10,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, Upload } from 'lucide-react';
+import { MoreHorizontal, Trash2, Upload, HandHeart } from 'lucide-react';
 import type { Unit, Service } from '@/lib/types';
 import {
     DropdownMenu,
@@ -33,6 +34,7 @@ import { ServiceManager } from './service-manager';
 import { UnitForm } from './unit-form';
 import { RoomManager } from './room-manager';
 import { useAuth } from '@/contexts/AuthContext';
+import { HealthPlanManager } from './health-plan-manager';
 
 export function UnitDetailView({
   unit,
@@ -109,8 +111,9 @@ export function UnitDetailView({
 
             {isAdmin ? (
                 <Tabs defaultValue="services">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-5">
                         <TabsTrigger value="services">Serviços</TabsTrigger>
+                        <TabsTrigger value="healthPlans">Planos de Saúde</TabsTrigger>
                         <TabsTrigger value="rooms">Salas</TabsTrigger>
                         <TabsTrigger value="details">Dados Cadastrais</TabsTrigger>
                         <TabsTrigger value="documents">Documentos</TabsTrigger>
@@ -124,6 +127,17 @@ export function UnitDetailView({
                         <CardContent className="space-y-4">
                            <ServiceManager unit={unit} onServiceChange={onServiceChange} />
                         </CardContent>
+                        </Card>
+                    </TabsContent>
+                     <TabsContent value="healthPlans">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Planos de Saúde</CardTitle>
+                                <CardDescription>Gerencie os planos de saúde e convênios aceitos nesta unidade.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <HealthPlanManager unit={unit} />
+                            </CardContent>
                         </Card>
                     </TabsContent>
                     <TabsContent value="rooms">

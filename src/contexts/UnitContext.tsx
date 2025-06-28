@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import type { Unit, Service } from '@/lib/types';
+import type { Unit, Service, HealthPlan } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, serverTimestamp, query, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,8 @@ interface UnitContextType {
   deleteUnit: (unitId: string) => Promise<void>;
   addServiceToUnit: (unitId: string, serviceData: Omit<Service, 'id' | 'unitId'>) => Promise<void>;
   deleteService: (unitId: string, serviceId: string) => Promise<void>;
+  addHealthPlanToUnit: (unitId: string, planData: Omit<HealthPlan, 'id' | 'unitId'>) => Promise<void>;
+  deleteHealthPlan: (unitId: string, planId: string) => Promise<void>;
   updateUnitRooms: (unitId: string, rooms: string[]) => Promise<void>;
   fetchUnits: () => Promise<void>;
 }
@@ -52,7 +54,8 @@ export function UnitProvider({ children }: { children: ReactNode }) {
       const unitSnapshot = await getDocs(query(unitsCollection));
       
       const unitListPromises = unitSnapshot.docs.map(async (unitDoc) => {
-        const unitData = unitDoc.data() as Omit<Unit, 'id' | 'services'>;
+        const unitData = unitDoc.data() as Omit<Unit, 'id' | 'services' | 'healthPlans'>;
+
         const servicesCollection = collection(db, 'units', unitDoc.id, 'services');
         const servicesSnapshot = await getDocs(query(servicesCollection));
         const services = servicesSnapshot.docs.map(serviceDoc => ({
@@ -60,10 +63,18 @@ export function UnitProvider({ children }: { children: ReactNode }) {
           ...serviceDoc.data()
         } as Service));
         
+        const healthPlansCollection = collection(db, 'units', unitDoc.id, 'healthPlans');
+        const healthPlansSnapshot = await getDocs(query(healthPlansCollection));
+        const healthPlans = healthPlansSnapshot.docs.map(planDoc => ({
+          id: planDoc.id,
+          ...planDoc.data()
+        } as HealthPlan));
+        
         return {
           id: unitDoc.id,
           ...unitData,
           services,
+          healthPlans,
         } as Unit;
       });
 
@@ -196,8 +207,35 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addHealthPlanToUnit = async (unitId: string, planData: Omit<HealthPlan, 'id' | 'unitId'>) => {
+    if (!db) return;
+    try {
+      const plansCollection = collection(db, 'units', unitId, 'healthPlans');
+      await addDoc(plansCollection, { ...planData, unitId });
+      toast({ title: "Sucesso", description: "Plano de saúde adicionado." });
+      await fetchUnits();
+    } catch (error) {
+      console.error("Error adding health plan: ", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível adicionar o plano de saúde." });
+    }
+  };
+  
+  const deleteHealthPlan = async (unitId: string, planId: string) => {
+    if (!db) return;
+    try {
+        const planRef = doc(db, 'units', unitId, 'healthPlans', planId);
+        await deleteDoc(planRef);
+        toast({ title: 'Sucesso', description: 'Plano de saúde removido.'});
+        await fetchUnits();
+    } catch (error) {
+        console.error("Error deleting health plan: ", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível remover o plano de saúde." });
+    }
+  }
+
+
   return (
-    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, deleteUnit, addServiceToUnit, deleteService, selectedUnitId, setSelectedUnitId: handleSetSelectedUnitId, fetchUnits, updateUnitRooms }}>
+    <UnitContext.Provider value={{ units, loading: loading || authLoading, error, addUnit, deleteUnit, addServiceToUnit, deleteService, addHealthPlanToUnit, deleteHealthPlan, selectedUnitId, setSelectedUnitId: handleSetSelectedUnitId, fetchUnits, updateUnitRooms }}>
       {children}
     </UnitContext.Provider>
   );

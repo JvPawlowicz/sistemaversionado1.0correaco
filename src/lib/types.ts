@@ -1,6 +1,9 @@
 
 export type Address = {
   street: string;
+  streetNumber?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
   city: string;
   state: string;
   zip: string;
@@ -20,6 +23,13 @@ export type Service = {
   professionalIds: string[];
 };
 
+export type HealthPlan = {
+  id: string;
+  name: string;
+  color: string;
+  unitId: string;
+}
+
 export type Unit = {
   id: string;
   name: string;
@@ -31,6 +41,7 @@ export type Unit = {
   photoUrl?: string;
   institutionalDocuments?: InstitutionalDocument[];
   services?: Service[]; // Populado no frontend
+  healthPlans?: HealthPlan[]; // Populado no frontend
   rooms?: string[];
   createdAt?: any;
 };
@@ -47,6 +58,17 @@ export type Patient = {
   gender?: 'Male' | 'Female' | 'Other' | null;
   unitIds: string[];
   createdAt?: any;
+
+  cpf?: string | null;
+  rg?: string | null;
+  maritalStatus?: string | null;
+  profession?: string | null;
+  cns?: string | null;
+  healthPlanId?: string | null;
+  healthPlanName?: string | null;
+  motherName?: string | null;
+  fatherName?: string | null;
+  additionalInfo?: string | null;
 
   diagnosis?: string | null;
   referringProfessional?: string | null;
@@ -206,4 +228,15 @@ export type Assessment = {
   authorId: string;
   authorName: string;
   createdAt: any;
+};
+
+export type Log = {
+  id: string;
+  actorId: string;
+  actorName: string;
+  action: string;
+  details: string;
+  entityType?: string;
+  entityId?: string;
+  createdAt: any; // Firestore Timestamp
 };
