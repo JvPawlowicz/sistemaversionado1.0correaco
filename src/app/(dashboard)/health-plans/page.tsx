@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -17,6 +18,18 @@ export default function HealthPlansPage() {
   const { units, loading: unitsLoading, fetchUnits } = useUnit();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const router = useRouter();
+
+  const allHealthPlans = React.useMemo(() => {
+    return units
+      .flatMap(unit =>
+        (unit.healthPlans || []).map(plan => ({
+          ...plan,
+          unitName: unit.name,
+          unitId: unit.id,
+        }))
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [units]);
 
   const isLoading = authLoading || unitsLoading;
 
@@ -52,19 +65,6 @@ export default function HealthPlansPage() {
         </Card>
     );
   }
-
-  // Logic for Admins
-  const allHealthPlans = React.useMemo(() => {
-    return units
-      .flatMap(unit =>
-        (unit.healthPlans || []).map(plan => ({
-          ...plan,
-          unitName: unit.name,
-          unitId: unit.id,
-        }))
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [units]);
 
   return (
     <div className="space-y-6">
