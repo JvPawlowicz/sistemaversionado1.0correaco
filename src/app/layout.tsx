@@ -5,8 +5,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'ClinicFlow',
-  description: 'Sistema de Gestão para Clínicas',
+  title: 'Equidade+',
+  description: 'Sistema de Gestão Equidade+',
 };
 
 export default function RootLayout({

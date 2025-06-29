@@ -26,8 +26,8 @@ export default function LoginPage() {
     <Card className="mx-auto max-w-sm w-full">
       <CardHeader className="space-y-1 text-center">
         <Logo className="w-16 h-16 mx-auto" />
-        <CardTitle className="text-2xl font-bold">ClinicFlow</CardTitle>
-        <CardDescription>Acesse sua conta para gerenciar a clínica</CardDescription>
+        <CardTitle className="text-2xl font-bold">Equidade+</CardTitle>
+        <CardDescription>Acesse sua conta para gerenciar a plataforma</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>
