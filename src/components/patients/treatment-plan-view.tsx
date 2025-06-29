@@ -4,14 +4,17 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Target, Plus, CheckCircle2, PauseCircle, PlayCircle, Clock } from 'lucide-react';
-import type { Patient, TreatmentGoal, TreatmentObjective } from '@/lib/types';
+import { Target, Plus, CheckCircle2, PauseCircle, PlayCircle, Clock, LineChart } from 'lucide-react';
+import type { Patient, TreatmentGoal, TreatmentObjective, EvolutionRecord } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { ManageTreatmentPlanDialog } from './manage-treatment-plan-dialog';
+import { ObjectiveProgressChartDialog } from './objective-progress-chart-dialog';
 
 interface TreatmentPlanViewProps {
   patient: Patient;
   onPlanUpdated: () => void;
+  evolutionRecords: EvolutionRecord[];
+  recordsLoading: boolean;
 }
 
 const statusConfig: Record<TreatmentObjective['status'], { icon: React.ElementType, color: string, label: string }> = {
@@ -21,9 +24,17 @@ const statusConfig: Record<TreatmentObjective['status'], { icon: React.ElementTy
     'Pausa': { icon: PauseCircle, color: 'text-yellow-500', label: 'Pausa' },
 }
 
-export function TreatmentPlanView({ patient, onPlanUpdated }: TreatmentPlanViewProps) {
+export function TreatmentPlanView({ patient, onPlanUpdated, evolutionRecords, recordsLoading }: TreatmentPlanViewProps) {
   const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
+  const [isChartDialogOpen, setIsChartDialogOpen] = React.useState(false);
+  const [selectedObjective, setSelectedObjective] = React.useState<TreatmentObjective | null>(null);
+  
   const plan = patient.treatmentPlan;
+  
+  const handleChartClick = (objective: TreatmentObjective) => {
+    setSelectedObjective(objective);
+    setIsChartDialogOpen(true);
+  }
   
   const canManage = true; // TODO: Add role check from useAuth
 
@@ -35,6 +46,15 @@ export function TreatmentPlanView({ patient, onPlanUpdated }: TreatmentPlanViewP
         patient={patient}
         onPlanUpdated={onPlanUpdated}
       />
+      {selectedObjective && (
+        <ObjectiveProgressChartDialog
+            isOpen={isChartDialogOpen}
+            onOpenChange={setIsChartDialogOpen}
+            objective={selectedObjective}
+            evolutionRecords={evolutionRecords}
+            isLoading={recordsLoading}
+        />
+      )}
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -60,12 +80,17 @@ export function TreatmentPlanView({ patient, onPlanUpdated }: TreatmentPlanViewP
                     const StatusIcon = statusConfig[objective.status].icon;
                     return (
                         <div key={objective.id} className="p-3 rounded-md bg-secondary/50">
-                            <div className="flex items-center gap-2">
-                               <StatusIcon className={`h-5 w-5 ${statusConfig[objective.status].color}`} />
-                               <p className="flex-1 font-medium">{objective.description}</p>
+                            <div className="flex items-start gap-2">
+                               <StatusIcon className={`h-5 w-5 mt-0.5 ${statusConfig[objective.status].color}`} />
+                               <div className="flex-1">
+                                <p className="font-medium">{objective.description}</p>
+                                {objective.masteryCriterion && <p className="text-xs text-muted-foreground mt-1"><strong>Critério:</strong> {objective.masteryCriterion}</p>}
+                               </div>
                                <Badge variant="outline">{objective.dataCollectionType}</Badge>
+                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleChartClick(objective)}>
+                                    <LineChart className="h-4 w-4" />
+                               </Button>
                             </div>
-                            {objective.masteryCriterion && <p className="text-xs text-muted-foreground mt-1 pl-7"><strong>Critério:</strong> {objective.masteryCriterion}</p>}
                         </div>
                     );
                   }) : <p className="text-sm text-muted-foreground">Nenhum objetivo de curto prazo definido para esta meta.</p>}

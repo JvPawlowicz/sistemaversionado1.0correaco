@@ -143,6 +143,12 @@ export type Appointment = {
   healthPlanName?: string;
 };
 
+export type ObjectiveProgressData = {
+  value: number;
+  total?: number; // Only for 'Tentativas'
+  type: TreatmentObjective['dataCollectionType'];
+};
+
 export type EvolutionRecord = {
   id: string;
   title: string;
@@ -153,6 +159,7 @@ export type EvolutionRecord = {
   patientName: string;
   patientId: string;
   linkedObjectiveIds?: string[];
+  objectiveProgress?: Record<string, ObjectiveProgressData>;
 };
 
 export type PatientDocument = {

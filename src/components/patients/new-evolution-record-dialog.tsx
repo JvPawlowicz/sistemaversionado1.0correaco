@@ -14,10 +14,13 @@ import { createEvolutionRecordAction } from '@/lib/actions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTemplate } from '@/contexts/TemplateContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { TemplateField, Patient } from '@/lib/types';
+import type { TemplateField, Patient, TreatmentObjective, ObjectiveProgressData } from '@/lib/types';
 import { Checkbox } from '../ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { ScrollArea } from '../ui/scroll-area';
+import { useImmer } from 'use-immer';
+import { cn } from '@/lib/utils';
+
 
 interface NewEvolutionRecordDialogProps {
   isOpen: boolean;
@@ -79,6 +82,7 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patient, onReco
   const [currentTemplateFields, setCurrentTemplateFields] = useState<TemplateField[] | null>(null);
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [linkedObjectiveIds, setLinkedObjectiveIds] = useState<string[]>([]);
+  const [objectiveProgress, setObjectiveProgress] = useImmer<Record<string, Partial<ObjectiveProgressData>>>({});
   
   const allObjectives = patient.treatmentPlan?.goals.flatMap(g => g.objectives) || [];
 
@@ -106,6 +110,7 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patient, onReco
     setCurrentTemplateFields(null);
     setFormValues({});
     setLinkedObjectiveIds([]);
+    setObjectiveProgress({});
     onOpenChange(false);
   };
   
@@ -139,11 +144,30 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patient, onReco
     });
   };
 
-  const handleObjectiveLink = (objectiveId: string, checked: boolean) => {
-    setLinkedObjectiveIds(prev => 
-      checked ? [...prev, objectiveId] : prev.filter(id => id !== objectiveId)
-    );
+  const handleObjectiveLink = (objective: TreatmentObjective, checked: boolean) => {
+    if (checked) {
+        setLinkedObjectiveIds(prev => [...prev, objective.id]);
+        setObjectiveProgress(draft => {
+            draft[objective.id] = { type: objective.dataCollectionType };
+        });
+    } else {
+        setLinkedObjectiveIds(prev => prev.filter(id => id !== objective.id));
+        setObjectiveProgress(draft => {
+            delete draft[objective.id];
+        });
+    }
   };
+
+  const handleProgressDataChange = (objectiveId: string, field: 'value' | 'total', value: string) => {
+    const numValue = value === '' ? undefined : parseInt(value, 10);
+    setObjectiveProgress(draft => {
+        if(draft[objectiveId]){
+           (draft[objectiveId] as any)[field] = numValue;
+        }
+    });
+  }
+
+  const stringifiedProgress = JSON.stringify(objectiveProgress);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -166,6 +190,7 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patient, onReco
               <input type="hidden" name="author" value={currentUser?.name || 'Sistema'} />
               <input type="hidden" name="details" value={details} />
               {linkedObjectiveIds.map(id => <input key={id} type="hidden" name="linkedObjectiveIds" value={id} />)}
+               <input type="hidden" name="objectiveProgress" value={stringifiedProgress} />
 
                <div className="space-y-2">
                   <Label htmlFor="template">Usar Modelo (Opcional)</Label>
@@ -238,7 +263,7 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patient, onReco
                   </div>
               ) : (
                   <div className="space-y-2 flex-grow flex flex-col">
-                      <Label htmlFor="details">Detalhes</Label>
+                      <Label htmlFor="details-visible">Detalhes</Label>
                       <Textarea id="details-visible" value={details} onChange={(e) => setDetails(e.target.value)} required className="flex-grow" />
                       {state.errors?.details && <p className="text-xs text-destructive mt-1">{state.errors.details[0]}</p>}
                   </div>
@@ -247,27 +272,39 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patient, onReco
             </div>
             <div className="space-y-4 py-4 max-h-full overflow-y-auto pr-4 border-l pl-6">
                 <div className="space-y-2">
-                    <Label className="flex items-center gap-2 text-base font-semibold"><Target /> Vincular a Objetivos</Label>
-                    <p className="text-sm text-muted-foreground">Selecione os objetivos do Plano Terapêutico Individual (PTI) que foram trabalhados nesta sessão.</p>
+                    <Label className="flex items-center gap-2 text-base font-semibold"><Target /> Vincular e Registrar Progresso de Objetivos</Label>
+                    <p className="text-sm text-muted-foreground">Selecione os objetivos trabalhados e insira os dados coletados na sessão.</p>
                 </div>
                  <ScrollArea className="h-full">
                     <div className="space-y-4 pr-4">
-                        {patient.treatmentPlan?.goals && patient.treatmentPlan.goals.length > 0 ? (
-                            patient.treatmentPlan.goals.map(goal => (
-                                <div key={goal.id} className="space-y-2">
-                                    <h4 className="font-semibold text-primary">{goal.description}</h4>
-                                    <div className="pl-2 space-y-2">
-                                        {goal.objectives.map(objective => (
-                                            <div key={objective.id} className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id={objective.id}
-                                                    onCheckedChange={(checked) => handleObjectiveLink(objective.id, !!checked)}
-                                                    checked={linkedObjectiveIds.includes(objective.id)}
-                                                />
-                                                <Label htmlFor={objective.id} className="font-normal">{objective.description}</Label>
-                                            </div>
-                                        ))}
+                        {allObjectives.length > 0 ? (
+                            allObjectives.map(objective => (
+                                <div key={objective.id}>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={`link-${objective.id}`}
+                                            onCheckedChange={(checked) => handleObjectiveLink(objective, !!checked)}
+                                            checked={linkedObjectiveIds.includes(objective.id)}
+                                        />
+                                        <Label htmlFor={`link-${objective.id}`} className="font-normal flex-1">{objective.description}</Label>
                                     </div>
+                                    {linkedObjectiveIds.includes(objective.id) && (
+                                        <fieldset className="mt-2 ml-6 pl-4 border-l-2 space-y-2">
+                                            <legend className="text-xs font-semibold text-muted-foreground">Coleta de Dados ({objective.dataCollectionType})</legend>
+                                            {objective.dataCollectionType === 'Tentativas' ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Input type="number" placeholder="Acertos" onChange={e => handleProgressDataChange(objective.id, 'value', e.target.value)} />
+                                                    <span className="text-muted-foreground">/</span>
+                                                    <Input type="number" placeholder="Total" onChange={e => handleProgressDataChange(objective.id, 'total', e.target.value)} />
+                                                </div>
+                                            ) : (
+                                                 <Input type="number" placeholder={
+                                                    objective.dataCollectionType === 'Frequência' ? 'Contagem' :
+                                                    objective.dataCollectionType === 'Duração' ? 'Minutos' : 'Valor'
+                                                 } onChange={e => handleProgressDataChange(objective.id, 'value', e.target.value)} />
+                                            )}
+                                        </fieldset>
+                                    )}
                                 </div>
                             ))
                         ) : (

@@ -271,7 +271,12 @@ export function PatientDetailView({
             </Card>
           </TabsContent>
           <TabsContent value="treatment-plan">
-             <TreatmentPlanView patient={patient} onPlanUpdated={onPatientUpdated} />
+             <TreatmentPlanView
+                patient={patient}
+                onPlanUpdated={onPatientUpdated}
+                evolutionRecords={records}
+                recordsLoading={recordsLoading}
+              />
           </TabsContent>
           <TabsContent value="assessments">
             <Card>

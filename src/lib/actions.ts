@@ -399,6 +399,7 @@ const CreateEvolutionRecordSchema = z.object({
   details: z.string().min(1, 'Os detalhes são obrigatórios.'),
   author: z.string().min(1, 'Autor é obrigatório.'),
   linkedObjectiveIds: z.array(z.string()).optional(),
+  objectiveProgress: z.string().optional(),
 });
 
 export async function createEvolutionRecordAction(prevState: any, formData: FormData) {
@@ -411,6 +412,7 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
     details: formData.get('details'),
     author: formData.get('author'),
     linkedObjectiveIds: formData.getAll('linkedObjectiveIds'),
+    objectiveProgress: formData.get('objectiveProgress'),
   });
 
   if (!validatedFields.success) {
@@ -421,7 +423,17 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
     };
   }
 
-  const { patientId, title, details, author, linkedObjectiveIds } = validatedFields.data;
+  const { patientId, title, details, author, linkedObjectiveIds, objectiveProgress } = validatedFields.data;
+
+  let parsedObjectiveProgress = {};
+  if (objectiveProgress) {
+      try {
+          parsedObjectiveProgress = JSON.parse(objectiveProgress);
+          // TODO: Add Zod validation for the parsed object
+      } catch (e) {
+          return { success: false, message: 'Formato de progresso dos objetivos inválido.', errors: null };
+      }
+  }
 
   try {
      const patientDoc = await db.collection('patients').doc(patientId).get();
@@ -440,6 +452,7 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
         details,
         author,
         linkedObjectiveIds: linkedObjectiveIds || [],
+        objectiveProgress: parsedObjectiveProgress,
         patientId,
         patientName,
         createdAt: FieldValue.serverTimestamp(),
