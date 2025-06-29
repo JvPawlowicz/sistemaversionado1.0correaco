@@ -117,7 +117,12 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
   const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
 
   const laidOutAppointments = React.useMemo(() => {
-    const appointmentsOnDay = appointments.filter(app => isSameDay(new Date(app.date + 'T00:00:00'), currentDate));
+    let appointmentsOnDay = appointments.filter(app => isSameDay(new Date(app.date + 'T00:00:00'), currentDate));
+    
+    // Filter for Therapist role to only show their appointments
+    if (currentUser?.role === 'Therapist') {
+        appointmentsOnDay = appointmentsOnDay.filter(app => app.professionalName === currentUser.name);
+    }
     
     const processedGroupIds = new Set<string>();
     const renderableAppointments: RenderableAppointment[] = [];
@@ -142,7 +147,7 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
     });
 
     return calculateAppointmentLayout(renderableAppointments);
-  }, [appointments, currentDate]);
+  }, [appointments, currentDate, currentUser]);
 
   const handleNextDay = () => setCurrentDate(addDays(currentDate, 1));
   const handlePrevDay = () => setCurrentDate(subDays(currentDate, 1));

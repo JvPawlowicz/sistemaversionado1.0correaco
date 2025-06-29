@@ -123,7 +123,12 @@ export function WeeklyView({ appointments, timeBlocks, currentDate, setCurrentDa
   const laidOutAppointmentsByDay = React.useMemo(() => {
     const dayMap = new Map<string, (RenderableAppointment & { layout: { col: number; totalCols: number } })[]>();
     days.forEach(day => {
-        const appointmentsOnDay = appointments.filter(app => isSameDay(new Date(app.date + 'T00:00:00'), day));
+        let appointmentsOnDay = appointments.filter(app => isSameDay(new Date(app.date + 'T00:00:00'), day));
+        
+        // Filter for Therapist role to only show their appointments
+        if (currentUser?.role === 'Therapist') {
+            appointmentsOnDay = appointmentsOnDay.filter(app => app.professionalName === currentUser.name);
+        }
         
         const processedGroupIds = new Set<string>();
         const renderableAppointments: RenderableAppointment[] = [];
@@ -150,7 +155,7 @@ export function WeeklyView({ appointments, timeBlocks, currentDate, setCurrentDa
       dayMap.set(day.toISOString(), calculateAppointmentLayout(renderableAppointments));
     });
     return dayMap;
-  }, [appointments, days]);
+  }, [appointments, days, currentUser]);
 
   const handleNextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
   const handlePrevWeek = () => setCurrentDate(subWeeks(currentDate, 1));
