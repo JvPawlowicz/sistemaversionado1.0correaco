@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Shield } from 'lucide-react';
+import { PlusCircle, Shield, ShieldAlert } from 'lucide-react';
 import { useUnit } from '@/contexts/UnitContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { HealthPlanTable } from '@/components/health-plans/health-plan-table';
@@ -18,26 +18,9 @@ export default function HealthPlansPage() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const router = useRouter();
 
-  React.useEffect(() => {
-    if (!authLoading && currentUser?.role !== 'Admin') {
-      router.push('/dashboard');
-    }
-  }, [authLoading, currentUser, router]);
-
-  const allHealthPlans = React.useMemo(() => {
-    return units
-      .flatMap(unit =>
-        (unit.healthPlans || []).map(plan => ({
-          ...plan,
-          unitName: unit.name,
-          unitId: unit.id,
-        }))
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [units]);
-
   const isLoading = authLoading || unitsLoading;
-  
+
+  // Early return for loading state
   if (isLoading) {
      return (
         <div className="space-y-6">
@@ -54,20 +37,34 @@ export default function HealthPlansPage() {
     );
   }
 
+  // Early return for non-admins
   if (currentUser?.role !== 'Admin') {
     return (
         <Card className="mt-8">
-        <CardHeader className="items-center text-center">
-            <Shield className="h-12 w-12 text-destructive" />
-            <CardTitle className="text-2xl">Acesso Negado</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center">
-            <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
-            <Button onClick={() => router.push('/dashboard')} className="mt-4">Voltar para o Painel</Button>
-        </CardContent>
+            <CardHeader className="items-center text-center">
+                <ShieldAlert className="h-12 w-12 text-destructive" />
+                <CardTitle className="text-2xl">Acesso Negado</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+                <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
+                <Button onClick={() => router.push('/dashboard')} className="mt-4">Voltar para o Painel</Button>
+            </CardContent>
         </Card>
     );
   }
+
+  // Logic for Admins
+  const allHealthPlans = React.useMemo(() => {
+    return units
+      .flatMap(unit =>
+        (unit.healthPlans || []).map(plan => ({
+          ...plan,
+          unitName: unit.name,
+          unitId: unit.id,
+        }))
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [units]);
 
   return (
     <div className="space-y-6">
