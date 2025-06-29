@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -151,15 +150,22 @@ export default function EvolutionsPage() {
     fetchAllEvolutions(); 
   };
 
+  const selectedPatientForDialog = React.useMemo(() => {
+    if (!selectedAppointment) return null;
+    return patients.find(p => p.id === selectedAppointment.patientId);
+  }, [selectedAppointment, patients]);
+
 
   return (
     <>
-      <NewEvolutionRecordDialog
-        isOpen={isRecordDialogOpen}
-        onOpenChange={setIsRecordDialogOpen}
-        patientId={selectedAppointment?.patientId || ''}
-        onRecordAdded={handleRecordAdded}
-      />
+      {selectedPatientForDialog && (
+        <NewEvolutionRecordDialog
+          isOpen={isRecordDialogOpen}
+          onOpenChange={setIsRecordDialogOpen}
+          patient={selectedPatientForDialog}
+          onRecordAdded={handleRecordAdded}
+        />
+      )}
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
