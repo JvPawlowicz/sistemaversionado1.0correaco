@@ -1344,3 +1344,63 @@ export async function deleteHealthPlanAction(planId: string, unitId: string): Pr
     return { success: false, message: 'Ocorreu um erro ao remover o plano de saúde.' };
   }
 }
+
+
+// --- Seed Default Health Plans Action ---
+const defaultHealthPlans = [
+  { name: 'Amil', color: '#0072C6' },
+  { name: 'Bradesco Saúde', color: '#CD232A' },
+  { name: 'SulAmérica Saúde', color: '#FF7F00' },
+  { name: 'Unimed', color: '#00995D' },
+  { name: 'Hapvida', color: '#00A8E0' },
+  { name: 'NotreDame Intermédica', color: '#0033A0' },
+  { name: 'Porto Seguro Saúde', color: '#0058A3' },
+  { name: 'Prevent Senior', color: '#FDB913' },
+  { name: 'Golden Cross', color: '#D4AF37' },
+  { name: 'Allianz Saúde', color: '#003781' }
+];
+
+export async function seedDefaultHealthPlansAction(): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  try {
+    const centralUnitRef = db.collection('units').doc('central');
+    const plansRef = centralUnitRef.collection('healthPlans');
+    
+    // Check if the central unit exists, create if not
+    const centralUnitDoc = await centralUnitRef.get();
+    if (!centralUnitDoc.exists) {
+        await centralUnitRef.set({
+            name: 'Central (Todas as Unidades)',
+            createdAt: FieldValue.serverTimestamp(),
+        });
+    }
+
+    const existingPlansSnapshot = await plansRef.get();
+    const existingPlanNames = new Set(existingPlansSnapshot.docs.map(doc => doc.data().name.toLowerCase()));
+    
+    const batch = db.batch();
+    let plansAddedCount = 0;
+
+    for (const plan of defaultHealthPlans) {
+      if (!existingPlanNames.has(plan.name.toLowerCase())) {
+        const newPlanRef = plansRef.doc(); // Auto-generate ID
+        batch.set(newPlanRef, plan);
+        plansAddedCount++;
+      }
+    }
+
+    if (plansAddedCount > 0) {
+      await batch.commit();
+      revalidatePath('/health-plans');
+      return { success: true, message: `${plansAddedCount} plano(s) de saúde padrão foram adicionados com sucesso.` };
+    } else {
+      return { success: true, message: 'Todos os planos de saúde padrão já estavam cadastrados.' };
+    }
+
+  } catch (error) {
+    console.error("Error seeding default health plans:", error);
+    return { success: false, message: 'Ocorreu um erro ao cadastrar os planos de saúde padrão.' };
+  }
+}
