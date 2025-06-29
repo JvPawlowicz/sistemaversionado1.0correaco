@@ -17,6 +17,7 @@ import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { NewEvolutionRecordDialog } from '@/components/patients/new-evolution-record-dialog';
+import { createPendingEvolutionRemindersAction } from '@/lib/actions';
 
 
 export default function EvolutionsPage() {
@@ -30,6 +31,7 @@ export default function EvolutionsPage() {
 
   const [isRecordDialogOpen, setIsRecordDialogOpen] = React.useState(false);
   const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
+  const [isSendingReminders, setIsSendingReminders] = React.useState(false);
   
   const loading = scheduleLoading || patientsLoading || loadingEvolutions;
 
@@ -108,14 +110,37 @@ export default function EvolutionsPage() {
     }
   };
 
-  const handleSendReminders = () => {
-    // Placeholder for actual notification logic
-    toast({
-      title: "Lembretes Enviados (Simulação)",
-      description: `Lembretes foram enviados para os responsáveis de ${selectedAppointments.length} evoluções pendentes.`
-    });
-    setSelectedAppointments([]);
-  }
+  const handleSendReminders = async () => {
+    if (selectedAppointments.length === 0) return;
+
+    const appointmentsToSend = pendingEvolutions.filter(app => selectedAppointments.includes(app.id));
+    if (appointmentsToSend.length === 0) return;
+    
+    setIsSendingReminders(true);
+    const result = await createPendingEvolutionRemindersAction(
+      appointmentsToSend.map(app => ({
+        id: app.id,
+        patientName: app.patientName,
+        professionalName: app.professionalName,
+        date: app.date,
+      }))
+    );
+    setIsSendingReminders(false);
+
+    if (result.success) {
+      toast({
+        title: "Sucesso!",
+        description: result.message
+      });
+      setSelectedAppointments([]);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: "Erro ao enviar lembretes",
+        description: result.message
+      });
+    }
+  };
   
   const handleRegisterClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -156,7 +181,10 @@ export default function EvolutionsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="outline" onClick={handleSendReminders} disabled={selectedAppointments.length === 0}>Lembrar Selecionados ({selectedAppointments.length})</Button>
+            <Button variant="outline" onClick={handleSendReminders} disabled={selectedAppointments.length === 0 || isSendingReminders}>
+              {isSendingReminders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Lembrar Selecionados ({selectedAppointments.length})
+            </Button>
           </div>
         </div>
         <Card>

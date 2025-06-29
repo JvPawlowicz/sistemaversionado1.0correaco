@@ -6,6 +6,7 @@ import { auth, db, storageAdmin } from '@/lib/firebase-admin';
 import { FieldValue, WriteResult } from 'firebase-admin/firestore';
 import type { Appointment, Unit, Service, Availability, Log } from './types';
 import { revalidatePath } from 'next/cache';
+import { format } from 'date-fns';
 
 // --- Helper for creating logs ---
 async function createLog(data: {
@@ -95,7 +96,7 @@ export async function createUserAction(prevState: any, formData: FormData) {
       role,
       unitIds,
       status: 'Active',
-      avatarUrl: 'https://placehold.co/400x400.png',
+      avatarUrl: 'https://placehold.co/400x400/3F4CB5/FFFFFF?text=CF',
       createdAt: FieldValue.serverTimestamp(),
       availability: [],
       professionalCouncil: null,
@@ -1004,6 +1005,60 @@ export async function completeAppointmentWithEvolutionAction(prevState: any, for
   }
 }
 
+// --- Create Pending Evolution Reminders Action ---
+const CreatePendingEvolutionRemindersSchema = z.array(z.object({
+  id: z.string(),
+  patientName: z.string(),
+  professionalName: z.string(),
+  date: z.string(),
+}));
+
+export async function createPendingEvolutionRemindersAction(appointments: z.infer<typeof CreatePendingEvolutionRemindersSchema>): Promise<{ success: boolean; message: string }> {
+    const adminCheck = checkAdminInit();
+    if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+    if (!db) return { success: false, message: 'Database not initialized.' };
+
+    try {
+        const usersSnapshot = await db.collection('users').get();
+        const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
+        const userNameToIdMap = new Map(users.map(u => [u.name, u.id]));
+
+        const batch = db.batch();
+        let notificationsCreated = 0;
+
+        for (const app of appointments) {
+            const professionalId = userNameToIdMap.get(app.professionalName);
+
+            if (professionalId) {
+                const notificationRef = db.collection('notifications').doc();
+                const notificationData = {
+                    title: 'Evolução Pendente',
+                    content: `Você tem uma evolução pendente para o paciente ${app.patientName} do atendimento em ${format(new Date(app.date + 'T00:00:00'), 'dd/MM/yyyy')}.`,
+                    targetType: 'SPECIFIC',
+                    targetValue: [professionalId],
+                    createdAt: FieldValue.serverTimestamp(),
+                    seenBy: [],
+                };
+                batch.set(notificationRef, notificationData);
+                notificationsCreated++;
+            }
+        }
+
+        if (notificationsCreated > 0) {
+            await batch.commit();
+        }
+        
+        revalidatePath('/(dashboard)', 'layout'); 
+
+        return { success: true, message: `${notificationsCreated} lembretes de evolução pendente foram enviados.` };
+
+    } catch(error) {
+        console.error("Error creating pending evolution reminders:", error);
+        return { success: false, message: 'Ocorreu um erro ao enviar os lembretes.' };
+    }
+}
+
+
 // --- Evolution Template Actions ---
 
 const TemplateFieldSchema = z.object({
@@ -1180,7 +1235,7 @@ export async function createAssessmentAction(prevState: any, formData: FormData)
           unitIds: [unitId],
           status: 'Active' as const,
           lastVisit: null,
-          avatarUrl: 'https://placehold.co/400x400.png',
+          avatarUrl: 'https://placehold.co/400x400/3F4CB5/FFFFFF?text=CF',
           createdAt: FieldValue.serverTimestamp(),
           imageUseConsent: false,
       };
@@ -1328,7 +1383,7 @@ export async function updateHealthPlanAction(prevState: any, formData: FormData)
 
 export async function deleteHealthPlanAction(planId: string, unitId: string): Promise<{ success: boolean; message: string }> {
   const adminCheck = checkAdminInit();
-  if (adminCheck) return adminCheck;
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
 
   if (!planId || !unitId) {
     return { success: false, message: 'IDs do plano e da unidade são obrigatórios.' };
