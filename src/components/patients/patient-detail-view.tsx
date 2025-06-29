@@ -244,7 +244,7 @@ export function PatientDetailView({
                       <div key={record.id} className="rounded-lg border bg-card p-4 shadow-sm">
                         <div className="flex items-center justify-between">
                             <h3 className="font-semibold">{record.title}</h3>
-                            <span className="text-sm text-muted-foreground">{record.date}</span>
+                            <span className="text-sm text-muted-foreground">{record.createdAt?.toDate ? format(record.createdAt.toDate(), 'PPP p', { locale: ptBR }) : 'Data indisponível'}</span>
                         </div>
                         <p className="mt-2 text-sm whitespace-pre-wrap">{record.details}</p>
                         {record.linkedObjectiveIds && record.linkedObjectiveIds.length > 0 && (

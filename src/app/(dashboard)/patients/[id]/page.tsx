@@ -8,8 +8,6 @@ import { useEffect, useState, useCallback } from 'react';
 import type { Patient, EvolutionRecord, PatientDocument, FamilyMember, TherapyGroup, Assessment } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useTherapyGroup } from '@/contexts/TherapyGroupContext';
 import { useAssessment } from '@/contexts/AssessmentContext';
 
@@ -43,12 +41,9 @@ export default function PatientProfilePage() {
       const q = query(recordsCollectionRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
       const fetchedRecords = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          const date = data.createdAt.toDate();
           return {
               id: doc.id,
-              ...data,
-              date: format(date, 'PPP p', { locale: ptBR }),
+              ...doc.data(),
           } as EvolutionRecord;
       });
       setRecords(fetchedRecords);

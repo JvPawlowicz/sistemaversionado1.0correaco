@@ -1,4 +1,3 @@
-'use server';
 
 export type Address = {
   street: string;
@@ -142,12 +141,10 @@ export type Appointment = {
   createdAt?: any;
   healthPlanId?: string;
   healthPlanName?: string;
-  healthPlanColor?: string;
 };
 
 export type EvolutionRecord = {
   id: string;
-  date: string;
   title: string;
   details: string;
   author: string;
