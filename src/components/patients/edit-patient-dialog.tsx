@@ -63,11 +63,27 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
   }, [patient]);
 
   useEffect(() => {
-    // Collate health plans from all selected units
-    const plans = units
-        .filter(unit => selectedUnitIds.includes(unit.id))
+    // Get plans from the patient's assigned units
+    const patientUnitPlans = units
+        .filter(unit => selectedUnitIds.includes(unit.id) && unit.id !== 'central')
         .flatMap(unit => unit.healthPlans || []);
-    const uniquePlans = Array.from(new Map(plans.map(plan => [plan.id, plan])).values());
+
+    // Get central plans
+    const centralUnit = units.find(unit => unit.id === 'central');
+    const centralPlans = centralUnit?.healthPlans || [];
+    
+    const allAvailablePlans = [...patientUnitPlans, ...centralPlans];
+
+    // Create a unique list of plans by ID
+    const uniquePlansMap = new Map<string, HealthPlan>();
+    allAvailablePlans.forEach(plan => {
+        if (!uniquePlansMap.has(plan.id)) {
+            uniquePlansMap.set(plan.id, plan);
+        }
+    });
+
+    const uniquePlans = Array.from(uniquePlansMap.values());
+    uniquePlans.sort((a,b) => a.name.localeCompare(b.name));
     setHealthPlans(uniquePlans);
   }, [selectedUnitIds, units]);
 

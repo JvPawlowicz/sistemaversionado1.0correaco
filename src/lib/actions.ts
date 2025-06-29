@@ -450,6 +450,7 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
     });
 
     revalidatePath(`/patients/${patientId}`);
+    revalidatePath('/evolutions');
     return { success: true, message: 'Registro de evolução salvo com sucesso!', errors: null };
   } catch (error) {
     console.error('Error creating evolution record:', error);
@@ -515,15 +516,21 @@ export async function updatePatientDetailsAction(prevState: any, formData: FormD
     const currentPatientData = patientDoc.data();
     
     if(healthPlanId) {
-        const patientUnitId = currentPatientData?.unitIds?.[0];
-        if (patientUnitId) {
-            const planDoc = await db.collection('units').doc(patientUnitId).collection('healthPlans').doc(healthPlanId).get();
+        let foundPlan = false;
+        const unitIdsToSearch = [...(currentPatientData?.unitIds || []), 'central'];
+        
+        for (const unitIdToSearch of unitIdsToSearch) {
+            const planDoc = await db.collection('units').doc(unitIdToSearch).collection('healthPlans').doc(healthPlanId).get();
             if (planDoc.exists) {
                 updatePayload.healthPlanName = planDoc.data()?.name || null;
-            } else {
-                 updatePayload.healthPlanName = null;
+                foundPlan = true;
+                break;
             }
         }
+        if (!foundPlan) {
+          updatePayload.healthPlanName = null;
+        }
+
     } else {
         updatePayload.healthPlanName = null;
     }
@@ -1267,6 +1274,16 @@ export async function createHealthPlanAction(prevState: any, formData: FormData)
 
   const { unitId, name, color } = validatedFields.data;
   try {
+     if (unitId === 'central') {
+        const centralUnitRef = db.collection('units').doc('central');
+        const centralUnitDoc = await centralUnitRef.get();
+        if (!centralUnitDoc.exists) {
+            await centralUnitRef.set({
+                name: 'Central (Todas as Unidades)',
+                createdAt: FieldValue.serverTimestamp(),
+            });
+        }
+    }
     const plansCollection = db.collection('units').doc(unitId).collection('healthPlans');
     await plansCollection.add({ name, color });
     revalidatePath('/health-plans');

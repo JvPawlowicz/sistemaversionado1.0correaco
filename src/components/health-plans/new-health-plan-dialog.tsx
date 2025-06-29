@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -69,7 +70,7 @@ export function NewHealthPlanDialog({ isOpen, onOpenChange, onPlanAdded }: NewHe
           <DialogHeader>
             <DialogTitle>Novo Plano de Saúde</DialogTitle>
             <DialogDescription>
-              Cadastre um novo convênio e vincule-o a uma unidade.
+              Cadastre um novo convênio e vincule-o a uma unidade específica ou a todas.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -97,6 +98,7 @@ export function NewHealthPlanDialog({ isOpen, onOpenChange, onPlanAdded }: NewHe
                         {displayableUnits.map(unit => (
                             <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
                         ))}
+                        <SelectItem value="central">Todas as Unidades (Central)</SelectItem>
                     </SelectContent>
                 </Select>
                  {state.errors?.unitId && <p className="text-xs text-destructive mt-1">{state.errors.unitId[0]}</p>}
