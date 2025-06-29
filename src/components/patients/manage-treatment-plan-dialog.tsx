@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -94,7 +95,7 @@ export function ManageTreatmentPlanDialog({ isOpen, onOpenChange, patient, onPla
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Gerenciar Plano de Tratamento</DialogTitle>
+          <DialogTitle>Gerenciar Plano Terapêutico Individual (PTI)</DialogTitle>
           <DialogDescription>
             Defina as metas e objetivos para o paciente {patient.name}.
           </DialogDescription>
@@ -194,7 +195,7 @@ export function ManageTreatmentPlanDialog({ isOpen, onOpenChange, patient, onPla
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar Plano
+              Salvar Plano Terapêutico
             </Button>
           </DialogFooter>
         </form>

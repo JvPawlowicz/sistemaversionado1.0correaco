@@ -211,7 +211,7 @@ export function PatientDetailView({
         <Tabs defaultValue="evolution">
           <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="evolution">Evolução</TabsTrigger>
-            <TabsTrigger value="treatment-plan">Plano de Tratamento</TabsTrigger>
+            <TabsTrigger value="treatment-plan">Plano Terapêutico</TabsTrigger>
             <TabsTrigger value="assessments">Avaliações</TabsTrigger>
             <TabsTrigger value="groups">Grupos</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>

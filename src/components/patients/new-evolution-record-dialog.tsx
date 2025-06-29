@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
@@ -247,7 +248,7 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patient, onReco
             <div className="space-y-4 py-4 max-h-full overflow-y-auto pr-4 border-l pl-6">
                 <div className="space-y-2">
                     <Label className="flex items-center gap-2 text-base font-semibold"><Target /> Vincular a Objetivos</Label>
-                    <p className="text-sm text-muted-foreground">Selecione os objetivos do Plano de Tratamento que foram trabalhados nesta sessão.</p>
+                    <p className="text-sm text-muted-foreground">Selecione os objetivos do Plano Terapêutico Individual (PTI) que foram trabalhados nesta sessão.</p>
                 </div>
                  <ScrollArea className="h-full">
                     <div className="space-y-4 pr-4">
@@ -270,7 +271,7 @@ export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patient, onReco
                                 </div>
                             ))
                         ) : (
-                            <p className="text-sm text-muted-foreground text-center py-8">Nenhum plano de tratamento definido para este paciente.</p>
+                            <p className="text-sm text-muted-foreground text-center py-8">Nenhum Plano Terapêutico Individual (PTI) definido para este paciente.</p>
                         )}
                     </div>
                 </ScrollArea>

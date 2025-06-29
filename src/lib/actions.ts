@@ -1604,7 +1604,7 @@ export async function updatePatientTreatmentPlanAction(patientId: string, plan: 
   if (!validatedPlan.success) {
     return {
       success: false,
-      message: 'O plano de tratamento contém dados inválidos.',
+      message: 'O Plano Terapêutico Individual contém dados inválidos.',
       errors: validatedPlan.error.flatten(),
     };
   }
@@ -1615,9 +1615,9 @@ export async function updatePatientTreatmentPlanAction(patientId: string, plan: 
       treatmentPlan: validatedPlan.data,
     });
     revalidatePath(`/patients/${patientId}`);
-    return { success: true, message: 'Plano de tratamento atualizado com sucesso!' };
+    return { success: true, message: 'Plano Terapêutico Individual atualizado com sucesso!' };
   } catch (error) {
     console.error("Error updating treatment plan:", error);
-    return { success: false, message: 'Ocorreu um erro ao salvar o plano de tratamento.' };
+    return { success: false, message: 'Ocorreu um erro ao salvar o Plano Terapêutico Individual.' };
   }
 }

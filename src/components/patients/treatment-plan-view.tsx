@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -38,7 +39,7 @@ export function TreatmentPlanView({ patient, onPlanUpdated }: TreatmentPlanViewP
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Plano de Tratamento Individual (PTI)</CardTitle>
+              <CardTitle>Plano Terapêutico Individual (PTI)</CardTitle>
               <CardDescription>Metas de longo prazo e objetivos de curto prazo para o tratamento.</CardDescription>
             </div>
             {canManage && (
@@ -74,10 +75,10 @@ export function TreatmentPlanView({ patient, onPlanUpdated }: TreatmentPlanViewP
           ) : (
             <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg flex flex-col items-center gap-4">
               <Target className="h-12 w-12" />
-              <p>Nenhum plano de tratamento definido para este paciente.</p>
+              <p>Nenhum Plano Terapêutico Individual (PTI) definido para este paciente.</p>
               {canManage && <Button onClick={() => setIsManageDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Criar Plano de Tratamento
+                Criar Plano Terapêutico
               </Button>}
             </div>
           )}
