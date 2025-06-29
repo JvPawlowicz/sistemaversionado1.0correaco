@@ -1242,3 +1242,88 @@ export async function createAssessmentAction(prevState: any, formData: FormData)
     return { success: false, message: 'Ocorreu um erro ao salvar a avaliação.', errors: null };
   }
 }
+
+// --- Health Plan Actions ---
+
+const HealthPlanSchema = z.object({
+  name: z.string().min(2, { message: 'O nome do plano é obrigatório.' }),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i, { message: 'Cor inválida.' }),
+  unitId: z.string().min(1, { message: 'Selecione uma unidade.' }),
+});
+
+export async function createHealthPlanAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = HealthPlanSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  const { unitId, name, color } = validatedFields.data;
+  try {
+    const plansCollection = db.collection('units').doc(unitId).collection('healthPlans');
+    await plansCollection.add({ name, color });
+    revalidatePath('/health-plans');
+    revalidatePath(`/units/${unitId}`);
+    return { success: true, message: 'Plano de saúde adicionado com sucesso.', errors: null };
+  } catch (error) {
+    console.error("Error adding health plan:", error);
+    return { success: false, message: "Ocorreu um erro ao adicionar o plano.", errors: null };
+  }
+}
+
+const UpdateHealthPlanSchema = HealthPlanSchema.extend({
+  planId: z.string().min(1, { message: 'ID do plano é obrigatório.' }),
+});
+
+export async function updateHealthPlanAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = UpdateHealthPlanSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  const { unitId, planId, name, color } = validatedFields.data;
+  try {
+    const planRef = db.collection('units').doc(unitId).collection('healthPlans').doc(planId);
+    await planRef.update({ name, color });
+    revalidatePath('/health-plans');
+    revalidatePath(`/units/${unitId}`);
+    return { success: true, message: 'Plano de saúde atualizado com sucesso.', errors: null };
+  } catch (error) {
+    console.error("Error updating health plan:", error);
+    return { success: false, message: "Ocorreu um erro ao atualizar o plano.", errors: null };
+  }
+}
+
+export async function deleteHealthPlanAction(planId: string, unitId: string): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  if (!planId || !unitId) {
+    return { success: false, message: 'IDs do plano e da unidade são obrigatórios.' };
+  }
+  try {
+    const planRef = db.collection('units').doc(unitId).collection('healthPlans').doc(planId);
+    await planRef.delete();
+    revalidatePath('/health-plans');
+    revalidatePath(`/units/${unitId}`);
+    return { success: true, message: 'Plano de saúde removido com sucesso.' };
+  } catch (error) {
+    console.error("Error deleting health plan:", error);
+    return { success: false, message: 'Ocorreu um erro ao remover o plano de saúde.' };
+  }
+}

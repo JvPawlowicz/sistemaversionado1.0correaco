@@ -31,6 +31,10 @@ export type HealthPlan = {
   unitId: string;
 }
 
+export type HealthPlanWithUnit = HealthPlan & {
+    unitName: string;
+}
+
 export type Unit = {
   id: string;
   name: string;
