@@ -4,19 +4,22 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Loader2, Edit, Trash2, NotebookText } from 'lucide-react';
+import { PlusCircle, Loader2, Edit, Trash2, NotebookText, DatabaseZap } from 'lucide-react';
 import { useTemplate } from '@/contexts/TemplateContext';
 import { TemplateDialog } from '@/components/templates/template-dialog';
 import type { EvolutionTemplate } from '@/lib/types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { deleteEvolutionTemplateAction } from '@/lib/actions';
+import { deleteEvolutionTemplateAction, seedDefaultTemplatesAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function TemplatesPage() {
   const { templates, loading, fetchTemplates } = useTemplate();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedTemplate, setSelectedTemplate] = React.useState<EvolutionTemplate | null>(null);
+  const [isSeeding, setIsSeeding] = React.useState(false);
   
   const handleEdit = (template: EvolutionTemplate) => {
     setSelectedTemplate(template);
@@ -37,6 +40,19 @@ export default function TemplatesPage() {
       toast({ variant: 'destructive', title: 'Erro', description: result.message });
     }
   };
+  
+  const handleSeedTemplates = async () => {
+    if (!currentUser) return;
+    setIsSeeding(true);
+    const result = await seedDefaultTemplatesAction(currentUser.id);
+    if (result.success) {
+      toast({ title: 'Sucesso!', description: result.message });
+      fetchTemplates();
+    } else {
+      toast({ variant: 'destructive', title: 'Erro', description: result.message });
+    }
+    setIsSeeding(false);
+  };
 
   return (
     <>
@@ -55,10 +71,16 @@ export default function TemplatesPage() {
               Crie, edite e gerencie seus modelos para agilizar a documentação clínica, avaliações e anamneses.
             </p>
           </div>
-          <Button onClick={handleAddNew}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Novo Modelo
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleSeedTemplates} disabled={isSeeding}>
+              {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
+              Cadastrar Modelos Padrão
+            </Button>
+            <Button onClick={handleAddNew}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Novo Modelo
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -111,7 +133,7 @@ export default function TemplatesPage() {
           <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
             <NotebookText className="mx-auto h-12 w-12 mb-4" />
             <h3 className="text-xl font-semibold text-foreground">Nenhum modelo encontrado.</h3>
-            <p className="mb-4">Comece criando seu primeiro modelo.</p>
+            <p className="mb-4">Comece criando seu primeiro modelo ou cadastre os modelos padrão.</p>
             <Button onClick={handleAddNew}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Criar Modelo

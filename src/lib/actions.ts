@@ -1408,75 +1408,40 @@ export async function deleteHealthPlanAction(planId: string, unitId: string): Pr
 
 // --- Seed Default Health Plans Action ---
 const defaultHealthPlans = [
-  { name: 'Amil', color: '#0072C6' },
-  { name: 'Bradesco Saúde', color: '#CD232A' },
-  { name: 'SulAmérica Saúde', color: '#FF7F00' },
-  { name: 'Unimed', color: '#00995D' },
-  { name: 'Hapvida', color: '#00A8E0' },
-  { name: 'NotreDame Intermédica', color: '#0033A0' },
-  { name: 'Porto Seguro Saúde', color: '#0058A3' },
-  { name: 'Prevent Senior', color: '#FDB913' },
-  { name: 'Golden Cross', color: '#D4AF37' },
-  { name: 'Allianz Saúde', color: '#003781' },
-  { name: 'Sompo Saúde', color: '#E6007E' },
-  { name: 'Care Plus', color: '#00A499' },
-  { name: 'One Health', color: '#A6CE39' },
-  { name: 'Qsaúde', color: '#8A2BE2' },
-  { name: 'Alice', color: '#FF69B4' },
-  { name: 'Sami', color: '#20B2AA' },
-  { name: 'Assim Saúde', color: '#4682B4' },
-  { name: 'MedSênior', color: '#D2691E' },
-  { name: 'BioVida', color: '#6B8E23' },
-  { name: 'Total MedCare', color: '#B22222' },
-  { name: 'Trasmontano', color: '#DAA520' },
-  { name: 'São Cristóvão Saúde', color: '#5F9EA0' },
-  { name: 'Santa Helena', color: '#FF1493' },
-  { name: 'Next Saúde', color: '#1E90FF' },
-  { name: 'Ameplan', color: '#BDB76B' },
-  { name: 'Cuidar.me', color: '#87CEEB' },
-  { name: 'Kipp', color: '#32CD32' },
-  { name: 'Dr. Consulta', color: '#9932CC' },
-  { name: 'Medplan', color: '#FF4500' },
-  { name: 'Humana Saúde', color: '#2E8B57' },
-  { name: 'Univida', color: '#483D8B' },
-  { name: 'São Francisco', color: '#8FBC8F' },
-  { name: 'Santa Casa Saúde', color: '#8B008B' },
-  { name: 'Pladisa', color: '#9400D3' },
-  { name: 'Postal Saúde', color: '#6A5ACD' },
-  { name: 'Geap', color: '#008080' },
-  { name: 'Cassi', color: '#0000CD' },
-  { name: 'Capesesp', color: '#7FFF00' },
-  { name: 'Economus', color: '#DC143C' },
-  { name: 'Elix', color: '#00FFFF' },
-  { name: 'Saúde Sistema', color: '#00BFFF' },
-  { name: 'FioSaúde', color: '#ADFF2F' },
-  { name: 'Gama Saúde', color: '#FF00FF' },
-  { name: 'Life Empresarial', color: '#191970' },
-  { name: 'MedHealth', color: '#F0E68C' },
-  { name: 'Medtour', color: '#E6E6FA' },
-  { name: 'Personal', color: '#FFF0F5' },
-  { name: 'Premium', color: '#7CFC00' },
-  { name: 'Samel', color: '#FFFACD' },
-  { name: 'Santa Tereza', color: '#ADD8E6' },
-  { name: 'São Bernardo', color: '#F08080' },
-  { name: 'Sermed', color: '#E0FFFF' },
-  { name: 'Serpram', color: '#FAFAD2' },
-  { name: 'Unihosp', color: '#D3D3D3' },
-  { name: 'Vitallis', color: '#90EE90' },
-  { name: 'You Saúde', color: '#FFB6C1' },
-  { name: 'Ameno Saúde', color: '#FFA07A' },
-  { name: 'Benevida', color: '#20B2AA' },
-  { name: 'Blue Med', color: '#87CEFA' },
-  { name: 'Classes Laboriosas', color: '#778899' },
-  { name: 'Conmed', color: '#B0C4DE' },
-  { name: 'Cruz Azul Saúde', color: '#FFFFE0' },
-  { name: 'GS Saúde', color: '#00FF00' },
-  { name: 'Interclínicas', color: '#32CD32' },
-  { name: 'Med-Tour', color: '#FAF0E6' },
-  { name: 'Medical Health', color: '#FF00FF' },
-  { name: 'São Miguel', color: '#800000' },
-  { name: 'Biovida Saúde', color: '#66CDAA' },
-  { name: 'Med Senior', color: '#00008B' },
+  { name: 'Amil', color: '#0072C6' }, { name: 'Bradesco Saúde', color: '#CD232A' },
+  { name: 'SulAmérica Saúde', color: '#FF7F00' }, { name: 'Unimed', color: '#00995D' },
+  { name: 'Hapvida', color: '#00A8E0' }, { name: 'NotreDame Intermédica', color: '#0033A0' },
+  { name: 'Porto Seguro Saúde', color: '#0058A3' }, { name: 'Prevent Senior', color: '#FDB913' },
+  { name: 'Golden Cross', color: '#D4AF37' }, { name: 'Allianz Saúde', color: '#003781' },
+  { name: 'Sompo Saúde', color: '#E6007E' }, { name: 'Care Plus', color: '#00A499' },
+  { name: 'One Health', color: '#A6CE39' }, { name: 'Qsaúde', color: '#8A2BE2' },
+  { name: 'Alice', color: '#FF69B4' }, { name: 'Sami', color: '#20B2AA' },
+  { name: 'Assim Saúde', color: '#4682B4' }, { name: 'MedSênior', color: '#D2691E' },
+  { name: 'BioVida', color: '#6B8E23' }, { name: 'Total MedCare', color: '#B22222' },
+  { name: 'Trasmontano', color: '#DAA520' }, { name: 'São Cristóvão Saúde', color: '#5F9EA0' },
+  { name: 'Santa Helena', color: '#FF1493' }, { name: 'Next Saúde', color: '#1E90FF' },
+  { name: 'Ameno Saúde', color: '#FFA07A' }, { name: 'Benevida', color: '#20B2AA' },
+  { name: 'Blue Med', color: '#87CEFA' }, { name: 'Classes Laboriosas', color: '#778899' },
+  { name: 'Conmed', color: '#B0C4DE' }, { name: 'Cruz Azul Saúde', color: '#FFFFE0' },
+  { name: 'GS Saúde', color: '#00FF00' }, { name: 'Interclínicas', color: '#32CD32' },
+  { name: 'Med-Tour', color: '#FAF0E6' }, { name: 'Medical Health', color: '#FF00FF' },
+  { name: 'São Miguel', color: '#800000' }, { name: 'Biovida Saúde', color: '#66CDAA' },
+  { name: 'Med Senior', color: '#00008B' }, { name: 'Cassi', color: '#0000CD' },
+  { name: 'Geap', color: '#008080' }, { name: 'Postal Saúde', color: '#6A5ACD' },
+  { name: 'Capesesp', color: '#7FFF00' }, { name: 'Economus', color: '#DC143C' },
+  { name: 'Elix', color: '#00FFFF' }, { name: 'FioSaúde', color: '#ADFF2F' },
+  { name: 'Gama Saúde', color: '#FF00FF' }, { name: 'Life Empresarial', color: '#191970' },
+  { name: 'MedHealth', color: '#F0E68C' }, { name: 'Personal', color: '#FFF0F5' },
+  { name: 'Premium', color: '#7CFC00' }, { name: 'Samel', color: '#FFFACD' },
+  { name: 'Santa Tereza', color: '#ADD8E6' }, { name: 'São Bernardo', color: '#F08080' },
+  { name: 'Sermed', color: '#E0FFFF' }, { name: 'Serpram', color: '#FAFAD2' },
+  { name: 'Unihosp', color: '#D3D3D3' }, { name: 'Vitallis', color: '#90EE90' },
+  { name: 'You Saúde', color: '#FFB6C1' }, { name: 'Ameplan', color: '#BDB76B' },
+  { name: 'Cuidar.me', color: '#87CEEB' }, { name: 'Kipp', color: '#32CD32' },
+  { name: 'Dr. Consulta', color: '#9932CC' }, { name: 'Medplan', color: '#FF4500' },
+  { name: 'Humana Saúde', color: '#2E8B57' }, { name: 'Univida', color: '#483D8B' },
+  { name: 'São Francisco', color: '#8FBC8F' }, { name: 'Santa Casa Saúde', color: '#8B008B' },
+  { name: 'Pladisa', color: '#9400D3' }, { name: 'Saúde Sistema', color: '#00BFFF' },
 ];
 
 export async function seedDefaultHealthPlansAction(): Promise<{ success: boolean; message: string }> {
@@ -1521,5 +1486,89 @@ export async function seedDefaultHealthPlansAction(): Promise<{ success: boolean
   } catch (error) {
     console.error("Error seeding default health plans:", error);
     return { success: false, message: 'Ocorreu um erro ao cadastrar os planos de saúde padrão.' };
+  }
+}
+
+const defaultTemplates = [
+    {
+      title: "Anamnese Infantil",
+      content: [
+        { id: crypto.randomUUID(), type: "header", label: "Identificação do Paciente", },
+        { id: crypto.randomUUID(), type: "text", label: "Nome da Escola", placeholder: "Nome da escola atual" },
+        { id: crypto.randomUUID(), type: "text", label: "Professor(a) Responsável", placeholder: "Nome do(a) professor(a)" },
+        { id: crypto.randomUUID(), type: "header", label: "Motivo da Avaliação", },
+        { id: crypto.randomUUID(), type: "textarea", label: "Queixa Principal", placeholder: "Descreva a principal queixa ou motivo da busca por avaliação." },
+        { id: crypto.randomUUID(), type: "textarea", label: "Histórico da Moléstia Atual (HMA)", placeholder: "Detalhe o início e a evolução da queixa principal." },
+        { id: crypto.randomUUID(), type: "header", label: "Desenvolvimento Neuropsicomotor", },
+        { id: crypto.randomUUID(), type: "checkbox", label: "Marcos do Desenvolvimento", options: ["Sustentou a cabeça", "Sentou sem apoio", "Engatinhou", "Andou", "Controle dos esfíncteres", "Primeiras palavras", "Primeiras frases"] },
+        { id: crypto.randomUUID(), type: "textarea", label: "Observações sobre o Desenvolvimento", placeholder: "Houve alguma particularidade no desenvolvimento? Atrasos? Doenças?" },
+        { id: crypto.randomUUID(), type: "header", label: "Rotina e Comportamento", },
+        { id: crypto.randomUUID(), type: "textarea", label: "Sono", placeholder: "Como é a rotina de sono? Dorme bem? Tem pesadelos?" },
+        { id: crypto.randomUUID(), type: "textarea", label: "Alimentação", placeholder: "Como é a alimentação? Aceita variedade de alimentos? Tem alguma restrição?" },
+        { id: crypto.randomUUID(), type: "textarea", label: "Sociabilidade", placeholder: "Como interage com outras crianças e adultos?" },
+        { id: crypto.randomUUID(), type: "header", label: "Histórico Familiar", },
+        { id: crypto.randomUUID(), type: "textarea", label: "Composição Familiar e Relacionamento", placeholder: "Descreva quem mora com a criança e como é a dinâmica familiar." },
+      ]
+    },
+    {
+      title: "Evolução (Método SOAP)",
+      content: [
+        { id: crypto.randomUUID(), type: "textarea", label: "Subjetivo (S)", placeholder: "Relato do paciente, familiares ou cuidadores sobre o estado e progresso desde a última sessão." },
+        { id: crypto.randomUUID(), type: "textarea", label: "Objetivo (O)", placeholder: "Observações mensuráveis, dados de testes, e observações clínicas realizadas pelo terapeuta durante a sessão." },
+        { id: crypto.randomUUID(), type: "textarea", label: "Avaliação (A)", placeholder: "Análise e interpretação dos dados subjetivos e objetivos. Progresso em relação às metas." },
+        { id: crypto.randomUUID(), type: "textarea", label: "Plano (P)", placeholder: "Plano para a próxima sessão, incluindo modificações na terapia, orientações para casa, etc." }
+      ]
+    },
+    {
+      title: "Relatório de Sessão Simples",
+      content: [
+        { id: crypto.randomUUID(), type: "textarea", label: "Objetivos Trabalhados na Sessão", placeholder: "Liste os objetivos do plano terapêutico que foram abordados." },
+        { id: crypto.randomUUID(), type: "textarea", label: "Atividades Realizadas", placeholder: "Descreva as principais atividades e estratégias utilizadas." },
+        { id: crypto.randomUUID(), type: "radio", label: "Comportamento e Engajamento", options: ["Excelente", "Bom", "Regular", "Ruim"] },
+        { id: crypto.randomUUID(), type: "textarea", label: "Orientações para Casa/Escola", placeholder: "Sugestões de atividades ou estratégias para dar continuidade ao trabalho." }
+      ]
+    }
+];
+
+export async function seedDefaultTemplatesAction(userId: string): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+
+  if (!userId) {
+    return { success: false, message: "ID do usuário não fornecido." };
+  }
+
+  try {
+    const templatesRef = db.collection('evolutionTemplates');
+    const q = templatesRef.where('userId', '==', userId);
+    
+    const existingTemplatesSnapshot = await q.get();
+    const existingTemplateTitles = new Set(existingTemplatesSnapshot.docs.map(doc => doc.data().title.toLowerCase()));
+
+    const batch = db.batch();
+    let templatesAddedCount = 0;
+
+    for (const template of defaultTemplates) {
+      if (!existingTemplateTitles.has(template.title.toLowerCase())) {
+        const newTemplateRef = templatesRef.doc();
+        batch.set(newTemplateRef, {
+            ...template,
+            userId: userId,
+            createdAt: FieldValue.serverTimestamp(),
+        });
+        templatesAddedCount++;
+      }
+    }
+
+    if (templatesAddedCount > 0) {
+      await batch.commit();
+      revalidatePath('/templates');
+      return { success: true, message: `${templatesAddedCount} modelo(s) padrão foram adicionados com sucesso.` };
+    } else {
+      return { success: true, message: 'Todos os modelos padrão já estavam cadastrados.' };
+    }
+  } catch (error) {
+    console.error("Error seeding default templates:", error);
+    return { success: false, message: 'Ocorreu um erro ao cadastrar os modelos padrão.' };
   }
 }
