@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Shield, ShieldAlert, DatabaseZap, Loader2 } from 'lucide-react';
+import { PlusCircle, Shield, ShieldAlert } from 'lucide-react';
 import { useUnit } from '@/contexts/UnitContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { HealthPlanTable } from '@/components/health-plans/health-plan-table';
@@ -12,28 +12,12 @@ import type { HealthPlanWithUnit } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { seedDefaultHealthPlansAction } from '@/lib/actions';
 
 export default function HealthPlansPage() {
   const { currentUser, loading: authLoading } = useAuth();
   const { units, loading: unitsLoading, fetchUnits } = useUnit();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const router = useRouter();
-  const { toast } = useToast();
-  const [isSeeding, setIsSeeding] = React.useState(false);
-
-  const handleSeedPlans = async () => {
-    setIsSeeding(true);
-    const result = await seedDefaultHealthPlansAction();
-    if (result.success) {
-        toast({ title: "Sucesso!", description: result.message });
-        fetchUnits();
-    } else {
-        toast({ variant: 'destructive', title: "Erro", description: result.message });
-    }
-    setIsSeeding(false);
-  };
 
   const allHealthPlans = React.useMemo(() => {
     return units
@@ -56,7 +40,6 @@ export default function HealthPlansPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <Skeleton className="h-9 w-64" />
                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-10 w-40" />
                     <Skeleton className="h-10 w-48" />
                 </div>
             </div>
@@ -102,10 +85,6 @@ export default function HealthPlansPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-            <Button onClick={handleSeedPlans} disabled={isSeeding} variant="outline">
-                {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
-                Cadastrar Padrões
-            </Button>
             <Button onClick={() => setIsDialogOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Novo Plano de Saúde
