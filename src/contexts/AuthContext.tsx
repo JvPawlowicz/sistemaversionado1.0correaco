@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: 'Admin' as const,
             status: 'Active' as const,
             unitIds: [],
-            avatarUrl: 'https://placehold.co/150x150.png',
+            avatarUrl: 'https://placehold.co/400x400.png',
             createdAt: serverTimestamp(),
             professionalCouncil: null,
             councilNumber: null,

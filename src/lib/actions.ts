@@ -95,7 +95,7 @@ export async function createUserAction(prevState: any, formData: FormData) {
       role,
       unitIds,
       status: 'Active',
-      avatarUrl: 'https://placehold.co/150x150.png',
+      avatarUrl: 'https://placehold.co/400x400.png',
       createdAt: FieldValue.serverTimestamp(),
       availability: [],
       professionalCouncil: null,
@@ -1180,7 +1180,7 @@ export async function createAssessmentAction(prevState: any, formData: FormData)
           unitIds: [unitId],
           status: 'Active' as const,
           lastVisit: null,
-          avatarUrl: 'https://placehold.co/150x150.png',
+          avatarUrl: 'https://placehold.co/400x400.png',
           createdAt: FieldValue.serverTimestamp(),
           imageUseConsent: false,
       };

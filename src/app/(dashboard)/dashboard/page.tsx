@@ -159,7 +159,7 @@ export default function DashboardPage() {
                         return (
                             <div key={app.id} className="flex items-center space-x-4">
                                 <Avatar>
-                                    <AvatarImage src={patient?.avatarUrl} />
+                                    <AvatarImage src={patient?.avatarUrl} data-ai-hint="person portrait" />
                                     <AvatarFallback>{patient ? getInitials(patient.name) : '?'}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 space-y-1">

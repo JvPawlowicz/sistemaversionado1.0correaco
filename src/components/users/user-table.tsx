@@ -119,7 +119,7 @@ export function UserTable({ users, onAddUser, searchTerm }: UserTableProps) {
                 <TableCell>
                   <div className="flex items-center gap-4">
                     <Avatar className="hidden h-9 w-9 sm:flex">
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="person portrait" />
                       <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                     </Avatar>
                     <div className="grid gap-1">

@@ -138,7 +138,7 @@ export default function PlanningPage() {
                   <div key={pro.id} className="flex items-center justify-between rounded-md border p-4">
                       <div className="flex items-center gap-4">
                           <Avatar>
-                              <AvatarImage src={pro.avatarUrl} alt={pro.name} />
+                              <AvatarImage src={pro.avatarUrl} alt={pro.name} data-ai-hint="person portrait" />
                               <AvatarFallback>{getInitials(pro.name)}</AvatarFallback>
                           </Avatar>
                           <div>

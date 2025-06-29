@@ -99,7 +99,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <Link href="/dashboard" className="flex items-center gap-2">
           <Logo className="w-8 h-8" />
-          <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">Equidade+</span>
+          <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">ClinicFlow</span>
         </Link>
       </SidebarHeader>
       <SidebarMenu className="flex-1">

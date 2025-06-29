@@ -12,7 +12,6 @@ import { Loader2 } from 'lucide-react';
 import { UserProvider } from '@/contexts/UserContext';
 import { UnitProvider } from '@/contexts/UnitContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
-import { AuthorPopup } from '@/components/layout/author-popup';
 import { TherapyGroupProvider } from '@/contexts/TherapyGroupContext';
 import { TemplateProvider } from '@/contexts/TemplateContext';
 import { AssessmentProvider } from '@/contexts/AssessmentContext';
@@ -66,7 +65,6 @@ export default function DashboardLayout({
                             Desenvolvido por: JVGP- João Pawlowicz
                         </footer>
                       </SidebarInset>
-                      <AuthorPopup />
                     </SidebarProvider>
                   </AssessmentProvider>
                 </TemplateProvider>

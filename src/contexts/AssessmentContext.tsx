@@ -40,16 +40,22 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
       let q: Query;
       
       if (currentUser.role === 'Admin' && selectedUnitId === 'central') {
-          q = query(assessmentsCollection, orderBy('createdAt', 'desc'));
+        q = query(assessmentsCollection);
       } else {
-          q = query(assessmentsCollection, where('unitId', '==', selectedUnitId), orderBy('createdAt', 'desc'));
+        q = query(assessmentsCollection, where('unitId', '==', selectedUnitId));
       }
-      
       const querySnapshot = await getDocs(q);
       const assessmentList = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       } as Assessment));
+
+      // Sort on the client to avoid composite index requirement
+      assessmentList.sort((a, b) => {
+        const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+        const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+        return timeB - timeA;
+      });
       
       setAssessments(assessmentList);
     } catch (err: any) {
