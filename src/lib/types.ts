@@ -51,6 +51,25 @@ export type Unit = {
   createdAt?: any;
 };
 
+export type TreatmentObjective = {
+  id: string;
+  description: string;
+  status: 'Não Iniciado' | 'Em Andamento' | 'Atingido' | 'Pausa';
+  masteryCriterion: string;
+  dataCollectionType: 'Frequência' | 'Duração' | 'Latência' | 'Tentativas' | 'Outro';
+};
+
+export type TreatmentGoal = {
+  id: string;
+  description: string;
+  objectives: TreatmentObjective[];
+};
+
+export type TreatmentPlan = {
+  goals: TreatmentGoal[];
+};
+
+
 export type Patient = {
   id: string;
   name: string;
@@ -79,6 +98,7 @@ export type Patient = {
   referringProfessional?: string | null;
   imageUseConsent?: boolean;
   address?: Address | null;
+  treatmentPlan?: TreatmentPlan;
 };
 
 export type Availability = {
@@ -135,6 +155,7 @@ export type EvolutionRecord = {
   createdAt?: any;
   patientName: string;
   patientId: string;
+  linkedObjectiveIds?: string[];
 };
 
 export type PatientDocument = {

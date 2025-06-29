@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { auth, db, storageAdmin } from '@/lib/firebase-admin';
 import { FieldValue, WriteResult } from 'firebase-admin/firestore';
-import type { Appointment, Unit, Service, Availability, Log } from './types';
+import type { Appointment, Unit, Service, Availability, Log, TreatmentPlan } from './types';
 import { revalidatePath } from 'next/cache';
 import { format } from 'date-fns';
 
@@ -397,6 +397,7 @@ const CreateEvolutionRecordSchema = z.object({
   title: z.string().min(3, 'O título deve ter pelo menos 3 caracteres.'),
   details: z.string().min(1, 'Os detalhes são obrigatórios.'),
   author: z.string().min(1, 'Autor é obrigatório.'),
+  linkedObjectiveIds: z.array(z.string()).optional(),
 });
 
 export async function createEvolutionRecordAction(prevState: any, formData: FormData) {
@@ -408,6 +409,7 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
     title: formData.get('title'),
     details: formData.get('details'),
     author: formData.get('author'),
+    linkedObjectiveIds: formData.getAll('linkedObjectiveIds'),
   });
 
   if (!validatedFields.success) {
@@ -418,7 +420,7 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
     };
   }
 
-  const { patientId, title, details, author } = validatedFields.data;
+  const { patientId, title, details, author, linkedObjectiveIds } = validatedFields.data;
 
   try {
      const patientDoc = await db.collection('patients').doc(patientId).get();
@@ -436,6 +438,7 @@ export async function createEvolutionRecordAction(prevState: any, formData: Form
         title,
         details,
         author,
+        linkedObjectiveIds: linkedObjectiveIds || [],
         patientId,
         patientName,
         createdAt: FieldValue.serverTimestamp(),
@@ -1570,5 +1573,51 @@ export async function seedDefaultTemplatesAction(userId: string): Promise<{ succ
   } catch (error) {
     console.error("Error seeding default templates:", error);
     return { success: false, message: 'Ocorreu um erro ao cadastrar os modelos padrão.' };
+  }
+}
+
+// --- Treatment Plan Action ---
+const TreatmentObjectiveSchema = z.object({
+  id: z.string(),
+  description: z.string().min(1, 'A descrição do objetivo não pode ser vazia.'),
+  status: z.enum(['Não Iniciado', 'Em Andamento', 'Atingido', 'Pausa']),
+  masteryCriterion: z.string().min(1, 'O critério de mestria é obrigatório.'),
+  dataCollectionType: z.enum(['Frequência', 'Duração', 'Latência', 'Tentativas', 'Outro']),
+});
+
+const TreatmentGoalSchema = z.object({
+  id: z.string(),
+  description: z.string().min(1, 'A descrição da meta não pode ser vazia.'),
+  objectives: z.array(TreatmentObjectiveSchema),
+});
+
+const TreatmentPlanSchema = z.object({
+  goals: z.array(TreatmentGoalSchema),
+});
+
+export async function updatePatientTreatmentPlanAction(patientId: string, plan: TreatmentPlan): Promise<{ success: boolean; message: string, errors?: any }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
+
+  const validatedPlan = TreatmentPlanSchema.safeParse(plan);
+
+  if (!validatedPlan.success) {
+    return {
+      success: false,
+      message: 'O plano de tratamento contém dados inválidos.',
+      errors: validatedPlan.error.flatten(),
+    };
+  }
+
+  try {
+    const patientRef = db.collection('patients').doc(patientId);
+    await patientRef.update({
+      treatmentPlan: validatedPlan.data,
+    });
+    revalidatePath(`/patients/${patientId}`);
+    return { success: true, message: 'Plano de tratamento atualizado com sucesso!' };
+  } catch (error) {
+    console.error("Error updating treatment plan:", error);
+    return { success: false, message: 'Ocorreu um erro ao salvar o plano de tratamento.' };
   }
 }

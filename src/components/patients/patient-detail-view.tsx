@@ -12,7 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, Loader2, ChevronDown, MoreHorizontal, Trash2, Edit, Users2 } from 'lucide-react';
+import { FileText, Plus, Loader2, ChevronDown, MoreHorizontal, Trash2, Edit, Users2, Target } from 'lucide-react';
 import type { Patient, EvolutionRecord, PatientDocument, FamilyMember, TherapyGroup, Assessment } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '../ui/skeleton';
@@ -29,6 +29,7 @@ import { DocumentUploader } from './document-uploader';
 import { DeletePatientDialog } from './delete-patient-dialog';
 import { EditPatientDialog } from './edit-patient-dialog';
 import { FamilyMemberManager } from './family-member-manager';
+import { TreatmentPlanView } from './treatment-plan-view';
 
 export function PatientDetailView({
   patient,
@@ -114,13 +115,15 @@ export function PatientDetailView({
     const parts = [address.street, address.city, address.state, address.zip].filter(Boolean);
     return parts.join(', ');
   }
+  
+  const allObjectives = React.useMemo(() => patient.treatmentPlan?.goals.flatMap(g => g.objectives) || [], [patient.treatmentPlan]);
 
   return (
     <>
       <NewEvolutionRecordDialog
         isOpen={isNewRecordDialogOpen}
         onOpenChange={setIsNewRecordDialogOpen}
-        patientId={patient.id}
+        patient={patient}
         onRecordAdded={onRecordAdded}
       />
       <DeletePatientDialog
@@ -206,8 +209,9 @@ export function PatientDetailView({
         </Card>
 
         <Tabs defaultValue="evolution">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="evolution">Evolução</TabsTrigger>
+            <TabsTrigger value="treatment-plan">Plano de Tratamento</TabsTrigger>
             <TabsTrigger value="assessments">Avaliações</TabsTrigger>
             <TabsTrigger value="groups">Grupos</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
@@ -242,6 +246,17 @@ export function PatientDetailView({
                             <span className="text-sm text-muted-foreground">{record.date}</span>
                         </div>
                         <p className="mt-2 text-sm whitespace-pre-wrap">{record.details}</p>
+                        {record.linkedObjectiveIds && record.linkedObjectiveIds.length > 0 && (
+                            <div className="mt-4 border-t pt-2">
+                                <h4 className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1.5"><Target className="h-3 w-3"/> OBJETIVOS TRABALHADOS</h4>
+                                <div className="flex flex-wrap gap-1">
+                                    {record.linkedObjectiveIds.map(id => {
+                                        const objective = allObjectives.find(o => o.id === id);
+                                        return objective ? <Badge key={id} variant="secondary">{objective.description}</Badge> : null;
+                                    })}
+                                </div>
+                            </div>
+                        )}
                         <p className="mt-4 text-xs text-muted-foreground text-right">Por: {record.author}</p>
                       </div>
                     ))
@@ -253,6 +268,9 @@ export function PatientDetailView({
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+          <TabsContent value="treatment-plan">
+             <TreatmentPlanView patient={patient} onPlanUpdated={onPatientUpdated} />
           </TabsContent>
           <TabsContent value="assessments">
             <Card>
