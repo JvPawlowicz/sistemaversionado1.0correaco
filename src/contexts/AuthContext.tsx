@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
 import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref as storage_ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { DEFAULT_AVATAR_URL } from '@/lib/utils';
 
 
 interface AuthContextType {
@@ -63,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: 'Admin' as const,
             status: 'Active' as const,
             unitIds: [],
-            avatarUrl: 'https://placehold.co/400x400.png',
+            avatarUrl: DEFAULT_AVATAR_URL,
             createdAt: serverTimestamp(),
             professionalCouncil: null,
             councilNumber: null,

@@ -21,7 +21,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, getDisplayAvatarUrl } from '@/lib/utils';
 import { ManageAvailabilityDialog } from '@/components/planning/manage-availability-dialog';
 import type { User } from '@/lib/types';
 
@@ -138,7 +138,7 @@ export default function PlanningPage() {
                   <div key={pro.id} className="flex items-center justify-between rounded-md border p-4">
                       <div className="flex items-center gap-4">
                           <Avatar>
-                              <AvatarImage src={pro.avatarUrl} alt={pro.name} data-ai-hint="person portrait" />
+                              <AvatarImage src={getDisplayAvatarUrl(pro.avatarUrl)} alt={pro.name} data-ai-hint="person portrait" />
                               <AvatarFallback>{getInitials(pro.name)}</AvatarFallback>
                           </Avatar>
                           <div>

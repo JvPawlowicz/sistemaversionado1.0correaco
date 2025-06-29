@@ -16,6 +16,7 @@ import { useFormStatus } from 'react-dom';
 import { updateUserProfessionalDetailsAction } from '@/lib/actions';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
+import { getDisplayAvatarUrl } from '@/lib/utils';
 
 const roleNames: Record<string, string> = {
   Admin: 'Administrador',
@@ -151,7 +152,7 @@ export default function ProfilePage() {
         <div className="lg:col-span-1">
           <Card className="flex flex-col items-center p-6 text-center">
             <Avatar className="h-24 w-24 mb-4">
-              <AvatarImage src={avatarPreview || currentUser.avatarUrl} alt={currentUser.name} />
+              <AvatarImage src={avatarPreview || getDisplayAvatarUrl(currentUser.avatarUrl)} alt={currentUser.name} />
               <AvatarFallback className="text-3xl">{getInitials(currentUser.name)}</AvatarFallback>
             </Avatar>
             <h2 className="text-xl font-semibold">{currentUser.name}</h2>

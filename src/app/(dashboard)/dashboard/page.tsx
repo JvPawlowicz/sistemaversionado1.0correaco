@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -15,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getDisplayAvatarUrl } from '@/lib/utils';
 
 interface StatCardProps {
   title: string;
@@ -159,7 +161,7 @@ export default function DashboardPage() {
                         return (
                             <div key={app.id} className="flex items-center space-x-4">
                                 <Avatar>
-                                    <AvatarImage src={patient?.avatarUrl} data-ai-hint="person portrait" />
+                                    <AvatarImage src={getDisplayAvatarUrl(patient?.avatarUrl)} data-ai-hint="person portrait" />
                                     <AvatarFallback>{patient ? getInitials(patient.name) : '?'}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 space-y-1">

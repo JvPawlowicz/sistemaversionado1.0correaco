@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDisplayAvatarUrl } from '@/lib/utils';
 
 export function UserNav() {
   const { user, currentUser, logout } = useAuth();
@@ -38,7 +40,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={currentUser.avatarUrl || ''} alt={displayName} data-ai-hint="person portrait" />
+            <AvatarImage src={getDisplayAvatarUrl(currentUser.avatarUrl)} alt={displayName} data-ai-hint="person portrait" />
             <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
           </Avatar>
         </Button>

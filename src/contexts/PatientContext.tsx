@@ -8,6 +8,7 @@ import { collection, getDocs, addDoc, serverTimestamp, query, where, type Query 
 import { useToast } from '@/hooks/use-toast';
 import { useUnit } from './UnitContext';
 import { useAuth } from './AuthContext';
+import { DEFAULT_AVATAR_URL } from '@/lib/utils';
 
 interface PatientContextType {
   patients: Patient[];
@@ -107,7 +108,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         ...patientData,
         status: 'Active',
         lastVisit: null,
-        avatarUrl: 'https://placehold.co/400x400.png',
+        avatarUrl: DEFAULT_AVATAR_URL,
         createdAt: serverTimestamp(),
         imageUseConsent: false,
       });

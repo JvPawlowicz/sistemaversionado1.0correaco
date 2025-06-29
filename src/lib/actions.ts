@@ -7,6 +7,7 @@ import { FieldValue, WriteResult } from 'firebase-admin/firestore';
 import type { Appointment, Unit, Service, Availability, Log, TreatmentPlan } from './types';
 import { revalidatePath } from 'next/cache';
 import { format } from 'date-fns';
+import { DEFAULT_AVATAR_URL } from './utils';
 
 // --- Helper for creating logs ---
 async function createLog(data: {
@@ -96,7 +97,7 @@ export async function createUserAction(prevState: any, formData: FormData) {
       role,
       unitIds,
       status: 'Active',
-      avatarUrl: 'https://placehold.co/400x400.png',
+      avatarUrl: DEFAULT_AVATAR_URL,
       createdAt: FieldValue.serverTimestamp(),
       availability: [],
       professionalCouncil: null,
@@ -1243,7 +1244,7 @@ export async function createAssessmentAction(prevState: any, formData: FormData)
           unitIds: [unitId],
           status: 'Active' as const,
           lastVisit: null,
-          avatarUrl: 'https://placehold.co/400x400.png',
+          avatarUrl: DEFAULT_AVATAR_URL,
           createdAt: FieldValue.serverTimestamp(),
           imageUseConsent: false,
       };

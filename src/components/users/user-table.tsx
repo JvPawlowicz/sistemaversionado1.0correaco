@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -20,6 +21,7 @@ import { DeleteUserDialog } from './delete-user-dialog';
 import { EditUserDialog } from './edit-user-dialog';
 import { useUnit } from '@/contexts/UnitContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDisplayAvatarUrl } from '@/lib/utils';
 
 interface UserTableProps {
   users: User[];
@@ -119,7 +121,7 @@ export function UserTable({ users, onAddUser, searchTerm }: UserTableProps) {
                 <TableCell>
                   <div className="flex items-center gap-4">
                     <Avatar className="hidden h-9 w-9 sm:flex">
-                      <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="person portrait" />
+                      <AvatarImage src={getDisplayAvatarUrl(user.avatarUrl)} alt={user.name} data-ai-hint="person portrait" />
                       <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                     </Avatar>
                     <div className="grid gap-1">

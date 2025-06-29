@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -13,6 +14,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import type { EvolutionRecord } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getDisplayAvatarUrl } from '@/lib/utils';
 
 interface PerformanceData {
   userId: string;
@@ -177,7 +179,7 @@ export default function TeamPerformancePage() {
                         <TableCell>
                         <div className="flex items-center gap-4">
                             <Avatar className="h-9 w-9">
-                            <AvatarImage src={pro.avatarUrl} data-ai-hint="person portrait" />
+                            <AvatarImage src={getDisplayAvatarUrl(pro.avatarUrl)} data-ai-hint="person portrait" />
                             <AvatarFallback>{getInitials(pro.name)}</AvatarFallback>
                             </Avatar>
                             <div>

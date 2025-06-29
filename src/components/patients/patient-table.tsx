@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Eye, PlusCircle } from 'lucide-react';
 import type { Patient } from '@/lib/types';
+import { getDisplayAvatarUrl } from '@/lib/utils';
 
 export function PatientTable({ patients, searchTerm }: { patients: Patient[], searchTerm: string }) {
   if (patients.length === 0) {
@@ -54,7 +55,7 @@ export function PatientTable({ patients, searchTerm }: { patients: Patient[], se
               <TableCell>
                 <div className="flex items-center gap-4">
                   <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src={patient.avatarUrl} alt={patient.name} data-ai-hint="person portrait" />
+                    <AvatarImage src={getDisplayAvatarUrl(patient.avatarUrl)} alt={patient.name} data-ai-hint="person portrait" />
                     <AvatarFallback>{patient.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="grid gap-1">

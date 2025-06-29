@@ -30,6 +30,7 @@ import { DeletePatientDialog } from './delete-patient-dialog';
 import { EditPatientDialog } from './edit-patient-dialog';
 import { FamilyMemberManager } from './family-member-manager';
 import { TreatmentPlanView } from './treatment-plan-view';
+import { getDisplayAvatarUrl } from '@/lib/utils';
 
 export function PatientDetailView({
   patient,
@@ -142,7 +143,7 @@ export function PatientDetailView({
         <Card>
           <CardHeader className="flex flex-col items-start gap-4 sm:flex-row">
             <Avatar className="h-24 w-24">
-              <AvatarImage src={patient.avatarUrl} alt={patient.name} data-ai-hint="person portrait" />
+              <AvatarImage src={getDisplayAvatarUrl(patient.avatarUrl)} alt={patient.name} data-ai-hint="person portrait" />
               <AvatarFallback className="text-3xl">{getInitials(patient.name)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
