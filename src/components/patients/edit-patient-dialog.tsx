@@ -224,10 +224,10 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="healthPlanId">Plano de Saúde</Label>
-                        <Select name="healthPlanId" defaultValue={patient.healthPlanId || ''}>
+                        <Select name="healthPlanId" defaultValue={patient.healthPlanId || 'none'}>
                             <SelectTrigger disabled={healthPlans.length === 0}><SelectValue placeholder="Selecione um plano..." /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Nenhum</SelectItem>
+                                <SelectItem value="none">Nenhum</SelectItem>
                                 {healthPlans.map(plan => <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>)}
                             </SelectContent>
                         </Select>

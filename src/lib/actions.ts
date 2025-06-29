@@ -510,16 +510,21 @@ export async function updatePatientDetailsAction(prevState: any, formData: FormD
     ? { street: addressStreet || '', city: addressCity || '', state: addressState || '', zip: addressZip || '' } 
     : null;
     
-  const updatePayload: any = { ...patientData, address, healthPlanId: healthPlanId || null };
+  const updatePayload: any = { ...patientData, address };
 
   try {
     const patientDoc = await db.collection('patients').doc(patientId).get();
+    if (!patientDoc.exists) {
+      return { success: false, message: 'Paciente não encontrado.', errors: null };
+    }
     const currentPatientData = patientDoc.data();
     
-    if(healthPlanId) {
-        let foundPlan = false;
+    if (healthPlanId && healthPlanId !== 'none') {
+        updatePayload.healthPlanId = healthPlanId;
+        
         const unitIdsToSearch = [...(currentPatientData?.unitIds || []), 'central'];
         
+        let foundPlan = false;
         for (const unitIdToSearch of unitIdsToSearch) {
             const planDoc = await db.collection('units').doc(unitIdToSearch).collection('healthPlans').doc(healthPlanId).get();
             if (planDoc.exists) {
@@ -529,10 +534,10 @@ export async function updatePatientDetailsAction(prevState: any, formData: FormD
             }
         }
         if (!foundPlan) {
-          updatePayload.healthPlanName = null;
+            updatePayload.healthPlanName = null;
         }
-
     } else {
+        updatePayload.healthPlanId = null;
         updatePayload.healthPlanName = null;
     }
     
