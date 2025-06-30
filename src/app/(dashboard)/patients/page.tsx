@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { PatientTable } from '@/components/patients/patient-table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Terminal, Search, Users2 } from 'lucide-react';
+import { PlusCircle, Terminal, Search, Users2, GitMerge } from 'lucide-react';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -45,6 +45,7 @@ export default function PatientsPage() {
   });
 
   const canManageGroups = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
+  const isAdmin = currentUser?.role === 'Admin';
   
   return (
     <div className="space-y-6">
@@ -80,6 +81,14 @@ export default function PatientsPage() {
                   <Link href="/groups">
                     <Users2 className="mr-2 h-4 w-4" />
                     Gerenciar Grupos
+                  </Link>
+                </Button>
+            )}
+             {isAdmin && (
+                <Button asChild variant="outline">
+                  <Link href="/merge-patients">
+                    <GitMerge className="mr-2 h-4 w-4" />
+                    Mesclar Pacientes
                   </Link>
                 </Button>
             )}

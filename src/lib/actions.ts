@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { auth, db, storageAdmin } from '@/lib/firebase-admin';
 import { FieldValue, WriteResult } from 'firebase-admin/firestore';
-import type { Appointment, Unit, Service, Availability, Log, TreatmentPlan } from './types';
+import type { Appointment, Unit, Service, Availability, Log, TreatmentPlan, Patient, TherapyGroup, Assessment } from './types';
 import { revalidatePath } from 'next/cache';
 import { format } from 'date-fns';
 import { DEFAULT_AVATAR_URL } from './utils';
@@ -1605,7 +1605,7 @@ const CreatePatientSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }).optional().or(z.literal('')),
   phone: z.string().optional(),
   dob: z.string().optional(),
-  gender: z.enum(['Male', 'Female', 'Other']).optional(),
+  gender: z.enum(['Male', 'Female', 'Other', '']).optional(),
 });
 
 export async function createPatientAction(prevState: any, formData: FormData) {
@@ -1702,5 +1702,99 @@ export async function updateUserAvatarAction(prevState: any, formData: FormData)
   } catch (error) {
     console.error('Error uploading avatar via server action:', error);
     return { success: false, message: 'Ocorreu um erro ao fazer upload do avatar.', errors: null };
+  }
+}
+
+// --- Merge Patients Action ---
+const MergePatientsSchema = z.object({
+  primaryPatientId: z.string().min(1, 'ID do paciente principal é obrigatório.'),
+  secondaryPatientId: z.string().min(1, 'ID do paciente duplicado é obrigatório.'),
+}).refine(data => data.primaryPatientId !== data.secondaryPatientId, {
+  message: 'Os pacientes para mesclagem não podem ser os mesmos.',
+});
+
+export async function mergePatientsAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = MergePatientsSchema.safeParse({
+    primaryPatientId: formData.get('primaryPatientId'),
+    secondaryPatientId: formData.get('secondaryPatientId'),
+  });
+
+  if (!validatedFields.success) {
+    return { success: false, message: validatedFields.error.errors[0].message };
+  }
+
+  const { primaryPatientId, secondaryPatientId } = validatedFields.data;
+
+  try {
+    const batch = db.batch();
+
+    // 1. Get patient docs
+    const primaryPatientRef = db.collection('patients').doc(primaryPatientId);
+    const secondaryPatientRef = db.collection('patients').doc(secondaryPatientId);
+    const primaryDoc = await primaryPatientRef.get();
+    const secondaryDoc = await secondaryPatientRef.get();
+
+    if (!primaryDoc.exists || !secondaryDoc.exists) {
+      return { success: false, message: 'Um ou ambos os pacientes não foram encontrados.' };
+    }
+    const primaryData = primaryDoc.data() as Patient;
+    const secondaryData = secondaryDoc.data() as Patient;
+    const primaryPatientName = primaryData.name;
+
+    // 2. Merge Unit IDs
+    const mergedUnitIds = [...new Set([...primaryData.unitIds, ...secondaryData.unitIds])];
+    batch.update(primaryPatientRef, { unitIds: mergedUnitIds });
+
+    // 3. Re-associate top-level collections
+    const collectionsToUpdate = ['appointments', 'assessments'];
+    for (const collectionName of collectionsToUpdate) {
+      const snapshot = await db.collection(collectionName).where('patientId', '==', secondaryPatientId).get();
+      snapshot.forEach(doc => {
+        batch.update(doc.ref, { patientId: primaryPatientId, patientName: primaryPatientName });
+      });
+    }
+
+    // 4. Re-associate sub-collections by moving documents
+    const subcollectionsToMove = ['evolutionRecords', 'documents', 'familyMembers'];
+    for (const subcollectionName of subcollectionsToMove) {
+        const subSnapshot = await secondaryPatientRef.collection(subcollectionName).get();
+        subSnapshot.forEach(doc => {
+            const newDocRef = primaryPatientRef.collection(subcollectionName).doc(doc.id);
+            batch.set(newDocRef, doc.data());
+            batch.delete(doc.ref);
+        });
+    }
+
+    // 5. Update therapy groups
+    const groupSnapshot = await db.collection('therapyGroups').where('patientIds', 'array-contains', secondaryPatientId).get();
+    groupSnapshot.forEach(doc => {
+        const groupData = doc.data() as TherapyGroup;
+        const newPatientIds = [...new Set([...groupData.patientIds.filter(id => id !== secondaryPatientId), primaryPatientId])];
+        batch.update(doc.ref, { patientIds: newPatientIds });
+    });
+
+    // 6. Delete secondary patient
+    batch.delete(secondaryPatientRef);
+
+    // 7. Commit batch
+    await batch.commit();
+
+    await createLog({
+        actorId: 'system', // TODO: get current user id
+        actorName: 'Admin',
+        action: 'MERGE_PATIENTS',
+        details: `Mesclou o paciente duplicado ${secondaryData.name} (ID: ${secondaryPatientId}) com o paciente principal ${primaryData.name} (ID: ${primaryPatientId}).`,
+        unitId: null, // This action is global
+    });
+
+    revalidatePath('/patients');
+    return { success: true, message: 'Pacientes mesclados com sucesso!' };
+
+  } catch (error) {
+    console.error("Error merging patients:", error);
+    return { success: false, message: 'Ocorreu um erro inesperado durante a mesclagem.' };
   }
 }

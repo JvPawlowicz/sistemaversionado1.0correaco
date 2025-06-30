@@ -31,6 +31,7 @@ import {
   Terminal,
   Shield,
   AreaChart,
+  GitMerge,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnit } from '@/contexts/UnitContext';
@@ -60,6 +61,7 @@ export function AppSidebar() {
     { href: '/units', label: 'Unidades', icon: Building, roles: ['Admin'] },
     { href: '/users', label: 'Usuários', icon: Users, roles: ['Admin'] },
     { href: '/health-plans', label: 'Planos de Saúde', icon: Shield, roles: ['Admin'] },
+    { href: '/merge-patients', label: 'Mesclar Pacientes', icon: GitMerge, roles: ['Admin'] },
     { href: '/notifications', label: 'Notificações', icon: Bell, roles: ['Admin'] },
     { href: '/logs', label: 'Logs do Sistema', icon: Terminal, roles: ['Admin'] },
   ];
