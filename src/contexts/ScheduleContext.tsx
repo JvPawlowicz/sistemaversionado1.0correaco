@@ -19,7 +19,7 @@ interface ScheduleContextType {
   error: string | null;
   addAppointment: (data: AddAppointmentData) => Promise<void>;
   deleteAppointment: (appointmentId: string) => Promise<void>;
-  updateAppointmentStatus: (appointmentId: string, status: 'Realizado' | 'Faltou' | 'Cancelado') => Promise<void>;
+  updateAppointmentStatus: (appointmentId: string, status: 'Agendado' | 'Realizado' | 'Faltou' | 'Cancelado') => Promise<void>;
   fetchScheduleData: () => Promise<void>;
 }
 
@@ -196,7 +196,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateAppointmentStatus = async (appointmentId: string, status: 'Realizado' | 'Faltou' | 'Cancelado') => {
+  const updateAppointmentStatus = async (appointmentId: string, status: 'Agendado' | 'Realizado' | 'Faltou' | 'Cancelado') => {
     if (!db) {
       toast({ variant: 'destructive', title: 'Erro de Configuração' });
       return;

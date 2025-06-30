@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment } from '@/lib/types';
-import { Calendar, Clock, User, Home, CheckCircle, XCircle, AlertCircle, Trash2, Stethoscope, ArrowLeft, Loader2, Shield, Edit } from 'lucide-react';
+import { Calendar, Clock, User, Home, CheckCircle, XCircle, AlertCircle, Trash2, Stethoscope, ArrowLeft, Loader2, Shield, Edit, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
@@ -115,7 +115,7 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
   }, [editState, onOpenChange, toast]);
 
 
-  const handleUpdateStatus = async (status: 'Faltou' | 'Cancelado') => {
+  const handleUpdateStatus = async (status: 'Agendado' | 'Faltou' | 'Cancelado') => {
     if (!appointment) return;
     await updateAppointmentStatus(appointment.id, status);
     onOpenChange(false);
@@ -141,7 +141,7 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
   
   const isLoading = usersLoading || unitsLoading;
   const canEditProfessional = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator' || currentUser?.role === 'Receptionist';
-
+  const isFinalized = appointment.status !== 'Agendado';
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -151,7 +151,9 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
             <DialogHeader>
               <DialogTitle>Ações do Agendamento</DialogTitle>
               <DialogDescription>
-                Gerencie o status ou remova este agendamento.
+                 {isFinalized
+                  ? 'Este agendamento já foi finalizado. Você pode editar os detalhes ou reverter o status.'
+                  : 'Gerencie o status ou remova este agendamento.'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -184,15 +186,20 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
                  <div className="space-y-2">
                     <h4 className="font-medium">Alterar Status</h4>
                     <div className="grid grid-cols-2 gap-2">
-                        <Button variant="outline" onClick={() => setView('evolution')}>
+                        <Button variant="outline" onClick={() => setView('evolution')} disabled={isFinalized}>
                             <CheckCircle className="mr-2 h-4 w-4 text-primary" />
                             Atendimento Realizado
                         </Button>
-                        <Button variant="outline" onClick={() => handleUpdateStatus('Faltou')}>
+                        <Button variant="outline" onClick={() => handleUpdateStatus('Faltou')} disabled={isFinalized}>
                              <XCircle className="mr-2 h-4 w-4 text-destructive" />
                             Faltou
                         </Button>
                     </div>
+                    {isFinalized && (
+                        <Button variant="outline" className="w-full mt-2" onClick={() => handleUpdateStatus('Agendado')}>
+                            <RotateCcw className="mr-2 h-4 w-4" /> Reverter para "Agendado"
+                        </Button>
+                    )}
                  </div>
                  <div className="pt-2">
                     <h4 className="font-medium">Outras Ações</h4>
@@ -226,7 +233,7 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleUpdateStatus('Cancelado')}>
+                    <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleUpdateStatus('Cancelado')} disabled={isFinalized}>
                         <AlertCircle className="mr-2 h-4 w-4" />
                         Cancelar Agendamento
                     </Button>
