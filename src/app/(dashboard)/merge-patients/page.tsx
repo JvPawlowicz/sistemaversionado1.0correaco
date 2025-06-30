@@ -14,6 +14,7 @@ import type { Patient } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { Label } from '@/components/ui/label';
 
 const initialState = {
   success: false,
