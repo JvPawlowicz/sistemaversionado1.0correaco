@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, CircleAlert, AlertCircle } from 'lucide-react';
+import { Loader2, CircleAlert, AlertCircle, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { updateUserProfessionalDetailsAction } from '@/lib/actions';
+import { updateUserProfessionalDetailsAction, updateUserAvatarAction } from '@/lib/actions';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { getDisplayAvatarUrl } from '@/lib/utils';
@@ -41,20 +41,37 @@ function ProfessionalSubmitButton() {
   );
 }
 
+const avatarInitialState = {
+  success: false,
+  message: '',
+  errors: null,
+};
+
+function AvatarSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending} className="flex-1">
+      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {pending ? 'Enviando...' : 'Salvar'}
+    </Button>
+  );
+}
 
 export default function ProfilePage() {
-  const { currentUser, loading, updateAvatar, updateUserName, refetchCurrentUser } = useAuth();
-  const [isAvatarUpdating, setIsAvatarUpdating] = React.useState(false);
+  const { currentUser, loading, updateUserName, refetchCurrentUser } = useAuth();
   const [isNameUpdating, setIsNameUpdating] = React.useState(false);
   const [name, setName] = React.useState(currentUser?.name || '');
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const avatarFormRef = React.useRef<HTMLFormElement>(null);
   const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
   const { toast } = useToast();
   
   const [professionalState, professionalFormAction] = useActionState(updateUserProfessionalDetailsAction, professionalInitialState);
   const professionalFormRef = React.useRef<HTMLFormElement>(null);
+
+  const [avatarState, avatarFormAction] = useActionState(updateUserAvatarAction, avatarInitialState);
 
   React.useEffect(() => {
     if (currentUser) {
@@ -70,30 +87,25 @@ export default function ProfilePage() {
         toast({ variant: 'destructive', title: 'Erro', description: professionalState.message });
     }
   }, [professionalState, toast, refetchCurrentUser]);
+
+  React.useEffect(() => {
+    if (avatarState.success) {
+      toast({ title: 'Sucesso!', description: avatarState.message });
+      refetchCurrentUser();
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      avatarFormRef.current?.reset();
+    } else if (avatarState.message) {
+      toast({ variant: 'destructive', title: 'Erro no Upload', description: avatarState.message });
+    }
+  }, [avatarState, toast, refetchCurrentUser]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
-        toast({
-          variant: 'destructive',
-          title: 'Arquivo muito grande',
-          description: 'Por favor, selecione uma imagem com menos de 2MB.',
-        });
-        return;
-      }
       setAvatarFile(file);
       setAvatarPreview(URL.createObjectURL(file));
     }
-  };
-
-  const handleUpdateAvatar = async () => {
-    if (!avatarFile) return;
-    setIsAvatarUpdating(true);
-    await updateAvatar(avatarFile);
-    setIsAvatarUpdating(false);
-    setAvatarFile(null);
-    setAvatarPreview(null);
   };
 
   const handleUpdateName = async (e: React.FormEvent) => {
@@ -139,36 +151,37 @@ export default function ProfilePage() {
           Gerencie suas informações pessoais e configurações de conta.
         </p>
       </div>
-      
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        className="hidden" 
-        accept="image/png, image/jpeg, image/webp" 
-      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
           <Card className="flex flex-col items-center p-6 text-center">
-            <Avatar className="h-24 w-24 mb-4">
-              <AvatarImage src={avatarPreview || getDisplayAvatarUrl(currentUser.avatarUrl)} alt={currentUser.name} />
-              <AvatarFallback className="text-3xl">{getInitials(currentUser.name)}</AvatarFallback>
-            </Avatar>
-            <h2 className="text-xl font-semibold">{currentUser.name}</h2>
-            <p className="text-muted-foreground">{currentUser.email}</p>
-            <p className="text-sm text-muted-foreground mt-1">{roleNames[currentUser.role] || currentUser.role}</p>
-            <div className="flex w-full mt-4 gap-2">
-              <Button onClick={() => fileInputRef.current?.click()} className="flex-1">
-                Escolher Foto
-              </Button>
-              {avatarFile && (
-                <Button onClick={handleUpdateAvatar} disabled={isAvatarUpdating} className="flex-1">
-                  {isAvatarUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Salvar
+            <form action={avatarFormAction} ref={avatarFormRef}>
+              <input type="hidden" name="userId" value={currentUser.id} />
+              <input 
+                type="file" 
+                name="avatar"
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+                accept="image/png, image/jpeg, image/webp" 
+              />
+              <Avatar className="h-24 w-24 mb-4">
+                <AvatarImage src={avatarPreview || getDisplayAvatarUrl(currentUser.avatarUrl)} alt={currentUser.name} />
+                <AvatarFallback className="text-3xl">{getInitials(currentUser.name)}</AvatarFallback>
+              </Avatar>
+              <h2 className="text-xl font-semibold">{currentUser.name}</h2>
+              <p className="text-muted-foreground">{currentUser.email}</p>
+              <p className="text-sm text-muted-foreground mt-1">{roleNames[currentUser.role] || currentUser.role}</p>
+              <div className="flex w-full mt-4 gap-2">
+                <Button type="button" onClick={() => fileInputRef.current?.click()} className="flex-1">
+                  Escolher Foto
                 </Button>
+                {avatarFile && <AvatarSubmitButton />}
+              </div>
+              {avatarState.message && !avatarState.success && (
+                <p className="text-xs text-destructive mt-2">{avatarState.message}</p>
               )}
-            </div>
+            </form>
           </Card>
         </div>
 

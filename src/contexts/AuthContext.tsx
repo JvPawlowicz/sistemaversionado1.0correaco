@@ -19,7 +19,6 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
-  updateAvatar: (file: File) => Promise<void>;
   updateUserName: (name: string) => Promise<void>;
   refetchCurrentUser: () => Promise<void>;
 }
@@ -180,42 +179,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout error:", error);
     }
   };
-  
-  const updateAvatar = async (file: File) => {
-    if (!auth || !db || !storage || !currentUser) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Não foi possível mudar o avatar.',
-      });
-      return;
-    }
-
-    const storageRef = storage_ref(storage, `avatars/${currentUser.id}`);
-    
-    try {
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-
-      const userDocRef = doc(db, 'users', currentUser.id);
-      await updateDoc(userDocRef, {
-        avatarUrl: downloadURL
-      });
-
-      setCurrentUser(prevUser => prevUser ? { ...prevUser, avatarUrl: downloadURL } : null);
-      toast({
-        title: 'Sucesso!',
-        description: 'Seu avatar foi atualizado.',
-      });
-    } catch (error) {
-       console.error("Avatar update error:", error);
-       toast({
-        variant: 'destructive',
-        title: 'Erro no Upload',
-        description: 'Não foi possível fazer o upload do avatar. Tente novamente.',
-      });
-    }
-  };
 
   const updateUserName = async (name: string) => {
     if (!db || !currentUser) {
@@ -247,7 +210,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     login,
     logout,
-    updateAvatar,
     updateUserName,
     refetchCurrentUser,
   };

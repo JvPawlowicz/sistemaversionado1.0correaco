@@ -1,15 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useActionState, useEffect, useRef } from 'react';
+import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { Loader2, Search, UserPlus, HeartPulse, Link as LinkIcon, Building } from 'lucide-react';
+import { Loader2, Search, UserPlus, HeartPulse, Link as LinkIcon, Building, CircleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePatient } from '@/contexts/PatientContext';
 import { useUnit } from '@/contexts/UnitContext';
@@ -20,18 +18,26 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getDisplayAvatarUrl } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { Label } from '@/components/ui/label';
 
-const patientFormSchema = z.object({
-  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
-  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }).optional().or(z.literal('')),
-  phone: z.string().optional(),
-  dob: z.string().optional(),
-  gender: z.enum(['Male', 'Female', 'Other']).optional(),
-});
-type PatientFormValues = z.infer<typeof patientFormSchema>;
+const createInitialState = {
+  success: false,
+  message: '',
+  errors: null,
+};
+
+function CreateSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      Salvar Paciente
+    </Button>
+  );
+}
 
 export default function NewPatientPage() {
-  const [isSaving, setIsSaving] = React.useState(false);
+  const [isLinking, setIsLinking] = React.useState(false);
   const [isSearching, setIsSearching] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [searchResults, setSearchResults] = React.useState<Patient[]>([]);
@@ -41,18 +47,20 @@ export default function NewPatientPage() {
   const { units, selectedUnitId } = useUnit();
   const router = useRouter();
   const { toast } = useToast();
-
-  const form = useForm<PatientFormValues>({
-    resolver: zodResolver(patientFormSchema),
-    defaultValues: { name: '', email: '', phone: '', dob: '', gender: undefined },
-  });
   
-  // When switching to create view, pre-fill the name from the search term
+  const [createState, createFormAction] = useActionState(createPatientAction, createInitialState);
+  const formRef = useRef<HTMLFormElement>(null);
+
   React.useEffect(() => {
-    if (view === 'create') {
-      form.setValue('name', searchTerm);
+    if (createState.success) {
+      toast({ title: 'Sucesso!', description: createState.message });
+      fetchPatients();
+      router.push('/patients');
+    } else if (createState.message && !createState.errors) {
+      toast({ variant: 'destructive', title: 'Erro', description: createState.message });
     }
-  }, [view, searchTerm, form]);
+  }, [createState, toast, fetchPatients, router]);
+
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +76,7 @@ export default function NewPatientPage() {
   
   const handleLinkPatient = async (patientId: string) => {
     if (!selectedUnitId) return;
-    setIsSaving(true);
+    setIsLinking(true);
     const result = await linkPatientToUnitAction(patientId, selectedUnitId);
     if (result.success) {
       toast({ title: 'Sucesso!', description: result.message });
@@ -77,22 +85,8 @@ export default function NewPatientPage() {
     } else {
       toast({ variant: 'destructive', title: 'Erro', description: result.message });
     }
-    setIsSaving(false);
+    setIsLinking(false);
   };
-
-  async function onSubmit(data: PatientFormValues) {
-    if (!selectedUnitId) return;
-    setIsSaving(true);
-    const result = await createPatientAction(data, selectedUnitId);
-    if (result.success) {
-        toast({ title: 'Sucesso!', description: result.message });
-        await fetchPatients();
-        router.push('/patients');
-    } else {
-        toast({ variant: 'destructive', title: 'Erro', description: result.message });
-    }
-    setIsSaving(false);
-  }
 
   const getInitials = (name: string) => {
     const names = name.split(' ');
@@ -153,8 +147,8 @@ export default function NewPatientPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <Button size="sm" onClick={() => handleLinkPatient(patient.id)} disabled={isLinked}>
-                                        <LinkIcon className="mr-2 h-4 w-4"/>
+                                    <Button size="sm" onClick={() => handleLinkPatient(patient.id)} disabled={isLinked || isLinking}>
+                                        {isLinking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-4 w-4"/>}
                                         {isLinked ? 'Já Vinculado' : 'Vincular'}
                                     </Button>
                                 </div>
@@ -177,46 +171,65 @@ export default function NewPatientPage() {
             )}
         </Card>
       ) : (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-            <Card>
-                <CardHeader>
-                <CardTitle>Passo 2: Informações do Paciente</CardTitle>
-                <CardDescription>Preencha os detalhes do novo paciente. Apenas o nome é obrigatório.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Digite o nome completo" {...field} disabled={isSaving}/></FormControl><FormMessage /></FormItem>
-                )}/>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="email" render={({ field }) => (
-                        <FormItem><FormLabel>E-mail (Opcional)</FormLabel><FormControl><Input type="email" placeholder="email@exemplo.com" {...field} disabled={isSaving}/></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="phone" render={({ field }) => (
-                        <FormItem><FormLabel>Telefone (Opcional)</FormLabel><FormControl><Input placeholder="(00) 00000-0000" {...field} disabled={isSaving}/></FormControl><FormMessage /></FormItem>
-                    )}/>
+        <form ref={formRef} action={createFormAction}>
+        <Card>
+            <CardHeader>
+            <CardTitle>Passo 2: Informações do Paciente</CardTitle>
+            <CardDescription>Preencha os detalhes do novo paciente. Apenas o nome é obrigatório.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {createState.message && !createState.success && !createState.errors && (
+                  <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                      <CircleAlert className="h-4 w-4" />
+                      <p>{createState.message}</p>
+                  </div>
+              )}
+              <input type="hidden" name="unitId" value={selectedUnitId || ''} />
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome Completo</Label>
+                <Input id="name" name="name" defaultValue={searchTerm} required />
+                {createState.errors?.name && <p className="text-xs text-destructive mt-1">{createState.errors.name[0]}</p>}
+              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail (Opcional)</Label>
+                  <Input id="email" name="email" type="email" placeholder="email@exemplo.com" />
+                  {createState.errors?.email && <p className="text-xs text-destructive mt-1">{createState.errors.email[0]}</p>}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="dob" render={({ field }) => (
-                        <FormItem><FormLabel>Data de Nascimento (Opcional)</FormLabel><FormControl><Input type="date" {...field} disabled={isSaving}/></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="gender" render={({ field }) => (
-                        <FormItem><FormLabel>Gênero (Opcional)</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}><FormControl><SelectTrigger><SelectValue placeholder="Selecione o gênero" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Male">Masculino</SelectItem><SelectItem value="Female">Feminino</SelectItem><SelectItem value="Other">Outro</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-                    )}/>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone (Opcional)</Label>
+                  <Input id="phone" name="phone" placeholder="(00) 00000-0000" />
+                  {createState.errors?.phone && <p className="text-xs text-destructive mt-1">{createState.errors.phone[0]}</p>}
                 </div>
-                </CardContent>
-                <CardFooter className="border-t px-6 py-4">
-                <div className="flex justify-between gap-2 w-full">
-                    <Button variant="outline" type="button" onClick={() => setView('search')}>Voltar para Busca</Button>
-                    <Button type="submit" disabled={isSaving || !selectedUnitId}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Salvar Paciente
-                    </Button>
-                    </div>
-                </CardFooter>
-            </Card>
-            </form>
-        </Form>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dob">Data de Nascimento (Opcional)</Label>
+                  <Input id="dob" name="dob" type="date" />
+                   {createState.errors?.dob && <p className="text-xs text-destructive mt-1">{createState.errors.dob[0]}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gênero (Opcional)</Label>
+                  <Select name="gender">
+                    <SelectTrigger><SelectValue placeholder="Selecione o gênero" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Male">Masculino</SelectItem>
+                        <SelectItem value="Female">Feminino</SelectItem>
+                        <SelectItem value="Other">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {createState.errors?.gender && <p className="text-xs text-destructive mt-1">{createState.errors.gender[0]}</p>}
+                </div>
+            </div>
+            </CardContent>
+            <CardFooter className="border-t px-6 py-4">
+            <div className="flex justify-between gap-2 w-full">
+                <Button variant="outline" type="button" onClick={() => setView('search')}>Voltar para Busca</Button>
+                <CreateSubmitButton />
+                </div>
+            </CardFooter>
+        </Card>
+        </form>
       )}
     </div>
   );

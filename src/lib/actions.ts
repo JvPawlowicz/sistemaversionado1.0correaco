@@ -8,6 +8,7 @@ import type { Appointment, Unit, Service, Availability, Log, TreatmentPlan } fro
 import { revalidatePath } from 'next/cache';
 import { format } from 'date-fns';
 import { DEFAULT_AVATAR_URL } from './utils';
+import { getDownloadURL } from 'firebase-admin/storage';
 
 // --- Helper for creating logs ---
 async function createLog(data: {
@@ -1607,17 +1608,25 @@ const CreatePatientSchema = z.object({
   gender: z.enum(['Male', 'Female', 'Other']).optional(),
 });
 
-export async function createPatientAction(data: z.infer<typeof CreatePatientSchema>, unitId: string): Promise<{ success: boolean; message: string }> {
+export async function createPatientAction(prevState: any, formData: FormData) {
     const adminCheck = checkAdminInit();
     if (adminCheck) return adminCheck;
 
-    const validatedFields = CreatePatientSchema.safeParse(data);
+    const validatedFields = CreatePatientSchema.safeParse({
+        name: formData.get('name'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        dob: formData.get('dob'),
+        gender: formData.get('gender') === "" ? undefined : formData.get('gender'),
+    });
+
     if (!validatedFields.success) {
-        return { success: false, message: 'Dados inválidos.' };
+        return { success: false, message: 'Dados inválidos.', errors: validatedFields.error.flatten().fieldErrors };
     }
-    
+
+    const unitId = formData.get('unitId') as string;
     if (!unitId) {
-        return { success: false, message: 'ID da unidade é obrigatório.' };
+        return { success: false, message: 'ID da unidade é obrigatório.', errors: null };
     }
 
     try {
@@ -1631,9 +1640,67 @@ export async function createPatientAction(data: z.infer<typeof CreatePatientSche
             imageUseConsent: false,
         });
         revalidatePath('/patients');
-        return { success: true, message: 'Paciente criado com sucesso!' };
+        return { success: true, message: 'Paciente criado com sucesso!', errors: null };
     } catch (error) {
         console.error('Error creating patient:', error);
-        return { success: false, message: 'Ocorreu um erro ao criar o paciente.' };
+        return { success: false, message: 'Ocorreu um erro ao criar o paciente.', errors: null };
     }
+}
+
+// --- Update User Avatar Action ---
+const UpdateAvatarSchema = z.object({
+  userId: z.string().min(1, 'ID do usuário é obrigatório.'),
+  avatar: z.custom<File>(val => val instanceof File, "Por favor, envie um arquivo.")
+    .refine((file) => file.size > 0, 'O arquivo não pode estar vazio.')
+    .refine((file) => file.size <= 2 * 1024 * 1024, `O tamanho máximo é 2MB.`)
+    .refine((file) => file.type?.startsWith("image/"), ".Somente imagens são permitidas"),
+});
+
+export async function updateUserAvatarAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = UpdateAvatarSchema.safeParse({
+    userId: formData.get('userId'),
+    avatar: formData.get('avatar'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: validatedFields.error.flatten().fieldErrors.avatar?.[0] || 'Arquivo inválido.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+  
+  const { userId, avatar } = validatedFields.data;
+  
+  try {
+    const bucket = storageAdmin.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+    const filePath = `avatars/${userId}`;
+    const fileUpload = bucket.file(filePath);
+
+    const buffer = Buffer.from(await avatar.arrayBuffer());
+
+    await fileUpload.save(buffer, {
+      metadata: { contentType: avatar.type },
+    });
+    
+    // Make the file public to get a URL
+    await fileUpload.makePublic();
+    const downloadURL = fileUpload.publicUrl();
+    
+    await db.collection('users').doc(userId).update({
+        avatarUrl: downloadURL,
+    });
+    
+    revalidatePath('/profile');
+    revalidatePath('/(dashboard)', 'layout'); // Revalidate layout to update header avatar
+
+    return { success: true, message: 'Avatar atualizado com sucesso!', errors: null };
+
+  } catch (error) {
+    console.error('Error uploading avatar via server action:', error);
+    return { success: false, message: 'Ocorreu um erro ao fazer upload do avatar.', errors: null };
+  }
 }
