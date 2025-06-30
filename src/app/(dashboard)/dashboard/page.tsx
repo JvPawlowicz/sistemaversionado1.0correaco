@@ -8,7 +8,7 @@ import { usePatient } from '@/contexts/PatientContext';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { isToday, startOfMonth, endOfMonth, isWithinInterval, isFuture, parseISO, compareAsc } from 'date-fns';
+import { isToday, startOfMonth, endOfMonth, isWithinInterval, parseISO, compareAsc } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnit } from '@/contexts/UnitContext';
 import { AppointmentsChart } from '@/components/dashboard/appointments-chart';
@@ -57,6 +57,11 @@ export default function DashboardPage() {
   const { currentUser } = useAuth();
   const { selectedUnitId } = useUnit();
 
+  const [isClient, setIsClient] = React.useState(false);
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const loading = patientsLoading || scheduleLoading || usersLoading;
 
   // --- Data Calculations ---
@@ -71,12 +76,16 @@ export default function DashboardPage() {
 
   // Therapist-specific Stats & Upcoming Appointments
   const myAppointments = React.useMemo(() => {
-    return appointments.filter(a => a.professionalName === currentUser?.name);
+    if (!currentUser) return [];
+    return appointments.filter(a => a.professionalName === currentUser.name);
   }, [appointments, currentUser]);
 
   const upcomingAppointments = React.useMemo(() => {
+    if (!isClient) return [];
+    
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+
     return appointments
       .filter(a => {
         const appointmentDate = parseISO(`${a.date}T${a.time}:00`);
@@ -88,7 +97,7 @@ export default function DashboardPage() {
         return compareAsc(dateA, dateB);
       })
       .slice(0, 5);
-  }, [appointments, currentUser]);
+  }, [appointments, currentUser, isClient]);
 
   const myTodaysAppointments = myAppointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length;
   const myMonthlyAppointments = myAppointments.filter(a => isWithinInterval(new Date(a.date + 'T00:00:00'), { start: monthStart, end: monthEnd })).length;

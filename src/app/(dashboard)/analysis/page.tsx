@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, TrendingUp, TrendingDown, Clock, Activity, Download, SlidersHorizontal, Trash, FileSignature, ListChecks, Users, Shield } from 'lucide-react';
+import { TrendingUp, TrendingDown, Clock, Activity, Download, SlidersHorizontal, Trash, FileSignature, ListChecks, Users, Shield } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { subDays, isWithinInterval, startOfDay, addDays, isAfter, isBefore, isEqual, format, differenceInYears } from 'date-fns';
@@ -19,7 +19,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useUnit } from '@/contexts/UnitContext';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
-import type { Appointment, Service, EvolutionRecord, HealthPlan } from '@/lib/types';
+import type { Appointment, EvolutionRecord } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -93,6 +93,36 @@ export default function AnalysisAndReportsPage() {
   
   const [evolutions, setEvolutions] = React.useState<(EvolutionRecord & { patientName: string; patientId: string; })[]>([]);
   const [loadingEvolutions, setLoadingEvolutions] = React.useState(true);
+  
+  const [appointmentFilters, setAppointmentFilters] = React.useState({
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+    patientId: '',
+    professionalName: '',
+    serviceId: '',
+    status: '',
+    healthPlanId: '',
+  });
+  const [evolutionFilters, setEvolutionFilters] = React.useState({
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+    patientId: '',
+    author: '',
+  });
+
+  React.useEffect(() => {
+    // This runs only on the client after mount, avoiding hydration mismatch
+    setAppointmentFilters(prev => ({
+      ...prev,
+      startDate: addDays(new Date(), -30),
+      endDate: new Date(),
+    }));
+    setEvolutionFilters(prev => ({
+      ...prev,
+      startDate: addDays(new Date(), -30),
+      endDate: new Date(),
+    }));
+  }, []);
 
   const isLoading = scheduleLoading || patientsLoading || usersLoading || unitsLoading || loadingEvolutions;
   
@@ -167,15 +197,6 @@ export default function AnalysisAndReportsPage() {
 
   // --- Appointments Report Logic ---
   const [filteredAppointments, setFilteredAppointments] = React.useState<Appointment[]>([]);
-  const [appointmentFilters, setAppointmentFilters] = React.useState({
-    startDate: addDays(new Date(), -30),
-    endDate: new Date(),
-    patientId: '',
-    professionalName: '',
-    serviceId: '',
-    status: '',
-    healthPlanId: '',
-  });
   
   const availableServices = selectedUnit?.services || [];
   const availableHealthPlans = selectedUnit?.healthPlans || [];
@@ -188,10 +209,10 @@ export default function AnalysisAndReportsPage() {
   const applyAppointmentFilters = React.useCallback(() => {
     let result = appointments;
     if (appointmentFilters.startDate) {
-      result = result.filter(app => isEqual(new Date(app.date), appointmentFilters.startDate) || isAfter(new Date(app.date), appointmentFilters.startDate));
+      result = result.filter(app => isEqual(new Date(app.date + 'T00:00:00'), appointmentFilters.startDate!) || isAfter(new Date(app.date + 'T00:00:00'), appointmentFilters.startDate!));
     }
     if (appointmentFilters.endDate) {
-      result = result.filter(app => isEqual(new Date(app.date), appointmentFilters.endDate) || isBefore(new Date(app.date), appointmentFilters.endDate));
+      result = result.filter(app => isEqual(new Date(app.date + 'T00:00:00'), appointmentFilters.endDate!) || isBefore(new Date(app.date + 'T00:00:00'), appointmentFilters.endDate!));
     }
     if (appointmentFilters.patientId) result = result.filter(app => app.patientId === appointmentFilters.patientId);
     if (appointmentFilters.professionalName) result = result.filter(app => app.professionalName === appointmentFilters.professionalName);
@@ -247,12 +268,6 @@ export default function AnalysisAndReportsPage() {
 
   // --- Evolutions Report Logic ---
   const [filteredEvolutions, setFilteredEvolutions] = React.useState<(EvolutionRecord & { patientName: string; patientId: string; })[]>([]);
-  const [evolutionFilters, setEvolutionFilters] = React.useState({
-    startDate: addDays(new Date(), -30),
-    endDate: new Date(),
-    patientId: '',
-    author: '',
-  });
 
   const evolutionAnalysisData = React.useMemo(() => {
     const endDate = new Date();
@@ -287,10 +302,10 @@ export default function AnalysisAndReportsPage() {
   const applyEvolutionFilters = React.useCallback(() => {
     let result = evolutions;
     if (evolutionFilters.startDate) {
-        result = result.filter(evo => evo.createdAt && isAfter(evo.createdAt.toDate(), evolutionFilters.startDate));
+        result = result.filter(evo => evo.createdAt && isAfter(evo.createdAt.toDate(), evolutionFilters.startDate!));
     }
     if (evolutionFilters.endDate) {
-        result = result.filter(evo => evo.createdAt && isBefore(evo.createdAt.toDate(), evolutionFilters.endDate));
+        result = result.filter(evo => evo.createdAt && isBefore(evo.createdAt.toDate(), evolutionFilters.endDate!));
     }
     if (evolutionFilters.patientId) result = result.filter(evo => evo.patientId === evolutionFilters.patientId);
     if (evolutionFilters.author) result = result.filter(evo => evo.author === evolutionFilters.author);
@@ -450,7 +465,7 @@ export default function AnalysisAndReportsPage() {
             <Card>
               <CardHeader><CardTitle>Filtros do Relatório</CardTitle><CardDescription>Selecione os critérios para gerar o relatório de agendamentos.</CardDescription></CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                <div className="flex flex-col space-y-2"><label className="text-sm font-medium">Período</label><div className="flex items-center gap-2"><DatePicker value={appointmentFilters.startDate} onChange={date => date && handleAppointmentFilterChange('startDate', startOfDay(date))} /><span className="text-muted-foreground">-</span><DatePicker value={appointmentFilters.endDate} onChange={date => date && handleAppointmentFilterChange('endDate', startOfDay(date))} /></div></div>
+                <div className="flex flex-col space-y-2"><label className="text-sm font-medium">Período</label><div className="flex items-center gap-2"><DatePicker value={appointmentFilters.startDate || undefined} onChange={date => date && handleAppointmentFilterChange('startDate', startOfDay(date))} /><span className="text-muted-foreground">-</span><DatePicker value={appointmentFilters.endDate || undefined} onChange={date => date && handleAppointmentFilterChange('endDate', startOfDay(date))} /></div></div>
                 <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Paciente</label><Select onValueChange={value => handleAppointmentFilterChange('patientId', value)} value={appointmentFilters.patientId} disabled={isLoading}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
                 <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Profissional</label><Select onValueChange={value => handleAppointmentFilterChange('professionalName', value)} value={appointmentFilters.professionalName} disabled={isLoading}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{professionals.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent></Select></div>
                 <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Serviço</label><Select onValueChange={value => handleAppointmentFilterChange('serviceId', value)} value={appointmentFilters.serviceId} disabled={isLoading || availableServices.length === 0}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{availableServices.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
@@ -461,7 +476,7 @@ export default function AnalysisAndReportsPage() {
             </Card>
             <Card>
               <CardHeader className="flex-row items-center justify-between"><div><CardTitle>Resultados</CardTitle><CardDescription>{filteredAppointments.length} registro(s) encontrado(s).</CardDescription></div><Button onClick={handleExportAppointmentsPdf} variant="outline" disabled={filteredAppointments.length === 0}><Download className="mr-2" /> Exportar PDF</Button></CardHeader>
-              <CardContent><div className="rounded-lg border bg-card text-card-foreground shadow-sm"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Paciente</TableHead><TableHead>Serviço</TableHead><TableHead className="hidden md:table-cell">Profissional</TableHead><TableHead className="hidden sm:table-cell">Status</TableHead></TableRow></TableHeader><TableBody>{isLoading ? (<TableRow><TableCell colSpan={5} className="text-center h-24"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>) : filteredAppointments.length > 0 ? (filteredAppointments.map(app => (<TableRow key={app.id}><TableCell><div className="font-medium">{format(new Date(app.date + 'T00:00'), 'dd/MM/yyyy')}</div><div className="text-sm text-muted-foreground">{`${app.time}-${app.endTime}`}</div></TableCell><TableCell>{app.patientName}</TableCell><TableCell>{app.serviceName}</TableCell><TableCell className="hidden md:table-cell">{app.professionalName}</TableCell><TableCell className="hidden sm:table-cell"><Badge variant={app.status === 'Realizado' ? 'default' : 'secondary'}>{app.status}</Badge></TableCell></TableRow>))) : (<TableRow><TableCell colSpan={5} className="text-center h-24">Nenhum resultado. Aplique os filtros para gerar um relatório.</TableCell></TableRow>)}</TableBody></Table></div></CardContent>
+              <CardContent><div className="rounded-lg border bg-card text-card-foreground shadow-sm"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Paciente</TableHead><TableHead>Serviço</TableHead><TableHead className="hidden md:table-cell">Profissional</TableHead><TableHead className="hidden sm:table-cell">Status</TableHead></TableRow></TableHeader><TableBody>{isLoading ? (<TableRow><TableCell colSpan={5} className="text-center h-24"><Loader2 className="animate-spin mx-auto" /></TableCell></TableRow>) : filteredAppointments.length > 0 ? (filteredAppointments.map(app => (<TableRow key={app.id}><TableCell><div className="font-medium">{format(new Date(app.date + 'T00:00:00'), 'dd/MM/yyyy')}</div><div className="text-sm text-muted-foreground">{`${app.time}-${app.endTime}`}</div></TableCell><TableCell>{app.patientName}</TableCell><TableCell>{app.serviceName}</TableCell><TableCell className="hidden md:table-cell">{app.professionalName}</TableCell><TableCell className="hidden sm:table-cell"><Badge variant={app.status === 'Realizado' ? 'default' : 'secondary'}>{app.status}</Badge></TableCell></TableRow>))) : (<TableRow><TableCell colSpan={5} className="text-center h-24">Nenhum resultado. Aplique os filtros para gerar um relatório.</TableCell></TableRow>)}</TableBody></Table></div></CardContent>
             </Card>
           </div>
         </TabsContent>
@@ -492,7 +507,7 @@ export default function AnalysisAndReportsPage() {
                     <Card>
                         <CardHeader><CardTitle>Filtros do Relatório de Evoluções</CardTitle><CardDescription>Selecione os critérios para gerar o relatório.</CardDescription></CardHeader>
                         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            <div className="flex flex-col space-y-2"><label className="text-sm font-medium">Período</label><div className="flex items-center gap-2"><DatePicker value={evolutionFilters.startDate} onChange={date => date && handleEvolutionFilterChange('startDate', startOfDay(date))} /><span className="text-muted-foreground">-</span><DatePicker value={evolutionFilters.endDate} onChange={date => date && handleEvolutionFilterChange('endDate', startOfDay(date))} /></div></div>
+                            <div className="flex flex-col space-y-2"><label className="text-sm font-medium">Período</label><div className="flex items-center gap-2"><DatePicker value={evolutionFilters.startDate || undefined} onChange={date => date && handleEvolutionFilterChange('startDate', startOfDay(date))} /><span className="text-muted-foreground">-</span><DatePicker value={evolutionFilters.endDate || undefined} onChange={date => date && handleEvolutionFilterChange('endDate', startOfDay(date))} /></div></div>
                             <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Paciente</label><Select onValueChange={value => handleEvolutionFilterChange('patientId', value)} value={evolutionFilters.patientId} disabled={isLoading}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
                             <div className="flex flex-col space-y-1.5"><label className="text-sm font-medium">Profissional</label><Select onValueChange={value => handleEvolutionFilterChange('author', value)} value={evolutionFilters.author} disabled={isLoading}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{allAuthors.map(author => <SelectItem key={author} value={author}>{author}</SelectItem>)}</SelectContent></Select></div>
                             <div className="flex items-end gap-2 col-span-full sm:col-span-1 lg:col-span-2 xl:col-span-1"><Button onClick={applyEvolutionFilters} className="w-full sm:w-auto flex-1"><SlidersHorizontal className="mr-2" />Aplicar Filtros</Button><Button onClick={clearEvolutionFilters} className="w-full sm:w-auto" variant="outline"><Trash className="mr-2" />Limpar</Button></div>

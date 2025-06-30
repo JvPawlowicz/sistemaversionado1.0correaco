@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,8 +9,7 @@ export function Clock() {
   useEffect(() => {
     // This function is only defined and called on the client side
     const updateClock = () => {
-      const now = new Date();
-      setTime(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+      setTime(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
     };
     
     // Set initial time
