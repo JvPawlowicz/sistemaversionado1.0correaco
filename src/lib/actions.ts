@@ -259,7 +259,6 @@ export async function updateUserPasswordAction(uid: string, newPassword: string)
 }
 
 // --- Delete User Action ---
-
 export async function deleteUserAction(uid: string): Promise<{ success: boolean; message: string }> {
   const adminCheck = checkAdminInit();
   if (adminCheck) return { success: adminCheck.success, message: adminCheck.message };
@@ -267,16 +266,40 @@ export async function deleteUserAction(uid: string): Promise<{ success: boolean;
   if (!uid) {
     return { success: false, message: 'UID do usuário é obrigatório.' };
   }
+
   try {
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+
+    if (userDoc.exists && userDoc.data()?.role === 'Admin') {
+      const adminUsersSnapshot = await db.collection('users').where('role', '==', 'Admin').get();
+      if (adminUsersSnapshot.size <= 1) {
+        return { success: false, message: 'Não é possível excluir o último administrador do sistema.' };
+      }
+    }
+
     await auth.deleteUser(uid);
-    await db.collection('users').doc(uid).delete();
+    await userRef.delete();
+
     revalidatePath('/users');
     return { success: true, message: 'Usuário excluído com sucesso.' };
   } catch (error: any) {
+    if (error.code === 'auth/user-not-found') {
+      // If user is not in Auth, maybe they are an orphan in Firestore. Try deleting from DB.
+      try {
+        await db.collection('users').doc(uid).delete();
+        revalidatePath('/users');
+        return { success: true, message: 'Usuário órfão removido do banco de dados.' };
+      } catch (dbError) {
+        console.error("Error deleting orphan user from Firestore:", dbError);
+        return { success: false, message: 'Usuário não encontrado na autenticação e falha ao remover do banco de dados.' };
+      }
+    }
     console.error("Error deleting user:", error);
     return { success: false, message: 'Falha ao excluir o usuário.' };
   }
 }
+
 
 // --- Unit and Service Actions ---
 const unitFormSchema = z.object({

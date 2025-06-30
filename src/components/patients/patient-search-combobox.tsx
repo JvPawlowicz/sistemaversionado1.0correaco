@@ -42,9 +42,9 @@ export function PatientSearchComboBox({ patients, selectedPatientId, onSelectPat
               {patients.map((patient) => (
                 <CommandItem
                   key={patient.id}
-                  value={patient.name}
-                  onSelect={() => {
-                    onSelectPatient(patient.id === selectedPatientId ? null : patient.id);
+                  value={patient.id}
+                  onSelect={(currentValue) => {
+                    onSelectPatient(currentValue === selectedPatientId ? null : currentValue);
                     setOpen(false);
                   }}
                 >
