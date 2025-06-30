@@ -20,6 +20,7 @@ interface ScheduleContextType {
   addAppointment: (data: AddAppointmentData) => Promise<void>;
   deleteAppointment: (appointmentId: string) => Promise<void>;
   updateAppointmentStatus: (appointmentId: string, status: 'Realizado' | 'Faltou' | 'Cancelado') => Promise<void>;
+  fetchScheduleData: () => Promise<void>;
 }
 
 export interface AddAppointmentData {
@@ -239,7 +240,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ScheduleContext.Provider value={{ appointments, timeBlocks, loading, error, addAppointment, deleteAppointment, updateAppointmentStatus }}>
+    <ScheduleContext.Provider value={{ appointments, timeBlocks, loading, error, addAppointment, deleteAppointment, updateAppointmentStatus, fetchScheduleData }}>
       {children}
     </ScheduleContext.Provider>
   );

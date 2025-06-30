@@ -1824,3 +1824,62 @@ export async function mergePatientsAction(prevState: any, formData: FormData) {
     return { success: false, message: 'Ocorreu um erro inesperado durante a mesclagem.', errors: null };
   }
 }
+
+// --- Update Appointment Action ---
+const UpdateAppointmentSchema = z.object({
+  appointmentId: z.string().min(1, 'ID do agendamento é obrigatório.'),
+  serviceId: z.string().min(1, 'Selecione um serviço.'),
+  professionalName: z.string().min(1, 'Selecione um profissional.'),
+  date: z.string().min(1, { message: 'Selecione uma data.' }),
+  time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Formato de hora inválido.' }),
+  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Formato de hora inválido.' }),
+  room: z.string().min(1, { message: 'Selecione uma sala.' }),
+}).refine(data => data.endTime > data.time, {
+  message: "O horário final deve ser após o horário inicial.",
+  path: ["endTime"],
+});
+
+export async function updateAppointmentAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = UpdateAppointmentSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Dados inválidos.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  const { appointmentId, ...updateData } = validatedFields.data;
+
+  try {
+    const appointmentRef = db.collection('appointments').doc(appointmentId);
+    const appointmentDoc = await appointmentRef.get();
+    if (!appointmentDoc.exists) {
+      return { success: false, message: 'Agendamento não encontrado.', errors: null };
+    }
+    const appointment = appointmentDoc.data() as Appointment;
+    
+    // Fetch service name to keep it consistent
+    let serviceName = '';
+    const serviceDoc = await db.collection('units').doc(appointment.unitId).collection('services').doc(updateData.serviceId).get();
+    if (serviceDoc.exists) {
+        serviceName = serviceDoc.data()?.name || '';
+    }
+
+    await appointmentRef.update({
+      ...updateData,
+      serviceName,
+    });
+    
+    revalidatePath('/schedule');
+    return { success: true, message: 'Agendamento atualizado com sucesso!', errors: null };
+
+  } catch(error) {
+    console.error('Error updating appointment:', error);
+    return { success: false, message: 'Ocorreu um erro ao atualizar o agendamento.', errors: null };
+  }
+}

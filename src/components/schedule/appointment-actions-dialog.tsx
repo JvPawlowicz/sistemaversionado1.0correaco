@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useActionState, useEffect, useRef } from 'react';
+import { useActionState, useEffect, useMemo, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import {
@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment } from '@/lib/types';
-import { Calendar, Clock, User, Home, CheckCircle, XCircle, AlertCircle, Trash2, Stethoscope, ArrowLeft, Loader2, Shield } from 'lucide-react';
+import { Calendar, Clock, User, Home, CheckCircle, XCircle, AlertCircle, Trash2, Stethoscope, ArrowLeft, Loader2, Shield, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
@@ -26,7 +26,10 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { completeAppointmentWithEvolutionAction } from '@/lib/actions';
+import { completeAppointmentWithEvolutionAction, updateAppointmentAction } from '@/lib/actions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useUser } from '@/contexts/UserContext';
+import { useUnit } from '@/contexts/UnitContext';
 
 interface AppointmentActionsDialogProps {
   isOpen: boolean;
@@ -45,33 +48,54 @@ function EvolutionSubmitButton() {
   return (
     <Button type="submit" disabled={pending}>
       {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      Salvar e Concluir Atendimento
+      Salvar e Concluir
+    </Button>
+  );
+}
+
+function EditSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      Salvar Alterações
     </Button>
   );
 }
 
 
 export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: AppointmentActionsDialogProps) {
-  const { updateAppointmentStatus, deleteAppointment } = useSchedule();
+  const { updateAppointmentStatus, deleteAppointment, fetchScheduleData } = useSchedule();
   const { toast } = useToast();
   const { currentUser } = useAuth();
   
-  const [view, setView] = React.useState<'actions' | 'evolution'>('actions');
+  const [view, setView] = React.useState<'actions' | 'evolution' | 'edit'>('actions');
   const [evolutionState, evolutionFormAction] = useActionState(completeAppointmentWithEvolutionAction, evolutionInitialState);
+  const [editState, editFormAction] = useActionState(updateAppointmentAction, evolutionInitialState);
+  
   const evolutionFormRef = useRef<HTMLFormElement>(null);
+  const editFormRef = useRef<HTMLFormElement>(null);
+  
+  // State for the edit form
+  const { users, loading: usersLoading } = useUser();
+  const { units, loading: unitsLoading } = useUnit();
+  const [serviceId, setServiceId] = React.useState('');
+  const [professionalName, setProfessionalName] = React.useState('');
 
   // Reset view when appointment changes or dialog opens
   useEffect(() => {
     if (isOpen) {
       setView('actions');
-      // Reset form state if it was previously in error
-      if (evolutionFormRef.current) {
-        evolutionFormRef.current.reset();
+      if (appointment) {
+        setServiceId(appointment.serviceId);
+        setProfessionalName(appointment.professionalName);
       }
+      if (evolutionFormRef.current) evolutionFormRef.current.reset();
+      if (editFormRef.current) editFormRef.current.reset();
     }
   }, [isOpen, appointment]);
 
-  // Handle successful form submission
+  // Handle successful form submissions
   useEffect(() => {
     if (evolutionState.success) {
       toast({ title: 'Sucesso!', description: evolutionState.message });
@@ -80,6 +104,16 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
       toast({ variant: 'destructive', title: 'Erro', description: evolutionState.message });
     }
   }, [evolutionState, onOpenChange, toast]);
+
+  useEffect(() => {
+    if (editState.success) {
+      toast({ title: 'Sucesso!', description: editState.message });
+      onOpenChange(false);
+    } else if (editState.message && !editState.errors) {
+      toast({ variant: 'destructive', title: 'Erro', description: editState.message });
+    }
+  }, [editState, onOpenChange, toast]);
+
 
   const handleUpdateStatus = async (status: 'Faltou' | 'Cancelado') => {
     if (!appointment) return;
@@ -93,7 +127,21 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
     onOpenChange(false);
   };
 
+  // Memoized data for the edit form
+  const selectedUnit = useMemo(() => units.find(u => u.id === appointment?.unitId), [units, appointment]);
+  const availableServices = selectedUnit?.services || [];
+  const selectedService = useMemo(() => availableServices.find(s => s.id === serviceId), [availableServices, serviceId]);
+  const availableProfessionals = useMemo(() => {
+    if (!selectedService) return [];
+    return users.filter(user => selectedService.professionalIds.includes(user.id));
+  }, [users, selectedService]);
+  const availableRooms = selectedUnit?.rooms || [];
+
   if (!appointment) return null;
+  
+  const isLoading = usersLoading || unitsLoading;
+  const canEditProfessional = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator' || currentUser?.role === 'Receptionist';
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -146,6 +194,13 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
                         </Button>
                     </div>
                  </div>
+                 <div className="pt-2">
+                    <h4 className="font-medium">Outras Ações</h4>
+                    <Button variant="outline" className="w-full justify-start mt-2" onClick={() => setView('edit')}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar Agendamento
+                    </Button>
+                </div>
             </div>
             <DialogFooter className="justify-between sm:justify-between w-full">
                 <div className="flex gap-2">
@@ -220,6 +275,86 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
                 <EvolutionSubmitButton />
             </DialogFooter>
           </form>
+        )}
+        
+        {view === 'edit' && (
+            <form ref={editFormRef} action={editFormAction}>
+              <DialogHeader>
+                <DialogTitle>Editar Agendamento</DialogTitle>
+                <DialogDescription>Ajuste os detalhes do agendamento para {appointment.patientName}.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                {editState.message && !editState.success && !editState.errors && (
+                    <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                        <CircleAlert className="h-4 w-4" />
+                        <p>{editState.message}</p>
+                    </div>
+                )}
+                <input type="hidden" name="appointmentId" value={appointment.id} />
+                
+                <div className="space-y-2">
+                  <Label>Paciente</Label>
+                  <Input value={appointment.patientName} disabled />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="service">Serviço</Label>
+                  <Select name="serviceId" onValueChange={setServiceId} defaultValue={appointment.serviceId} required disabled={isLoading}>
+                    <SelectTrigger id="service"><SelectValue placeholder="Selecione um serviço" /></SelectTrigger>
+                    <SelectContent>
+                      {availableServices.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {editState.errors?.serviceId && <p className="text-xs text-destructive mt-1">{editState.errors.serviceId[0]}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="professional">Profissional</Label>
+                  <Select name="professionalName" onValueChange={setProfessionalName} value={professionalName} required disabled={isLoading || !canEditProfessional || availableProfessionals.length === 0}>
+                    <SelectTrigger id="professional"><SelectValue placeholder="Selecione um profissional" /></SelectTrigger>
+                    <SelectContent>
+                        {availableProfessionals.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {editState.errors?.professionalName && <p className="text-xs text-destructive mt-1">{editState.errors.professionalName[0]}</p>}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="date">Data</Label>
+                        <Input id="date" name="date" type="date" defaultValue={appointment.date} required disabled={isLoading}/>
+                        {editState.errors?.date && <p className="text-xs text-destructive mt-1">{editState.errors.date[0]}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="time">Horário</Label>
+                        <div className="flex items-center gap-2">
+                            <Input id="time" name="time" type="time" defaultValue={appointment.time} required disabled={isLoading}/>
+                            <Input id="endTime" name="endTime" type="time" defaultValue={appointment.endTime} required disabled={isLoading}/>
+                        </div>
+                        {editState.errors?.endTime && <p className="text-xs text-destructive mt-1">{editState.errors.endTime[0]}</p>}
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="room">Sala</Label>
+                  <Select name="room" defaultValue={appointment.room} required disabled={isLoading || availableRooms.length === 0}>
+                    <SelectTrigger id="room"><SelectValue placeholder="Selecione uma sala" /></SelectTrigger>
+                    <SelectContent>
+                      {availableRooms.sort().map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {editState.errors?.room && <p className="text-xs text-destructive mt-1">{editState.errors.room[0]}</p>}
+                </div>
+
+              </div>
+              <DialogFooter className="justify-between">
+                <Button type="button" variant="outline" onClick={() => setView('actions')}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Voltar
+                </Button>
+                <EditSubmitButton />
+              </DialogFooter>
+            </form>
         )}
       </DialogContent>
     </Dialog>
