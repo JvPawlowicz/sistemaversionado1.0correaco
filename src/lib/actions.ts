@@ -1723,7 +1723,7 @@ export async function mergePatientsAction(prevState: any, formData: FormData) {
   });
 
   if (!validatedFields.success) {
-    return { success: false, message: validatedFields.error.errors[0].message };
+    return { success: false, message: validatedFields.error.errors[0].message, errors: null };
   }
 
   const { primaryPatientId, secondaryPatientId } = validatedFields.data;
@@ -1738,16 +1738,42 @@ export async function mergePatientsAction(prevState: any, formData: FormData) {
     const secondaryDoc = await secondaryPatientRef.get();
 
     if (!primaryDoc.exists || !secondaryDoc.exists) {
-      return { success: false, message: 'Um ou ambos os pacientes não foram encontrados.' };
+      return { success: false, message: 'Um ou ambos os pacientes não foram encontrados.', errors: null };
     }
     const primaryData = primaryDoc.data() as Patient;
     const secondaryData = secondaryDoc.data() as Patient;
     const primaryPatientName = primaryData.name;
 
-    // 2. Merge Unit IDs
-    const mergedUnitIds = [...new Set([...primaryData.unitIds, ...secondaryData.unitIds])];
-    batch.update(primaryPatientRef, { unitIds: mergedUnitIds });
+    // 2. Merge data fields
+    const mergedData: Partial<Patient> = {};
+    const fieldsToMerge: (keyof Patient)[] = [
+        'email', 'phone', 'dob', 'gender', 'cpf', 'rg', 'maritalStatus', 'profession', 
+        'cns', 'healthPlanId', 'healthPlanName', 'motherName', 'fatherName', 'additionalInfo', 
+        'diagnosis', 'referringProfessional', 'address'
+    ];
 
+    for (const field of fieldsToMerge) {
+        if (!primaryData[field] && secondaryData[field]) {
+            mergedData[field] = secondaryData[field];
+        }
+    }
+
+    if (secondaryData.imageUseConsent && !primaryData.imageUseConsent) {
+        mergedData.imageUseConsent = true;
+    }
+    if (!primaryData.treatmentPlan && secondaryData.treatmentPlan) {
+        mergedData.treatmentPlan = secondaryData.treatmentPlan;
+    }
+    if ((!primaryData.avatarUrl || primaryData.avatarUrl === DEFAULT_AVATAR_URL) && (secondaryData.avatarUrl && secondaryData.avatarUrl !== DEFAULT_AVATAR_URL)) {
+        mergedData.avatarUrl = secondaryData.avatarUrl;
+    }
+    const mergedUnitIds = [...new Set([...primaryData.unitIds, ...secondaryData.unitIds])];
+    mergedData.unitIds = mergedUnitIds;
+
+    if (Object.keys(mergedData).length > 0) {
+        batch.update(primaryPatientRef, mergedData);
+    }
+    
     // 3. Re-associate top-level collections
     const collectionsToUpdate = ['appointments', 'assessments'];
     for (const collectionName of collectionsToUpdate) {
@@ -1791,10 +1817,10 @@ export async function mergePatientsAction(prevState: any, formData: FormData) {
     });
 
     revalidatePath('/patients');
-    return { success: true, message: 'Pacientes mesclados com sucesso!' };
+    return { success: true, message: 'Pacientes mesclados com sucesso!', errors: null };
 
   } catch (error) {
     console.error("Error merging patients:", error);
-    return { success: false, message: 'Ocorreu um erro inesperado durante a mesclagem.' };
+    return { success: false, message: 'Ocorreu um erro inesperado durante a mesclagem.', errors: null };
   }
 }

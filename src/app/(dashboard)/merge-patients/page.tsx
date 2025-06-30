@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Label } from '@/components/ui/label';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 const initialState = {
   success: false,
@@ -30,6 +35,68 @@ function SubmitButton() {
     </Button>
   );
 }
+
+function PatientComparisonCard({ patient, title }: { patient: Patient; title: string }) {
+  const [counts, setCounts] = React.useState({ appointments: 0, evolutions: 0, documents: 0 });
+  const [loading, setLoading] = React.useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!patient || !db) return;
+      setLoading(true);
+      try {
+        const appointmentsSnap = await getDocs(query(collection(db, 'appointments'), where('patientId', '==', patient.id)));
+        const evolutionsSnap = await getDocs(collection(db, 'patients', patient.id, 'evolutionRecords'));
+        const documentsSnap = await getDocs(collection(db, 'patients', patient.id, 'documents'));
+        
+        setCounts({
+          appointments: appointmentsSnap.size,
+          evolutions: evolutionsSnap.size,
+          documents: documentsSnap.size,
+        });
+      } catch (error) {
+        console.error("Error fetching patient comparison data:", error);
+        setCounts({ appointments: 0, evolutions: 0, documents: 0 });
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [patient]);
+
+  return (
+    <Card className="flex-1">
+      <CardHeader className="bg-muted/50">
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{patient.name}</CardDescription>
+      </CardHeader>
+      <CardContent className="p-4 text-sm space-y-3">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Telefone:</span>
+          <span className="font-medium">{patient.phone || 'N/A'}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">E-mail:</span>
+          <span className="font-medium">{patient.email || 'N/A'}</span>
+        </div>
+        <Separator />
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Agendamentos:</span>
+          {loading ? <Skeleton className="h-5 w-5" /> : <span className="font-bold">{counts.appointments}</span>}
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Evoluções:</span>
+          {loading ? <Skeleton className="h-5 w-5" /> : <span className="font-bold">{counts.evolutions}</span>}
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Documentos:</span>
+           {loading ? <Skeleton className="h-5 w-5" /> : <span className="font-bold">{counts.documents}</span>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 export default function MergePatientsPage() {
   const { currentUser } = useAuth();
@@ -84,7 +151,7 @@ export default function MergePatientsPage() {
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Ação Irreversível</AlertTitle>
         <AlertDescription>
-          A mesclagem de pacientes é uma ação permanente. O registro do "Paciente Duplicado" será **excluído** e todos os seus dados (agendamentos, evoluções, documentos) serão transferidos para o "Paciente Principal". Proceda com extrema cautela.
+          A mesclagem de pacientes é uma ação permanente. O registro do "Paciente Duplicado" será **excluído** e todos os seus dados serão transferidos para o "Paciente Principal". Proceda com extrema cautela.
         </AlertDescription>
       </Alert>
 
@@ -123,10 +190,13 @@ export default function MergePatientsPage() {
           {primaryPatient && secondaryPatient && (
             <CardFooter className="flex-col items-start gap-4 border-t pt-6">
               <h3 className="font-semibold">Resumo da Mesclagem</h3>
-              <div className="flex w-full items-center justify-center gap-4 rounded-lg border p-4">
-                <PatientInfoCard patient={primaryPatient} title="Manter Este Perfil" />
-                <ArrowRight className="h-8 w-8 shrink-0 text-muted-foreground" />
-                <PatientInfoCard patient={secondaryPatient} title="Excluir Este Perfil" />
+               <p className="text-sm text-muted-foreground">Revise os dados abaixo. Itens do "Paciente Duplicado" serão mesclados ao "Paciente Principal" se o campo correspondente no principal estiver vazio. Todos os registros associados (agendamentos, evoluções, etc.) serão transferidos.</p>
+              <div className="flex w-full items-start justify-center gap-4 rounded-lg p-2">
+                <PatientComparisonCard patient={primaryPatient} title="Manter Este Perfil" />
+                <div className="flex h-full flex-col justify-center pt-24">
+                   <ArrowRight className="h-8 w-8 shrink-0 text-muted-foreground" />
+                </div>
+                <PatientComparisonCard patient={secondaryPatient} title="Mesclar e Excluir" />
               </div>
             </CardFooter>
           )}
@@ -146,17 +216,6 @@ export default function MergePatientsPage() {
           </Card>
         )}
       </form>
-    </div>
-  );
-}
-
-function PatientInfoCard({ patient, title }: { patient: Patient, title: string }) {
-  return (
-    <div className="flex-1 rounded-md bg-secondary/50 p-4">
-      <h4 className="text-sm font-semibold text-muted-foreground">{title}</h4>
-      <p className="font-bold">{patient.name}</p>
-      <p className="text-xs text-muted-foreground">ID: {patient.id}</p>
-      <p className="text-xs text-muted-foreground">Unidades: {patient.unitIds.join(', ')}</p>
     </div>
   );
 }
