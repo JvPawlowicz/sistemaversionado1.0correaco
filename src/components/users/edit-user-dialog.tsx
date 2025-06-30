@@ -26,6 +26,7 @@ import { updateUserAction } from '@/lib/actions';
 import type { User } from '@/lib/types';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 interface EditUserDialogProps {
   isOpen: boolean;
@@ -94,7 +95,7 @@ export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogPro
         if (!open) handleClose();
         else onOpenChange(true);
       }}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <form ref={formRef} action={formAction}>
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
@@ -102,7 +103,7 @@ export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogPro
               Altere as informações e permissões para <span className="font-semibold">{user.name}</span>.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
             {state.message && !state.success && !state.errors && (
                 <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                     <CircleAlert className="h-4 w-4" />
@@ -110,34 +111,51 @@ export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogPro
                 </div>
             )}
             <input type="hidden" name="uid" value={user.id} />
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Nome</Label>
-              <div className="col-span-3">
-                <Input id="name" name="name" defaultValue={user.name} required />
-                {state.errors?.name && <p className="text-xs text-destructive mt-1">{state.errors.name[0]}</p>}
-              </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input id="name" name="name" defaultValue={user.name} required />
+              {state.errors?.name && <p className="text-xs text-destructive mt-1">{state.errors.name[0]}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input id="email" name="email" type="email" defaultValue={user.email} required />
+              {state.errors?.email && <p className="text-xs text-destructive mt-1">{state.errors.email[0]}</p>}
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role" className="text-right">Função</Label>
-              <div className="col-span-3">
-                <Select name="role" defaultValue={user.role} required>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Selecione uma função" />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="Therapist">Terapeuta</SelectItem>
-                     <SelectItem value="Coordinator">Coordenador</SelectItem>
-                     <SelectItem value="Admin">Admin</SelectItem>
-                     <SelectItem value="Receptionist">Recepcionista</SelectItem>
-                   </SelectContent>
-                 </Select>
-                 {state.errors?.role && <p className="text-xs text-destructive mt-1">{state.errors.role[0]}</p>}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Nova Senha</Label>
+              <Input id="password" name="password" type="password" placeholder="Deixe em branco para não alterar" />
+              {state.errors?.password && <p className="text-xs text-destructive mt-1">{state.errors.password[0]}</p>}
             </div>
-            <div className="grid grid-cols-4 items-start gap-4 pt-2">
-               <Label htmlFor="units" className="text-right pt-2">Unidades</Label>
-               <div className="col-span-3">
+
+            <Alert variant="destructive">
+                <CircleAlert className="h-4 w-4" />
+                <AlertTitle>Atenção</AlertTitle>
+                <AlertDescription>
+                    Alterar o e-mail ou a senha desconectará o usuário de todas as sessões ativas.
+                </AlertDescription>
+            </Alert>
+            
+            <div className="space-y-2">
+              <Label htmlFor="role">Função</Label>
+              <Select name="role" defaultValue={user.role} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma função" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Therapist">Terapeuta</SelectItem>
+                    <SelectItem value="Coordinator">Coordenador</SelectItem>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="Receptionist">Recepcionista</SelectItem>
+                  </SelectContent>
+                </Select>
+                {state.errors?.role && <p className="text-xs text-destructive mt-1">{state.errors.role[0]}</p>}
+            </div>
+
+            <div className="space-y-2">
+               <Label htmlFor="units">Unidades</Label>
                  {selectedUnitIds.map(id => <input key={id} type="hidden" name="unitIds" value={id} />)}
                  <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                   <PopoverTrigger asChild>
@@ -187,8 +205,8 @@ export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogPro
                   </PopoverContent>
                 </Popover>
                  {state.errors?.unitIds && <p className="text-xs text-destructive mt-1">{state.errors.unitIds[0]}</p>}
-               </div>
             </div>
+
           </div>
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>

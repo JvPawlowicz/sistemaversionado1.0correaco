@@ -127,6 +127,8 @@ export async function createUserAction(prevState: any, formData: FormData) {
 const UpdateUserSchema = z.object({
   uid: z.string().min(1, { message: 'ID do usuário é obrigatório.' }),
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
+  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
+  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }).optional().or(z.literal('')),
   role: z.enum(['Admin', 'Therapist', 'Receptionist', 'Coordinator']),
   unitIds: z.array(z.string()).min(1, { message: 'Selecione pelo menos uma unidade.' }),
 });
@@ -138,6 +140,8 @@ export async function updateUserAction(prevState: any, formData: FormData) {
   const validatedFields = UpdateUserSchema.safeParse({
     uid: formData.get('uid'),
     name: formData.get('name'),
+    email: formData.get('email'),
+    password: formData.get('password'),
     role: formData.get('role'),
     unitIds: formData.getAll('unitIds'),
   });
@@ -150,18 +154,32 @@ export async function updateUserAction(prevState: any, formData: FormData) {
     };
   }
   
-  const { uid, name, role, unitIds } = validatedFields.data;
+  const { uid, name, email, password, role, unitIds } = validatedFields.data;
 
   try {
-    await auth.updateUser(uid, { displayName: name });
-    await db.collection('users').doc(uid).update({
+    const userToUpdate: { displayName: string; email?: string; password?: string } = {
+      displayName: name,
+    };
+    if (email) userToUpdate.email = email;
+    if (password) userToUpdate.password = password;
+
+    await auth.updateUser(uid, userToUpdate);
+
+    const firestoreUpdateData: any = {
       name,
       role,
       unitIds,
-    });
+    };
+    if (email) firestoreUpdateData.email = email;
+
+    await db.collection('users').doc(uid).update(firestoreUpdateData);
+
     revalidatePath('/users');
   } catch (error: any) {
     console.error('Error updating user:', error);
+    if (error.code === 'auth/email-already-exists') {
+        return { success: false, message: 'Este e-mail já está em uso por outra conta.', errors: null };
+    }
     return { success: false, message: 'Ocorreu um erro desconhecido ao atualizar o usuário.', errors: null };
   }
 
