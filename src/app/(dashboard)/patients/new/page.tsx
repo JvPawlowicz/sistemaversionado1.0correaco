@@ -1,13 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
-
+import { Loader2, Search, UserPlus, HeartPulse, Link as LinkIcon, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,6 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePatient } from '@/contexts/PatientContext';
 import { useUnit } from '@/contexts/UnitContext';
 import type { Patient } from '@/lib/types';
+import { searchPatientsGloballyAction, linkPatientToUnitAction, createPatientAction } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getDisplayAvatarUrl } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 const patientFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
@@ -24,152 +28,196 @@ const patientFormSchema = z.object({
   dob: z.string().optional(),
   gender: z.enum(['Male', 'Female', 'Other']).optional(),
 });
-
 type PatientFormValues = z.infer<typeof patientFormSchema>;
 
 export default function NewPatientPage() {
   const [isSaving, setIsSaving] = React.useState(false);
-  const { addPatient } = usePatient();
-  const { selectedUnitId } = useUnit();
+  const [isSearching, setIsSearching] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [searchResults, setSearchResults] = React.useState<Patient[]>([]);
+  const [view, setView] = React.useState<'search' | 'create'>('search');
+  
+  const { fetchPatients } = usePatient();
+  const { units, selectedUnitId } = useUnit();
   const router = useRouter();
+  const { toast } = useToast();
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      dob: '',
-      gender: undefined,
-    },
+    defaultValues: { name: '', email: '', phone: '', dob: '', gender: undefined },
   });
+  
+  // When switching to create view, pre-fill the name from the search term
+  React.useEffect(() => {
+    if (view === 'create') {
+      form.setValue('name', searchTerm);
+    }
+  }, [view, searchTerm, form]);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim().length < 3) {
+      toast({ variant: 'destructive', title: 'Busca inválida', description: 'Digite pelo menos 3 caracteres para buscar.' });
+      return;
+    }
+    setIsSearching(true);
+    const results = await searchPatientsGloballyAction(searchTerm);
+    setSearchResults(results);
+    setIsSearching(false);
+  };
+  
+  const handleLinkPatient = async (patientId: string) => {
+    if (!selectedUnitId) return;
+    setIsSaving(true);
+    const result = await linkPatientToUnitAction(patientId, selectedUnitId);
+    if (result.success) {
+      toast({ title: 'Sucesso!', description: result.message });
+      await fetchPatients();
+      router.push('/patients');
+    } else {
+      toast({ variant: 'destructive', title: 'Erro', description: result.message });
+    }
+    setIsSaving(false);
+  };
 
   async function onSubmit(data: PatientFormValues) {
     if (!selectedUnitId) return;
     setIsSaving(true);
-
-    const newPatientData: Omit<Patient, 'id' | 'lastVisit' | 'status' | 'avatarUrl' | 'createdAt'> = {
-      name: data.name,
-      email: data.email || null,
-      phone: data.phone || null,
-      dob: data.dob || null,
-      gender: data.gender || null,
-      unitIds: [selectedUnitId],
-    };
-    
-    await addPatient(newPatientData);
+    const result = await createPatientAction(data, selectedUnitId);
+    if (result.success) {
+        toast({ title: 'Sucesso!', description: result.message });
+        await fetchPatients();
+        router.push('/patients');
+    } else {
+        toast({ variant: 'destructive', title: 'Erro', description: result.message });
+    }
     setIsSaving(false);
-    router.push('/patients');
   }
+
+  const getInitials = (name: string) => {
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
           Adicionar Novo Paciente
         </h1>
       </div>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Card>
+      
+      {view === 'search' ? (
+        <Card>
             <CardHeader>
-              <CardTitle>Informações do Paciente</CardTitle>
-              <CardDescription>Preencha os detalhes do novo paciente. Apenas o nome é obrigatório.</CardDescription>
+                <CardTitle>Passo 1: Buscar Paciente</CardTitle>
+                <CardDescription>Para evitar pacientes duplicados, busque pelo nome ou CPF antes de criar um novo cadastro. Se o paciente já existir em outra unidade, você poderá vinculá-lo à unidade atual.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome Completo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Digite o nome completo" {...field} disabled={isSaving}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>E-mail (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="email@exemplo.com" {...field} disabled={isSaving}/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Telefone (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="(00) 00000-0000" {...field} disabled={isSaving}/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="dob"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de Nascimento (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} disabled={isSaving}/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="gender"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Gênero (Opcional)</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o gênero" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Male">Masculino</SelectItem>
-                          <SelectItem value="Female">Feminino</SelectItem>
-                          <SelectItem value="Other">Outro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            <CardContent>
+                <form onSubmit={handleSearch} className="flex items-center gap-2">
+                    <Input 
+                        placeholder="Buscar por nome ou CPF..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Button type="submit" disabled={isSearching}>
+                        {isSearching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Search className="mr-2" /> Buscar
+                    </Button>
+                </form>
             </CardContent>
-            <CardFooter className="border-t px-6 py-4">
-               <div className="flex justify-end gap-2 w-full">
-                  <Button variant="outline" asChild type="button">
-                    <Link href="/patients">Cancelar</Link>
-                  </Button>
-                  <Button type="submit" disabled={isSaving || !selectedUnitId}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Salvar Paciente
-                  </Button>
+            {isSearching ? (
+                 <CardFooter className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></CardFooter>
+            ) : searchResults.length > 0 ? (
+                <CardFooter className="flex-col items-start gap-4">
+                    <h3 className="font-semibold">{searchResults.length} paciente(s) encontrado(s)</h3>
+                    <div className="w-full space-y-3">
+                        {searchResults.map(patient => {
+                            const isLinked = patient.unitIds.includes(selectedUnitId || '');
+                            const patientUnits = patient.unitIds.map(uid => units.find(u => u.id === uid)?.name).filter(Boolean);
+                            return (
+                                <div key={patient.id} className="flex items-center justify-between rounded-lg border p-4">
+                                    <div className="flex items-center gap-4">
+                                        <Avatar>
+                                            <AvatarImage src={getDisplayAvatarUrl(patient.avatarUrl)} />
+                                            <AvatarFallback>{getInitials(patient.name)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-medium">{patient.name}</p>
+                                            <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                                <Building className="h-3 w-3"/>
+                                                <span>{patientUnits.join(', ')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Button size="sm" onClick={() => handleLinkPatient(patient.id)} disabled={isLinked}>
+                                        <LinkIcon className="mr-2 h-4 w-4"/>
+                                        {isLinked ? 'Já Vinculado' : 'Vincular'}
+                                    </Button>
+                                </div>
+                            )
+                        })}
+                    </div>
+                     <Button variant="outline" className="mt-4" onClick={() => setView('create')}>
+                        Nenhum destes? Criar Novo Paciente
+                    </Button>
+                </CardFooter>
+            ) : (
+                <CardFooter className="flex-col items-center gap-4 text-center">
+                    <HeartPulse className="h-10 w-10 text-muted-foreground" />
+                    <p className="text-muted-foreground">Nenhum paciente encontrado com o termo "{searchTerm}".</p>
+                    <Button onClick={() => setView('create')}>
+                        <UserPlus className="mr-2"/>
+                        Criar Novo Paciente
+                    </Button>
+                </CardFooter>
+            )}
+        </Card>
+      ) : (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Card>
+                <CardHeader>
+                <CardTitle>Passo 2: Informações do Paciente</CardTitle>
+                <CardDescription>Preencha os detalhes do novo paciente. Apenas o nome é obrigatório.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Digite o nome completo" {...field} disabled={isSaving}/></FormControl><FormMessage /></FormItem>
+                )}/>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="email" render={({ field }) => (
+                        <FormItem><FormLabel>E-mail (Opcional)</FormLabel><FormControl><Input type="email" placeholder="email@exemplo.com" {...field} disabled={isSaving}/></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="phone" render={({ field }) => (
+                        <FormItem><FormLabel>Telefone (Opcional)</FormLabel><FormControl><Input placeholder="(00) 00000-0000" {...field} disabled={isSaving}/></FormControl><FormMessage /></FormItem>
+                    )}/>
                 </div>
-            </CardFooter>
-          </Card>
-        </form>
-      </Form>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="dob" render={({ field }) => (
+                        <FormItem><FormLabel>Data de Nascimento (Opcional)</FormLabel><FormControl><Input type="date" {...field} disabled={isSaving}/></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="gender" render={({ field }) => (
+                        <FormItem><FormLabel>Gênero (Opcional)</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}><FormControl><SelectTrigger><SelectValue placeholder="Selecione o gênero" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Male">Masculino</SelectItem><SelectItem value="Female">Feminino</SelectItem><SelectItem value="Other">Outro</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                    )}/>
+                </div>
+                </CardContent>
+                <CardFooter className="border-t px-6 py-4">
+                <div className="flex justify-between gap-2 w-full">
+                    <Button variant="outline" type="button" onClick={() => setView('search')}>Voltar para Busca</Button>
+                    <Button type="submit" disabled={isSaving || !selectedUnitId}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Salvar Paciente
+                    </Button>
+                    </div>
+                </CardFooter>
+            </Card>
+            </form>
+        </Form>
+      )}
     </div>
   );
 }

@@ -1551,3 +1551,89 @@ export async function updatePatientTreatmentPlanAction(patientId: string, plan: 
     return { success: false, message: 'Ocorreu um erro ao salvar o Plano Terapêutico Individual.' };
   }
 }
+
+// --- Search Patients Globally Action ---
+export async function searchPatientsGloballyAction(term: string): Promise<Patient[]> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return [];
+  if (!term || term.trim().length < 3) return [];
+
+  try {
+    const patientsCollection = db.collection('patients');
+    
+    // Simple case-insensitive prefix search. For production, a dedicated search service like Algolia would be better.
+    const searchTerm = term.toLowerCase();
+    const snapshot = await patientsCollection.get();
+    
+    const results = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Patient))
+      .filter(patient => patient.name.toLowerCase().includes(searchTerm) || (patient.cpf && patient.cpf.includes(searchTerm)));
+
+    return results;
+  } catch (error) {
+    console.error('Error searching patients globally:', error);
+    return [];
+  }
+}
+
+// --- Link Patient to Unit Action ---
+export async function linkPatientToUnitAction(patientId: string, unitId: string): Promise<{ success: boolean; message: string }> {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+  
+  if (!patientId || !unitId) {
+    return { success: false, message: "ID do paciente e da unidade são obrigatórios." };
+  }
+  
+  try {
+    const patientRef = db.collection('patients').doc(patientId);
+    await patientRef.update({
+      unitIds: FieldValue.arrayUnion(unitId)
+    });
+    revalidatePath('/patients');
+    return { success: true, message: "Paciente vinculado à nova unidade com sucesso!" };
+  } catch (error) {
+    console.error('Error linking patient to unit:', error);
+    return { success: false, message: 'Ocorreu um erro ao vincular o paciente.' };
+  }
+}
+
+// --- Create Patient Action ---
+const CreatePatientSchema = z.object({
+  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
+  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }).optional().or(z.literal('')),
+  phone: z.string().optional(),
+  dob: z.string().optional(),
+  gender: z.enum(['Male', 'Female', 'Other']).optional(),
+});
+
+export async function createPatientAction(data: z.infer<typeof CreatePatientSchema>, unitId: string): Promise<{ success: boolean; message: string }> {
+    const adminCheck = checkAdminInit();
+    if (adminCheck) return adminCheck;
+
+    const validatedFields = CreatePatientSchema.safeParse(data);
+    if (!validatedFields.success) {
+        return { success: false, message: 'Dados inválidos.' };
+    }
+    
+    if (!unitId) {
+        return { success: false, message: 'ID da unidade é obrigatório.' };
+    }
+
+    try {
+        await db.collection('patients').add({
+            ...validatedFields.data,
+            unitIds: [unitId],
+            status: 'Active',
+            lastVisit: null,
+            avatarUrl: DEFAULT_AVATAR_URL,
+            createdAt: FieldValue.serverTimestamp(),
+            imageUseConsent: false,
+        });
+        revalidatePath('/patients');
+        return { success: true, message: 'Paciente criado com sucesso!' };
+    } catch (error) {
+        console.error('Error creating patient:', error);
+        return { success: false, message: 'Ocorreu um erro ao criar o paciente.' };
+    }
+}
