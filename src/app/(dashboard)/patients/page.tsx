@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { PatientTable } from '@/components/patients/patient-table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Terminal, Search, Users2, GitMerge } from 'lucide-react';
+import { PlusCircle, Terminal, Search, Users2, GitMerge, Lightbulb } from 'lucide-react';
 import { usePatient } from '@/contexts/PatientContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -12,7 +12,7 @@ import * as React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUnit } from '@/contexts/UnitContext';
-import type { HealthPlan } from '@/lib/types';
+import type { HealthPlan, Patient } from '@/lib/types';
 
 export default function PatientsPage() {
   const { patients, loading, error } = usePatient();
@@ -47,6 +47,27 @@ export default function PatientsPage() {
   const canManageGroups = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
   const isAdmin = currentUser?.role === 'Admin';
   
+  const duplicateSuggestions = React.useMemo(() => {
+    if (currentUser?.role !== 'Admin') return [];
+
+    const nameMap = new Map<string, Patient[]>();
+    patients.forEach(patient => {
+        const normalizedName = patient.name.trim().toLowerCase();
+        if (!nameMap.has(normalizedName)) {
+            nameMap.set(normalizedName, []);
+        }
+        nameMap.get(normalizedName)!.push(patient);
+    });
+
+    const duplicates = [];
+    for (const patientGroup of nameMap.values()) {
+        if (patientGroup.length > 1) {
+            duplicates.push({ name: patientGroup[0].name, count: patientGroup.length, ids: patientGroup.map(p => p.id) });
+        }
+    }
+    return duplicates;
+  }, [patients, currentUser]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -100,6 +121,22 @@ export default function PatientsPage() {
             </Button>
         </div>
       </div>
+
+      {isAdmin && duplicateSuggestions.length > 0 && (
+        <Alert>
+          <Lightbulb className="h-4 w-4" />
+          <AlertTitle>Sugestão de Otimização</AlertTitle>
+          <AlertDescription>
+            Detectamos {duplicateSuggestions.length} nome(s) de paciente(s) potencialmente duplicado(s). Para manter a integridade dos dados, considere mesclá-los.
+            <Button asChild variant="link" className="p-0 h-auto ml-1 font-semibold">
+              <Link href="/merge-patients">
+                Ir para a ferramenta de mesclagem
+              </Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {loading ? (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4">
             <Skeleton className="h-12 w-full" />
