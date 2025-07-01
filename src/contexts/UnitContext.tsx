@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -36,6 +35,12 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const { toast } = useToast();
   const { currentUser, loading: authLoading } = useAuth();
+  
+  // This state ensures we only access localStorage on the client after mounting.
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const centralUnit: Unit = {
     id: CENTRAL_UNIT_ID,
@@ -102,24 +107,14 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     fetchUnits();
   }, [fetchUnits]);
 
-  const handleSetSelectedUnitId = useCallback((id: string | null) => {
-    setSelectedUnitId(id);
-    if (id) {
-        localStorage.setItem('selectedUnitId', id);
-    } else {
-        localStorage.removeItem('selectedUnitId');
-    }
-  }, []);
-
+  // This effect handles setting the available units for the user and initializing the selected unit.
   useEffect(() => {
-    if (authLoading || !currentUser) {
-      setUnits([]);
-      if (selectedUnitId !== null) {
-        handleSetSelectedUnitId(null);
-      }
+    // Don't do anything until mounted on client and all data is loaded
+    if (!isMounted || authLoading || loading || !currentUser) {
       return;
     }
 
+    // Determine units available to the current user
     let availableUnits: Unit[];
     if (currentUser.role === 'Admin') {
       availableUnits = [centralUnit, ...allUnits];
@@ -127,22 +122,30 @@ export function UnitProvider({ children }: { children: ReactNode }) {
       const userUnitIds = currentUser.unitIds || [];
       availableUnits = allUnits.filter(unit => userUnitIds.includes(unit.id));
     }
-    
     setUnits(availableUnits);
     
+    // Safely determine the initial selected unit
     const storedUnitId = localStorage.getItem('selectedUnitId');
-    let nextSelectedUnitId = selectedUnitId;
-
     if (storedUnitId && availableUnits.some(u => u.id === storedUnitId)) {
-        nextSelectedUnitId = storedUnitId;
-    } else if (!availableUnits.some(u => u.id === selectedUnitId)) {
-        nextSelectedUnitId = availableUnits.length > 0 ? availableUnits[0].id : null;
+      setSelectedUnitId(storedUnitId);
+    } else if (availableUnits.length > 0) {
+      setSelectedUnitId(availableUnits[0].id);
+    } else {
+      setSelectedUnitId(null);
     }
-    
-    if (nextSelectedUnitId !== selectedUnitId) {
-        handleSetSelectedUnitId(nextSelectedUnitId);
-    }
-  }, [currentUser, allUnits, authLoading, selectedUnitId, handleSetSelectedUnitId]);
+  }, [isMounted, currentUser, allUnits, authLoading, loading]);
+  
+  // This effect persists the selectedUnitId to localStorage whenever it changes.
+  const handleSetSelectedUnitId = useCallback((id: string | null) => {
+      setSelectedUnitId(id);
+      if (isMounted) {
+          if (id) {
+              localStorage.setItem('selectedUnitId', id);
+          } else {
+              localStorage.removeItem('selectedUnitId');
+          }
+      }
+  }, [isMounted]);
 
 
   const addUnit = async (unitData: Omit<Unit, 'id' | 'createdAt' | 'services' | 'rooms'>) => {
@@ -163,7 +166,6 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   const deleteUnit = async (unitId: string) => {
     if (!db) return;
     try {
-        // This is a simplified deletion. In a real app, you'd handle deleting subcollections and associated data.
         await deleteDoc(doc(db, 'units', unitId));
         toast({ title: "Sucesso", description: "Unidade excluída." });
         await fetchUnits();
