@@ -137,6 +137,18 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
   }, [users, selectedService]);
   const availableRooms = selectedUnit?.rooms || [];
 
+  React.useEffect(() => {
+    // When the selected service changes, check if the currently selected professional is valid.
+    // If not, reset it. This prevents submitting an invalid combination.
+    if (serviceId && availableProfessionals.length > 0) {
+      const isProfessionalValid = availableProfessionals.some(p => p.name === professionalName);
+      if (!isProfessionalValid) {
+        setProfessionalName('');
+      }
+    }
+  }, [serviceId, availableProfessionals, professionalName]);
+
+
   if (!appointment) return null;
   
   const isLoading = usersLoading || unitsLoading;

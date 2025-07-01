@@ -581,7 +581,7 @@ export async function updatePatientDetailsAction(prevState: any, formData: FormD
     if (healthPlanId && healthPlanId !== 'none') {
         updatePayload.healthPlanId = healthPlanId;
         
-        const unitIdsToSearch = [...(currentPatientData?.unitIds || []), 'central'];
+        const unitIdsToSearch = [...(validatedFields.data.unitIds || []), 'central'];
         
         let foundPlan = false;
         for (const unitIdToSearch of unitIdsToSearch) {

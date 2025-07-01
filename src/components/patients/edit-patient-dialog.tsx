@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useRef, useState, useMemo } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -53,40 +53,36 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
 
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [healthPlans, setHealthPlans] = useState<HealthPlan[]>([]);
-
+  const [selectedHealthPlanId, setSelectedHealthPlanId] = useState<string>('none');
 
   useEffect(() => {
-    if (patient) {
-        setSelectedUnitIds(patient.unitIds || []);
+    if (isOpen && patient) {
+      setSelectedUnitIds(patient.unitIds || []);
+      setSelectedHealthPlanId(patient.healthPlanId || 'none');
     }
-  }, [patient]);
+  }, [isOpen, patient]);
 
-  useEffect(() => {
-    // Get plans from the patient's assigned units
+  const availableHealthPlans = useMemo(() => {
     const patientUnitPlans = units
-        .filter(unit => selectedUnitIds.includes(unit.id) && unit.id !== 'central')
-        .flatMap(unit => unit.healthPlans || []);
-
-    // Get central plans
+      .filter(unit => selectedUnitIds.includes(unit.id) && unit.id !== 'central')
+      .flatMap(unit => unit.healthPlans || []);
     const centralUnit = units.find(unit => unit.id === 'central');
     const centralPlans = centralUnit?.healthPlans || [];
-    
     const allAvailablePlans = [...patientUnitPlans, ...centralPlans];
-
-    // Create a unique list of plans by ID
     const uniquePlansMap = new Map<string, HealthPlan>();
     allAvailablePlans.forEach(plan => {
-        if (!uniquePlansMap.has(plan.id)) {
-            uniquePlansMap.set(plan.id, plan);
-        }
+      if (!uniquePlansMap.has(plan.id)) {
+        uniquePlansMap.set(plan.id, plan);
+      }
     });
-
-    const uniquePlans = Array.from(uniquePlansMap.values());
-    uniquePlans.sort((a,b) => a.name.localeCompare(b.name));
-    setHealthPlans(uniquePlans);
+    return Array.from(uniquePlansMap.values()).sort((a,b) => a.name.localeCompare(b.name));
   }, [selectedUnitIds, units]);
 
+  useEffect(() => {
+    if (selectedHealthPlanId !== 'none' && !availableHealthPlans.some(p => p.id === selectedHealthPlanId)) {
+        setSelectedHealthPlanId('none');
+    }
+  }, [availableHealthPlans, selectedHealthPlanId]);
 
   useEffect(() => {
     if (state.success) {
@@ -224,11 +220,11 @@ export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpda
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="healthPlanId">Plano de Saúde</Label>
-                        <Select name="healthPlanId" defaultValue={patient.healthPlanId || 'none'}>
-                            <SelectTrigger disabled={healthPlans.length === 0}><SelectValue placeholder="Selecione um plano..." /></SelectTrigger>
+                        <Select name="healthPlanId" value={selectedHealthPlanId} onValueChange={setSelectedHealthPlanId} disabled={availableHealthPlans.length === 0}>
+                            <SelectTrigger><SelectValue placeholder="Selecione um plano..." /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="none">Nenhum</SelectItem>
-                                {healthPlans.map(plan => <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>)}
+                                {availableHealthPlans.map(plan => <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
