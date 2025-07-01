@@ -1,4 +1,3 @@
-'use server';
 
 /**
  * @fileOverview AI flows have been disabled.
