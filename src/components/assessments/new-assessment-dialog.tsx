@@ -12,12 +12,12 @@ import { useTemplate } from '@/contexts/TemplateContext';
 import { createAssessmentAction } from '@/lib/actions/assessment';
 import type { EvolutionTemplate, Patient, TemplateField } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { Checkbox } from '../ui/checkbox';
-import { Progress } from '../ui/progress';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { useUnit } from '@/contexts/UnitContext';
 
 interface NewAssessmentDialogProps {

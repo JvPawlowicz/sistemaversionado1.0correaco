@@ -13,7 +13,7 @@ import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NewAppointmentDialog } from './new-appointment-dialog';
 import type { Appointment } from '@/lib/types';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export function ScheduleView() {

@@ -26,7 +26,7 @@ import { updateUserAction } from '@/lib/actions/user';
 import type { User } from '@/lib/types';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface EditUserDialogProps {
   isOpen: boolean;

@@ -9,7 +9,7 @@ import { Loader2, Upload, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { uploadDocumentAction } from '@/lib/actions/patient';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '../ui/textarea';
+import { Textarea } from '@/components/ui/textarea';
 
 interface DocumentUploaderProps {
   patientId: string;

@@ -4,8 +4,8 @@ import * as React from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UnitSwitcher } from './unit-switcher';
 import { UserNav } from './user-nav';
-import { ThemeToggle } from '../theme-toggle';
-import { Button } from '../ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { Button } from '@/components/ui/button';
 import { Bell } from 'lucide-react';
 import { Clock } from './clock';
 import {

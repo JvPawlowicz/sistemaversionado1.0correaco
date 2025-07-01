@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import type { Appointment } from '@/lib/types';
 import { useSchedule } from '@/contexts/ScheduleContext';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function ScheduleCalendar() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());

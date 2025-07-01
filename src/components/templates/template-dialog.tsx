@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTemplate } from '@/contexts/TemplateContext';
 import { createEvolutionTemplateAction, updateEvolutionTemplateAction } from '@/lib/actions/template';
 import type { EvolutionTemplate, TemplateField } from '@/lib/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useImmer } from 'use-immer';
 
 interface TemplateDialogProps {
