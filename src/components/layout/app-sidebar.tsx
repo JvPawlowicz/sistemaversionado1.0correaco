@@ -32,7 +32,6 @@ import {
   Shield,
   AreaChart,
   GitMerge,
-  DollarSign,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnit } from '@/contexts/UnitContext';
@@ -55,7 +54,6 @@ export function AppSidebar() {
   ];
   const managementItems = [
     { href: '/analysis', label: 'Análise e Relatórios', icon: LineChart, roles: ['Admin', 'Coordinator'] },
-    { href: '/financial', label: 'Financeiro', icon: DollarSign, roles: ['Admin', 'Coordinator'] },
     { href: '/team-performance', label: 'Desempenho da Equipe', icon: AreaChart, roles: ['Admin', 'Coordinator'] },
     { href: '/planning', label: 'Planejamento', icon: SlidersHorizontal, roles: ['Admin', 'Coordinator'] },
   ];

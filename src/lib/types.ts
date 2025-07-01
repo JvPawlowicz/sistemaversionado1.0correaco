@@ -18,7 +18,6 @@ export type Service = {
   capacity: number; // 1 para individual, >1 para grupo, 0 para ilimitado
   unitId: string;
   professionalIds: string[];
-  price?: number;
 };
 
 export type HealthPlan = {
