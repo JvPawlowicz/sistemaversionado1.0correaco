@@ -12,7 +12,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { useUser } from '@/contexts/UserContext';
 import { Loader2, Plus, SlidersHorizontal, UserCheck, CircleAlert, ChevronsUpDown, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { createTimeBlockAction } from '@/lib/actions/schedule';
+import { createTimeBlockAction, updateUserAvailabilityAction } from '@/lib/actions/schedule';
 import { useUnit } from '@/contexts/UnitContext';
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfDay } from 'date-fns';
