@@ -37,10 +37,18 @@ export default function TeamPerformancePage() {
   const [evolutions, setEvolutions] = React.useState<EvolutionRecord[]>([]);
   const [loadingEvolutions, setLoadingEvolutions] = React.useState(true);
 
-  const [filters, setFilters] = React.useState({
-    startDate: startOfDay(subDays(new Date(), 30)),
-    endDate: endOfDay(new Date()),
+  const [filters, setFilters] = React.useState<{startDate: Date | null, endDate: Date | null}>({
+    startDate: null,
+    endDate: null,
   });
+
+  // Defer setting initial date to avoid hydration mismatch
+  React.useEffect(() => {
+    setFilters({
+      startDate: startOfDay(subDays(new Date(), 30)),
+      endDate: endOfDay(new Date()),
+    });
+  }, []);
 
   const isLoading = usersLoading || scheduleLoading || patientsLoading || loadingEvolutions;
 
@@ -81,20 +89,20 @@ export default function TeamPerformancePage() {
   }, [patients, patientsLoading]);
 
   const performanceData = React.useMemo<PerformanceData[]>(() => {
-    if (isLoading) return [];
+    if (isLoading || !filters.startDate || !filters.endDate) return [];
 
     const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Coordinator');
 
     return professionals.map(pro => {
       const proAppointments = appointments.filter(app => 
         app.professionalName === pro.name && 
-        isWithinInterval(new Date(app.date + 'T00:00:00'), { start: filters.startDate, end: filters.endDate })
+        isWithinInterval(new Date(app.date + 'T00:00:00'), { start: filters.startDate!, end: filters.endDate! })
       );
       
       const proEvolutions = evolutions.filter(evo =>
         evo.author === pro.name &&
         evo.createdAt &&
-        isWithinInterval(evo.createdAt.toDate(), { start: filters.startDate, end: filters.endDate })
+        isWithinInterval(evo.createdAt.toDate(), { start: filters.startDate!, end: filters.endDate! })
       );
 
       const attendedAppointments = proAppointments.filter(app => app.status === 'Realizado').length;
@@ -144,9 +152,9 @@ export default function TeamPerformancePage() {
           <CardTitle>Filtros de Análise</CardTitle>
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <div className="flex items-center gap-2">
-                <DatePicker value={filters.startDate} onChange={date => date && handleFilterChange('startDate', startOfDay(date))} />
+                <DatePicker value={filters.startDate || undefined} onChange={date => date && handleFilterChange('startDate', startOfDay(date))} />
                 <span className="text-muted-foreground">-</span>
-                <DatePicker value={filters.endDate} onChange={date => date && handleFilterChange('endDate', endOfDay(date))} />
+                <DatePicker value={filters.endDate || undefined} onChange={date => date && handleFilterChange('endDate', endOfDay(date))} />
             </div>
           </div>
         </CardHeader>

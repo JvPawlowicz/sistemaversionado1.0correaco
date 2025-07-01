@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
@@ -50,7 +51,7 @@ export default function PlanningPage() {
   const [state, formAction] = useActionState(createTimeBlockAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>();
   
   const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -59,6 +60,11 @@ export default function PlanningPage() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   
+  // Defer setting initial date to avoid hydration mismatch
+  useEffect(() => {
+    setDate(new Date());
+  }, []);
+
   const handleManageAvailability = (user: User) => {
     setSelectedUser(user);
     setIsAvailabilityDialogOpen(true);
