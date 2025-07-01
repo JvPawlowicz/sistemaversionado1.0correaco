@@ -1,5 +1,3 @@
-'use server';
-
 import { auth, db } from '@/lib/firebase-admin';
 import type { Log } from '@/lib/types';
 import { FieldValue } from 'firebase-admin/firestore';
