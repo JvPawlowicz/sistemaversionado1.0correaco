@@ -50,7 +50,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
   const [groupId, setGroupId] = React.useState('');
   const [serviceId, setServiceId] = React.useState('');
   const [professionalName, setProfessionalName] = React.useState('');
-  const [date, setDate] = React.useState(format(new Date(), 'yyyy-MM-dd'));
+  const [date, setDate] = React.useState('');
   const [time, setTime] = React.useState('09:00');
   const [endTime, setEndTime] = React.useState('10:00');
   const [room, setRoom] = React.useState('');
@@ -76,13 +76,19 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     return users.filter(user => selectedService.professionalIds.includes(user.id));
   }, [users, selectedService]);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      setDate(format(new Date(), 'yyyy-MM-dd'));
+    }
+  }, [isOpen]);
+
   const resetForm = () => {
     setScheduleType('individual');
     setPatientId('');
     setGroupId('');
     setServiceId('');
     setProfessionalName(currentUser?.role === 'Therapist' ? currentUser.name : '');
-    setDate(format(new Date(), 'yyyy-MM-dd'));
+    setDate('');
     setTime('09:00');
     setEndTime('10:00');
     setRoom('');
