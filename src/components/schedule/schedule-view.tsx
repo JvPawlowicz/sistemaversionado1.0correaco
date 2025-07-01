@@ -19,12 +19,13 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 export function ScheduleView() {
   const [activeTab, setActiveTab] = React.useState('week');
   const [isExporting, setIsExporting] = React.useState(false);
-  const [currentDate, setCurrentDate] = React.useState<Date>();
+  const [currentDate, setCurrentDate] = React.useState<Date | undefined>();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   const { appointments, timeBlocks, loading, error } = useSchedule();
 
   React.useEffect(() => {
+    // Set date on client-side to avoid hydration mismatch
     setCurrentDate(new Date());
   }, []);
 
