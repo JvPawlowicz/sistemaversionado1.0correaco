@@ -109,6 +109,24 @@ export default function AnalysisAndReportsPage() {
     patientId: '',
     author: '',
   });
+  
+  // State for calculated data to avoid hydration mismatch
+  const [overviewAnalysisData, setOverviewAnalysisData] = React.useState({
+    total: 0,
+    realizado: 0,
+    faltou: 0,
+    agendado: 0,
+    occupationRate: '0.0',
+    absenceRate: '0.0',
+    chartData: [] as any[],
+  });
+
+  const [evolutionAnalysisData, setEvolutionAnalysisData] = React.useState({
+      total: 0,
+      pending: 0,
+      chartData: [] as any[],
+  });
+
 
   React.useEffect(() => {
     // This runs only on the client after mount, avoiding hydration mismatch
@@ -165,14 +183,15 @@ export default function AnalysisAndReportsPage() {
     fetchAllEvolutions();
   }, [patients, patientsLoading]);
 
-
-  // --- Overview Tab Logic ---
-  const overviewAnalysisData = React.useMemo(() => {
-    const endDate = new Date();
-    const startDate = startOfDay(subDays(endDate, 30));
+  // --- Calculations useEffect ---
+  // Moved from useMemo to useEffect to prevent hydration mismatch with new Date()
+  React.useEffect(() => {
+    // Overview Data Calculation
+    const overviewEndDate = new Date();
+    const overviewStartDate = startOfDay(subDays(overviewEndDate, 30));
 
     const appointmentsInPeriod = appointments.filter(app =>
-      isWithinInterval(new Date(app.date + 'T00:00:00'), { start: startDate, end: endDate })
+      isWithinInterval(new Date(app.date + 'T00:00:00'), { start: overviewStartDate, end: overviewEndDate })
     );
 
     const total = appointmentsInPeriod.length;
@@ -185,15 +204,41 @@ export default function AnalysisAndReportsPage() {
     const occupationRate = possibleSlots > 0 ? (realizado / possibleSlots * 100).toFixed(1) : '0.0';
     const absenceRate = possibleSlots > 0 ? (faltou / possibleSlots * 100).toFixed(1) : '0.0';
 
-    const chartData = [
+    const overviewChartData = [
         { status: 'realizado', count: realizado, fill: 'var(--color-realizado)' },
         { status: 'agendado', count: agendado, fill: 'var(--color-agendado)' },
         { status: 'faltou', count: faltou, fill: 'var(--color-faltou)' },
         { status: 'cancelado', count: cancelado, fill: 'var(--color-cancelado)' },
     ].filter(item => item.count > 0);
 
-    return { total, realizado, faltou, agendado, occupationRate, absenceRate, chartData };
-  }, [appointments]);
+    setOverviewAnalysisData({ total, realizado, faltou, agendado, occupationRate, absenceRate, chartData: overviewChartData });
+
+
+    // Evolution Data Calculation
+    const evolutionEndDate = new Date();
+    const evolutionStartDate = startOfDay(subDays(evolutionEndDate, 30));
+
+    const evolutionsInPeriod = evolutions.filter(evo => 
+        evo.createdAt && isWithinInterval(evo.createdAt.toDate(), { start: evolutionStartDate, end: evolutionEndDate })
+    );
+
+    const attendedAppointmentsInPeriod = appointments.filter(app => 
+        app.status === 'Realizado' && isWithinInterval(new Date(app.date + 'T00:00:00'), { start: evolutionStartDate, end: evolutionEndDate })
+    );
+    
+    const pendingCount = attendedAppointmentsInPeriod.length;
+
+    const evolutionsByAuthor = evolutionsInPeriod.reduce((acc, evo) => {
+        acc[evo.author] = (acc[evo.author] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const evolutionChartData = Object.entries(evolutionsByAuthor).map(([author, count]) => ({ author, count }));
+
+    setEvolutionAnalysisData({ total: evolutionsInPeriod.length, pending: pendingCount, chartData: evolutionChartData });
+
+  }, [appointments, evolutions]);
+
 
   // --- Appointments Report Logic ---
   const [filteredAppointments, setFilteredAppointments] = React.useState<Appointment[]>([]);
@@ -269,30 +314,6 @@ export default function AnalysisAndReportsPage() {
   // --- Evolutions Report Logic ---
   const [filteredEvolutions, setFilteredEvolutions] = React.useState<(EvolutionRecord & { patientName: string; patientId: string; })[]>([]);
 
-  const evolutionAnalysisData = React.useMemo(() => {
-    const endDate = new Date();
-    const startDate = startOfDay(subDays(endDate, 30));
-
-    const evolutionsInPeriod = evolutions.filter(evo => 
-        evo.createdAt && isWithinInterval(evo.createdAt.toDate(), { start: startDate, end: endDate })
-    );
-
-    const appointmentsInPeriod = appointments.filter(app => 
-        app.status === 'Realizado' && isWithinInterval(new Date(app.date + 'T00:00:00'), { start: startDate, end: endDate })
-    );
-    
-    const pendingCount = appointmentsInPeriod.length;
-
-    const evolutionsByAuthor = evolutionsInPeriod.reduce((acc, evo) => {
-        acc[evo.author] = (acc[evo.author] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-
-    const chartData = Object.entries(evolutionsByAuthor).map(([author, count]) => ({ author, count }));
-
-    return { total: evolutionsInPeriod.length, pending: pendingCount, chartData };
-  }, [evolutions, appointments]);
-  
   const allAuthors = React.useMemo(() => [...new Set(evolutions.map(e => e.author))], [evolutions]);
 
   const handleEvolutionFilterChange = (key: keyof typeof evolutionFilters, value: any) => {
