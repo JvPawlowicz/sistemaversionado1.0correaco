@@ -702,6 +702,7 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
       metadata: { contentType: documentFile.type },
     });
     
+    await fileUpload.makePublic();
     const fileUrl = fileUpload.publicUrl();
     
     await db.collection('patients').doc(patientId).collection('documents').add({
@@ -788,6 +789,63 @@ export async function deletePatientAction(patientId: string): Promise<{ success:
     return { success: false, message: 'Falha ao excluir o paciente.' };
   }
 }
+
+// --- Update Patient Avatar Action ---
+const UpdatePatientAvatarSchema = z.object({
+  patientId: z.string().min(1, 'ID do paciente é obrigatório.'),
+  avatar: z.custom<File>(val => val instanceof File, "Por favor, envie um arquivo.")
+    .refine((file) => file.size > 0, 'O arquivo não pode estar vazio.')
+    .refine((file) => file.size <= 2 * 1024 * 1024, `O tamanho máximo é 2MB.`)
+    .refine((file) => file.type?.startsWith("image/"), ".Somente imagens são permitidas"),
+});
+
+export async function updatePatientAvatarAction(prevState: any, formData: FormData) {
+  const adminCheck = checkAdminInit();
+  if (adminCheck) return adminCheck;
+
+  const validatedFields = UpdatePatientAvatarSchema.safeParse({
+    patientId: formData.get('patientId'),
+    avatar: formData.get('avatar'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: validatedFields.error.flatten().fieldErrors.avatar?.[0] || 'Arquivo inválido.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+  
+  const { patientId, avatar } = validatedFields.data;
+  
+  try {
+    const bucket = storageAdmin.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+    const filePath = `avatars/patients/${patientId}`;
+    const fileUpload = bucket.file(filePath);
+
+    const buffer = Buffer.from(await avatar.arrayBuffer());
+
+    await fileUpload.save(buffer, {
+      metadata: { contentType: avatar.type },
+    });
+    
+    await fileUpload.makePublic();
+    const downloadURL = fileUpload.publicUrl();
+    
+    await db.collection('patients').doc(patientId).update({
+        avatarUrl: downloadURL,
+    });
+    
+    revalidatePath(`/patients/${patientId}`);
+    
+    return { success: true, message: 'Foto do paciente atualizada com sucesso!', errors: null };
+
+  } catch (error) {
+    console.error('Error uploading patient avatar via server action:', error);
+    return { success: false, message: 'Ocorreu um erro ao fazer upload da foto.', errors: null };
+  }
+}
+
 
 // --- Family Member Actions ---
 const FamilyMemberSchema = z.object({

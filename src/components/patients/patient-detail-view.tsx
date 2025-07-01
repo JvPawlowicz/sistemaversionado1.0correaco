@@ -2,6 +2,8 @@
 'use client';
 
 import * as React from 'react';
+import { useActionState, useEffect, useRef } from 'react';
+import { useFormStatus } from 'react-dom';
 import {
   Card,
   CardContent,
@@ -23,14 +25,23 @@ import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePatient } from '@/contexts/PatientContext';
 import { useToast } from '@/hooks/use-toast';
-import { updatePatientStatusAction } from '@/lib/actions';
+import { updatePatientStatusAction, updatePatientAvatarAction } from '@/lib/actions';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { DocumentUploader } from './document-uploader';
 import { DeletePatientDialog } from './delete-patient-dialog';
 import { EditPatientDialog } from './edit-patient-dialog';
 import { FamilyMemberManager } from './family-member-manager';
 import { TreatmentPlanView } from './treatment-plan-view';
-import { getDisplayAvatarUrl } from '@/lib/utils';
+import { getDisplayAvatarUrl, cn } from '@/lib/utils';
+
+function AvatarFormStatus() {
+    const { pending } = useFormStatus();
+    return pending ? (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+            <Loader2 className="h-8 w-8 text-white animate-spin" />
+        </div>
+    ) : null;
+}
 
 export function PatientDetailView({
   patient,
@@ -74,8 +85,32 @@ export function PatientDetailView({
   const { fetchPatients } = usePatient();
   const { toast } = useToast();
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
+  
+  const [avatarState, avatarFormAction] = useActionState(updatePatientAvatarAction, { success: false, message: '', errors: null });
+  const avatarFormRef = React.useRef<HTMLFormElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const canEdit = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
+
+  useEffect(() => {
+    if (avatarState.success) {
+      toast({ title: 'Sucesso!', description: avatarState.message });
+      onPatientUpdated(); 
+    } else if (avatarState.message && !avatarState.errors) {
+      toast({ variant: 'destructive', title: 'Erro no Upload', description: avatarState.message });
+    }
+  }, [avatarState, toast, onPatientUpdated]);
+
+  const handleAvatarClick = () => {
+    if (!canEdit) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      avatarFormRef.current?.requestSubmit();
+    }
+  };
 
   const patientGroups = React.useMemo(() => {
     return therapyGroups.filter(g => g.patientIds.includes(patient.id));
@@ -142,10 +177,26 @@ export function PatientDetailView({
       <div className="space-y-6">
         <Card>
           <CardHeader className="flex flex-col items-start gap-4 sm:flex-row">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={getDisplayAvatarUrl(patient.avatarUrl)} alt={patient.name} data-ai-hint="person portrait" />
-              <AvatarFallback className="text-3xl">{getInitials(patient.name)}</AvatarFallback>
-            </Avatar>
+            <form ref={avatarFormRef} action={avatarFormAction} className="relative flex-shrink-0">
+                <input type="hidden" name="patientId" value={patient.id} />
+                <input
+                    type="file"
+                    name="avatar"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/png, image/jpeg, image/webp"
+                    disabled={!canEdit}
+                />
+                <Avatar
+                    className={cn("h-24 w-24", canEdit && "cursor-pointer hover:opacity-80 transition-opacity")}
+                    onClick={handleAvatarClick}
+                >
+                    <AvatarImage src={getDisplayAvatarUrl(patient.avatarUrl)} alt={patient.name} data-ai-hint="person portrait" />
+                    <AvatarFallback className="text-3xl">{getInitials(patient.name)}</AvatarFallback>
+                </Avatar>
+                <AvatarFormStatus />
+            </form>
             <div className="flex-1">
               <CardTitle className="text-3xl">{patient.name}</CardTitle>
               <CardDescription className="mt-2 text-base">
