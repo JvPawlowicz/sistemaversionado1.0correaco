@@ -45,6 +45,7 @@ export function ServiceManager({ unit, onServiceChange }: ServiceManagerProps) {
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [capacity, setCapacity] = React.useState(1);
+  const [price, setPrice] = React.useState(0);
   const [professionalIds, setProfessionalIds] = React.useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
   
@@ -56,6 +57,7 @@ export function ServiceManager({ unit, onServiceChange }: ServiceManagerProps) {
     setName('');
     setDescription('');
     setCapacity(1);
+    setPrice(0);
     setProfessionalIds([]);
   }
 
@@ -66,7 +68,7 @@ export function ServiceManager({ unit, onServiceChange }: ServiceManagerProps) {
         return;
     }
     setIsSaving(true);
-    await onServiceChange(unit.id, { name, description, capacity, professionalIds });
+    await onServiceChange(unit.id, { name, description, capacity, professionalIds, price });
     setIsSaving(false);
     setIsAddDialogOpen(false);
     resetForm();
@@ -75,6 +77,11 @@ export function ServiceManager({ unit, onServiceChange }: ServiceManagerProps) {
   const handleDeleteService = async (serviceId: string) => {
     await deleteService(unit.id, serviceId);
   }
+
+  const formatCurrency = (value: number | undefined) => {
+    if (value === undefined || value === null) return 'Não definido';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
 
   return (
     <div className="space-y-4">
@@ -99,10 +106,16 @@ export function ServiceManager({ unit, onServiceChange }: ServiceManagerProps) {
                     <Label htmlFor="description">Descrição</Label>
                     <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="capacity">Capacidade por Sessão</Label>
-                    <Input id="capacity" type="number" min="0" value={capacity} onChange={(e) => setCapacity(Number(e.target.value))} />
-                    <p className="text-xs text-muted-foreground">Use 1 para individual, 0 para ilimitado.</p>
+                <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="capacity">Capacidade por Sessão</Label>
+                        <Input id="capacity" type="number" min="0" value={capacity} onChange={(e) => setCapacity(Number(e.target.value))} />
+                        <p className="text-xs text-muted-foreground">Use 1 para individual, 0 para ilimitado.</p>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="price">Preço (R$)</Label>
+                        <Input id="price" type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+                    </div>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="professionals">Profissionais</Label>
@@ -162,7 +175,7 @@ export function ServiceManager({ unit, onServiceChange }: ServiceManagerProps) {
                 <CardHeader className="p-4 flex flex-row items-start justify-between">
                     <div>
                     <CardTitle className="text-lg">{service.name}</CardTitle>
-                    <CardDescription>Capacidade: {service.capacity === 0 ? "Ilimitada" : service.capacity}</CardDescription>
+                    <CardDescription>Capacidade: {service.capacity === 0 ? "Ilimitada" : service.capacity} | Preço: {formatCurrency(service.price)}</CardDescription>
                     </div>
                     <AlertDialog>
                     <AlertDialogTrigger asChild>
