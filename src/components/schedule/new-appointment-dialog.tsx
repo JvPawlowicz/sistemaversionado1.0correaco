@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -78,6 +79,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
 
   React.useEffect(() => {
     if (isOpen) {
+      // Set date only when dialog opens to avoid hydration issues
       setDate(format(new Date(), 'yyyy-MM-dd'));
     }
   }, [isOpen]);

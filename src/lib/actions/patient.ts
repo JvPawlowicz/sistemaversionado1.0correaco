@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -351,20 +352,12 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
 async function deleteCollection(collectionPath: string, batchSize: number) {
   if (!db) return;
   const collectionRef = db.collection(collectionPath);
-  const query = collectionRef.orderBy('__name__').limit(batchSize);
+  let query = collectionRef.orderBy('__name__').limit(batchSize);
 
-  return new Promise<void>((resolve, reject) => {
-    deleteQueryBatch(query, resolve).catch(reject);
-  });
-
-  async function deleteQueryBatch(query: FirebaseFirestore.Query, resolve: () => void) {
-     if (!db) return;
+  while (true) {
     const snapshot = await query.get();
-
-    const batchSize = snapshot.size;
-    if (batchSize === 0) {
-      resolve();
-      return;
+    if (snapshot.size === 0) {
+      return; // All documents deleted
     }
 
     const batch = db.batch();
@@ -372,10 +365,6 @@ async function deleteCollection(collectionPath: string, batchSize: number) {
       batch.delete(doc.ref);
     });
     await batch.commit();
-
-    process.nextTick(() => {
-      deleteQueryBatch(query, resolve);
-    });
   }
 }
 
