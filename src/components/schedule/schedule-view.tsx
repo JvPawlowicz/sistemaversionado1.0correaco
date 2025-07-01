@@ -19,12 +19,19 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 export function ScheduleView() {
   const [activeTab, setActiveTab] = React.useState('week');
   const [isExporting, setIsExporting] = React.useState(false);
-  const [currentDate, setCurrentDate] = React.useState<Date>(new Date());
+  const [currentDate, setCurrentDate] = React.useState<Date>();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   const { appointments, timeBlocks, loading, error } = useSchedule();
 
+  React.useEffect(() => {
+    setCurrentDate(new Date());
+  }, []);
+
+
   const handleExportPdf = async () => {
+    if (!currentDate) return;
+    
     setIsExporting(true);
     
     const { default: jsPDF } = await import('jspdf');
@@ -89,6 +96,8 @@ export function ScheduleView() {
     setIsExporting(false);
   };
 
+  const isInitializing = loading || !currentDate;
+
   return (
     <div className="space-y-4">
         <NewAppointmentDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
@@ -104,13 +113,13 @@ export function ScheduleView() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Novo Agendamento
                     </Button>
-                    <Button onClick={handleExportPdf} disabled={isExporting || appointments.length === 0} variant="outline">
+                    <Button onClick={handleExportPdf} disabled={isExporting || appointments.length === 0 || !currentDate} variant="outline">
                         {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                         Exportar PDF
                     </Button>
                 </div>
             </div>
-            {loading ? (
+            {isInitializing ? (
                 <Card><CardContent className="p-6"><Skeleton className="h-[500px] w-full" /></CardContent></Card>
             ) : error ? (
                 <Alert variant="destructive">
