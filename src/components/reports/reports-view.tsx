@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -26,13 +25,21 @@ export function ReportsView() {
 
   const [filteredAppointments, setFilteredAppointments] = React.useState<Appointment[]>([]);
   const [filters, setFilters] = React.useState({
-    startDate: addDays(new Date(), -30),
-    endDate: new Date(),
+    startDate: null as Date | null,
+    endDate: null as Date | null,
     patientId: '',
     professionalName: '',
     serviceId: '',
     status: '',
   });
+
+  React.useEffect(() => {
+    setFilters(prev => ({
+        ...prev,
+        startDate: addDays(new Date(), -30),
+        endDate: new Date(),
+    }));
+  }, []);
 
   const isLoading = scheduleLoading || patientsLoading || usersLoading || unitsLoading;
   
@@ -48,10 +55,10 @@ export function ReportsView() {
     let result = appointments;
 
     if (filters.startDate) {
-      result = result.filter(app => isEqual(new Date(app.date), filters.startDate) || isAfter(new Date(app.date), filters.startDate));
+      result = result.filter(app => isEqual(new Date(app.date), filters.startDate!) || isAfter(new Date(app.date), filters.startDate!));
     }
     if (filters.endDate) {
-      result = result.filter(app => isEqual(new Date(app.date), filters.endDate) || isBefore(new Date(app.date), filters.endDate));
+      result = result.filter(app => isEqual(new Date(app.date), filters.endDate!) || isBefore(new Date(app.date), filters.endDate!));
     }
     if (filters.patientId) {
       result = result.filter(app => app.patientId === filters.patientId);
@@ -118,9 +125,9 @@ export function ReportsView() {
           <div className="flex flex-col space-y-2">
             <label className="text-sm font-medium">Período</label>
             <div className="flex items-center gap-2">
-              <DatePicker value={filters.startDate} onChange={date => date && handleFilterChange('startDate', startOfDay(date))} />
+              <DatePicker value={filters.startDate || undefined} onChange={date => date && handleFilterChange('startDate', startOfDay(date))} />
               <span className="text-muted-foreground">-</span>
-              <DatePicker value={filters.endDate} onChange={date => date && handleFilterChange('endDate', startOfDay(date))} />
+              <DatePicker value={filters.endDate || undefined} onChange={date => date && handleFilterChange('endDate', startOfDay(date))} />
             </div>
           </div>
           <div className="flex flex-col space-y-1.5">
