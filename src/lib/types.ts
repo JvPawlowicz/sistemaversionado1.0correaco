@@ -1,9 +1,6 @@
 
 export type Address = {
   street: string;
-  streetNumber?: string | null;
-  complement?: string | null;
-  neighborhood?: string | null;
   city: string;
   state: string;
   zip: string;
