@@ -63,38 +63,45 @@ export default function DashboardPage() {
     todaysAppointmentsTotal: 0,
     myTodaysAppointments: 0,
     myMonthlyAppointments: 0,
+    totalActivePatients: 0,
+    totalTherapists: 0,
+    myActivePatientsCount: 0,
   });
 
   const loading = patientsLoading || scheduleLoading || usersLoading;
-
-  // General Stats (for Admin/Coordinator/Receptionist)
-  const totalActivePatients = patients.filter(p => p.status === 'Active').length;
-  const totalTherapists = users.filter(u => u.role === 'Therapist' && selectedUnitId && Array.isArray(u.unitIds) && u.unitIds.includes(selectedUnitId)).length;
-
-  // Therapist-specific Stats
-  const myAppointments = React.useMemo(() => {
-    if (!currentUser) return [];
-    return appointments.filter(a => a.professionalName === currentUser.name);
-  }, [appointments, currentUser]);
   
-  const myPatientIds = [...new Set(myAppointments.map(a => a.patientId))];
-  const myActivePatientsCount = patients.filter(p => p.status === 'Active' && myPatientIds.includes(p.id)).length;
-
-
-  // Defer date-sensitive calculations to useEffect to avoid hydration mismatch
+  // Defer all date-sensitive and data-dependent calculations to useEffect to avoid hydration mismatch
   React.useEffect(() => {
+    if (loading || !currentUser) return;
+    
+    // Date calculations
     const today = new Date();
     const monthStart = startOfMonth(today);
     const monthEnd = endOfMonth(today);
 
+    // Therapist-specific calculations
+    const myAppointments = appointments.filter(a => a.professionalName === currentUser.name);
+    const myPatientIds = [...new Set(myAppointments.map(a => a.patientId))];
+    const myActivePatientsCount = patients.filter(p => p.status === 'Active' && myPatientIds.includes(p.id)).length;
+    
+    // General calculations
+    const totalActivePatients = patients.filter(p => p.status === 'Active').length;
+    const totalTherapists = users.filter(u => u.role === 'Therapist' && selectedUnitId && Array.isArray(u.unitIds) && u.unitIds.includes(selectedUnitId)).length;
+    const todaysAppointmentsTotal = appointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length;
+    const myTodaysAppointments = myAppointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length;
+    const myMonthlyAppointments = myAppointments.filter(a => isWithinInterval(new Date(a.date + 'T00:00:00'), { start: monthStart, end: monthEnd })).length;
+
+    // Set all stats at once
     setStats({
-      todaysAppointmentsTotal: appointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length,
-      myTodaysAppointments: myAppointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length,
-      myMonthlyAppointments: myAppointments.filter(a => isWithinInterval(new Date(a.date + 'T00:00:00'), { start: monthStart, end: monthEnd })).length,
+      todaysAppointmentsTotal,
+      myTodaysAppointments,
+      myMonthlyAppointments,
+      totalActivePatients,
+      totalTherapists,
+      myActivePatientsCount,
     });
     
     // Upcoming appointments logic
-    if (loading || !currentUser) return;
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -117,7 +124,7 @@ export default function DashboardPage() {
       
       setUpcomingAppointments(filtered);
 
-  }, [appointments, myAppointments, currentUser, loading]);
+  }, [appointments, patients, users, currentUser, loading, selectedUnitId]);
 
   const renderContentForRole = () => {
     if (currentUser?.role === 'Therapist') {
@@ -125,16 +132,16 @@ export default function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <StatCard title="Meus Agendamentos de Hoje" value={stats.myTodaysAppointments} icon={CalendarCheck} loading={loading} description="Sessões agendadas para hoje" />
           <StatCard title="Meus Atendimentos no Mês" value={stats.myMonthlyAppointments} icon={Activity} loading={loading} description="Total de sessões realizadas este mês" />
-          <StatCard title="Meus Pacientes Ativos" value={myActivePatientsCount} icon={HeartPulse} loading={loading} description="Pacientes sob seus cuidados" />
+          <StatCard title="Meus Pacientes Ativos" value={stats.myActivePatientsCount} icon={HeartPulse} loading={loading} description="Pacientes sob seus cuidados" />
         </div>
       );
     }
     // Default view for Admin, Coordinator, Receptionist
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <StatCard title="Pacientes Ativos" value={totalActivePatients} icon={HeartPulse} loading={loading} description="Total de pacientes na unidade" />
+        <StatCard title="Pacientes Ativos" value={stats.totalActivePatients} icon={HeartPulse} loading={loading} description="Total de pacientes na unidade" />
         <StatCard title="Agendamentos para Hoje" value={stats.todaysAppointmentsTotal} icon={CalendarCheck} loading={loading} description="Sessões agendadas para hoje" />
-        <StatCard title="Terapeutas na Unidade" value={totalTherapists} icon={Users} loading={loading} description="Profissionais ativos na unidade" />
+        <StatCard title="Terapeutas na Unidade" value={stats.totalTherapists} icon={Users} loading={loading} description="Profissionais ativos na unidade" />
       </div>
     );
   };
