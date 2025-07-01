@@ -49,7 +49,7 @@ export function UnitDetailView({
 }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
     const { currentUser } = useAuth();
-    const isAdmin = currentUser?.role === 'Admin';
+    const canManageUnit = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
     
     return (
         <div className="space-y-6">
@@ -91,7 +91,7 @@ export function UnitDetailView({
                             <span>Telefone: {unit.phone || 'Não informado'}</span>
                          </div>
                     </div>
-                    {isAdmin && (
+                    {canManageUnit && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
@@ -109,7 +109,7 @@ export function UnitDetailView({
                 </CardHeader>
             </Card>
 
-            {isAdmin ? (
+            {canManageUnit ? (
                 <Tabs defaultValue="services">
                     <TabsList className="grid w-full grid-cols-5">
                         <TabsTrigger value="services">Serviços</TabsTrigger>
@@ -170,12 +170,9 @@ export function UnitDetailView({
             ) : (
                  <Card>
                     <CardHeader>
-                        <CardTitle>Gestão de Salas</CardTitle>
-                        <CardDescription>Cadastre e gerencie as salas de atendimento disponíveis nesta unidade.</CardDescription>
+                        <CardTitle>Acesso Limitado</CardTitle>
+                        <CardDescription>Apenas Administradores e Coordenadores podem gerenciar os detalhes da unidade.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <RoomManager unit={unit} />
-                    </CardContent>
                 </Card>
             )}
         </div>
