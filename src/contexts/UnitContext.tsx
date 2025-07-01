@@ -102,19 +102,21 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     fetchUnits();
   }, [fetchUnits]);
 
-  const handleSetSelectedUnitId = (id: string | null) => {
+  const handleSetSelectedUnitId = useCallback((id: string | null) => {
     setSelectedUnitId(id);
     if (id) {
         localStorage.setItem('selectedUnitId', id);
     } else {
         localStorage.removeItem('selectedUnitId');
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (authLoading || !currentUser) {
       setUnits([]);
-      setSelectedUnitId(null);
+      if (selectedUnitId !== null) {
+        handleSetSelectedUnitId(null);
+      }
       return;
     }
 
@@ -129,15 +131,18 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     setUnits(availableUnits);
     
     const storedUnitId = localStorage.getItem('selectedUnitId');
+    let nextSelectedUnitId = selectedUnitId;
+
     if (storedUnitId && availableUnits.some(u => u.id === storedUnitId)) {
-        if (selectedUnitId !== storedUnitId) {
-            setSelectedUnitId(storedUnitId);
-        }
+        nextSelectedUnitId = storedUnitId;
     } else if (!availableUnits.some(u => u.id === selectedUnitId)) {
-      handleSetSelectedUnitId(availableUnits.length > 0 ? availableUnits[0].id : null);
+        nextSelectedUnitId = availableUnits.length > 0 ? availableUnits[0].id : null;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser, allUnits, authLoading]);
+    
+    if (nextSelectedUnitId !== selectedUnitId) {
+        handleSetSelectedUnitId(nextSelectedUnitId);
+    }
+  }, [currentUser, allUnits, authLoading, selectedUnitId, handleSetSelectedUnitId]);
 
 
   const addUnit = async (unitData: Omit<Unit, 'id' | 'createdAt' | 'services' | 'rooms'>) => {
