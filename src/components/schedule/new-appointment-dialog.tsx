@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -122,7 +121,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     const serviceName = selectedService?.name;
     
     if (!professionalName || !serviceName || !date || !time || !endTime || !room || !selectedUnitId) {
-        toast({ variant: "destructive", title: "Campos incompletos" });
+        toast({ variant: "destructive", title: "Campos incompletos", description: "Todos os campos devem ser preenchidos para criar um agendamento." });
         setIsSaving(false);
         return;
     }
@@ -149,7 +148,7 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
 
 
     if (!isDataValid || !data) {
-      toast({ variant: "destructive", title: "Campos obrigatórios", description: "Por favor, preencha todos os campos do formulário." });
+      toast({ variant: "destructive", title: "Campos obrigatórios", description: "Por favor, selecione um paciente ou grupo válido." });
       setIsSaving(false);
       return;
     }
@@ -234,8 +233,8 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
 
              <div className="space-y-2">
               <Label htmlFor="service">Serviço</Label>
-              <Select onValueChange={setServiceId} value={selectedService?.id || ''} required disabled={isLoading || availableServices.length === 0 || scheduleType === 'group'}>
-                 <SelectTrigger id="service"><SelectValue placeholder="Selecione um serviço" /></SelectTrigger>
+              <Select onValueChange={setServiceId} value={serviceId} required disabled={isLoading || availableServices.length === 0 || scheduleType === 'group'}>
+                 <SelectTrigger id="service"><SelectValue placeholder={availableServices.length === 0 ? "Nenhum serviço disponível" : "Selecione um serviço"} /></SelectTrigger>
                  <SelectContent>
                    {availableServices.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                  </SelectContent>
