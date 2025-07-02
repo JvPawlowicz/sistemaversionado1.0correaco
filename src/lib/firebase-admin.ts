@@ -3,27 +3,15 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
-const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-};
-
-// Check if all required environment variables are present
-const hasAdminCredentials = serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey;
-
-if (hasAdminCredentials && !admin.apps.length) {
+// In a Firebase/Google Cloud environment like App Hosting,
+// the SDK can automatically discover the credentials.
+if (!admin.apps.length) {
   try {
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   } catch (error: any) {
-    // In a serverless environment, sometimes initialization can be attempted multiple times.
-    // We check if the error is about an existing app to avoid unnecessary noise in the logs.
-    if (!/already exists/u.test(error.message)) {
-      console.error('Firebase admin initialization error', error.stack);
-    }
+    console.error('Firebase admin initialization error', error.stack);
   }
 }
 
