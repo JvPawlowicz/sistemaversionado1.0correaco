@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -117,6 +116,11 @@ export function WeeklyView({ appointments, timeBlocks, currentDate, setCurrentDa
   const { units, selectedUnitId } = useUnit();
   const [isActionsDialogOpen, setIsActionsDialogOpen] = React.useState(false);
   const [selectedAppointment, setSelectedAppointment] = React.useState<Appointment | null>(null);
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const selectedUnit = React.useMemo(() => units.find(u => u.id === selectedUnitId), [units, selectedUnitId]);
 
@@ -312,7 +316,7 @@ export function WeeklyView({ appointments, timeBlocks, currentDate, setCurrentDa
                         (currentUser.role === 'Therapist' && currentUser.name === app.professionalName)
                     );
                     
-                    const isPastAndPending = new Date() > new Date(`${app.date}T${app.endTime}`) && app.status === 'Agendado';
+                    const isPastAndPending = isClient && new Date() > new Date(`${app.date}T${app.endTime}`) && app.status === 'Agendado';
 
                     const healthPlan = selectedUnit?.healthPlans?.find(p => p.id === app.healthPlanId);
 

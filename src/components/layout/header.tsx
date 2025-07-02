@@ -28,6 +28,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 export function Header() {
   const { notifications, fetchNotifications } = useNotification();
   const { currentUser } = useAuth();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleMarkAsSeen = async (notificationId: string) => {
     if (!currentUser) return;
@@ -71,7 +76,7 @@ export function Header() {
                         <p className="text-sm text-muted-foreground">{notification.content}</p>
                         <div className="w-full flex justify-between items-center mt-2">
                             <p className="text-xs text-muted-foreground">
-                                {notification.createdAt?.toDate ? formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : 'agora'}
+                                {isClient && notification.createdAt?.toDate ? formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true, locale: ptBR }) : '...'}
                             </p>
                             <Button variant="link" size="sm" className="h-auto p-0" onClick={() => handleMarkAsSeen(notification.id)}>Marcar como lida</Button>
                         </div>
