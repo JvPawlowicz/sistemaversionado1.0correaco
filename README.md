@@ -50,7 +50,30 @@ O Firestore é o banco de dados principal. As coleções mais importantes são:
 
 ### 3.1. Autenticação e Autorização
 - **Login**: `src/app/(auth)/login/page.tsx` utiliza o `AuthContext` para autenticar via Firebase Auth.
-- **Controle de Acesso**: O acesso às páginas e funcionalidades é controlado pela `role` do `currentUser` (`Admin`, `Coordinator`, `Therapist`, `Receptionist`). Verificações são feitas tanto no frontend (para mostrar/ocultar UI) quanto no backend (nas Server Actions).
+- **Controle de Acesso**: O acesso às páginas e funcionalidades é controlado pela `role` do `currentUser`. Verificações são feitas tanto no frontend (para mostrar/ocultar UI) quanto no backend (nas Server Actions). A seguir, o detalhamento de cada papel:
+    -   **Administrador (`Admin`):**
+        -   **Acesso Total:** Possui controle irrestrito sobre todo o sistema.
+        -   **Gestão Global:** É o único que pode criar, editar e excluir Unidades, Usuários e Planos de Saúde para todas as clínicas.
+        -   **Operações Críticas:** Pode realizar ações de alto impacto como a mesclagem de pacientes duplicados.
+        -   **Visibilidade Completa:** Tem acesso a todos os dados de todas as unidades, incluindo dados clínicos e financeiros.
+        -   **Configurações:** Pode enviar notificações para todo o sistema e visualizar os logs de auditoria completos.
+
+    -   **Coordenador (`Coordinator`):**
+        -   **Gestão da Unidade:** Atua como um gerente para as unidades às quais está associado. Pode configurar os serviços, salas e visualizar os dados de desempenho de toda a equipe da unidade.
+        -   **Acesso Clínico:** Possui as mesmas permissões de um terapeuta, podendo gerenciar pacientes, criar evoluções, planos terapêuticos e gerenciar sua própria agenda.
+        -   **Visão de Equipe:** Tem acesso à página de "Desempenho da Equipe" e aos relatórios de análise da unidade.
+
+    -   **Terapeuta (`Therapist`):**
+        -   **Foco Clínico:** O acesso é centrado na atividade clínica.
+        -   **Gestão de Pacientes:** Pode visualizar e gerenciar os detalhes dos seus pacientes, registrar evoluções, criar e gerenciar planos terapêuticos (PTI) e avaliações.
+        -   **Agenda Pessoal:** Visualiza e gerencia apenas os seus próprios agendamentos.
+        -   **Escopo Limitado:** O acesso é restrito aos pacientes e agendamentos da unidade selecionada.
+
+    -   **Recepcionista (`Receptionist`):**
+        -   **Foco Operacional:** Acesso focado na gestão do fluxo da clínica.
+        -   **Gestão da Agenda:** Pode visualizar e gerenciar a agenda de **todos os profissionais** da unidade, incluindo criar, editar e cancelar agendamentos.
+        -   **Gestão de Pacientes:** Pode criar novos pacientes e editar seus dados cadastrais (mas não tem acesso a dados clínicos como evoluções ou planos terapêuticos).
+        -   **Visão da Unidade:** Visualiza o painel com dados gerais da unidade, como total de agendamentos para o dia.
 - **Layout de Autenticação**: O `src/app/(auth)/layout.tsx` provê um layout simples para as páginas de login, enquanto o `src/app/(dashboard)/layout.tsx` protege as rotas do painel principal, redirecionando usuários não autenticados.
 
 ### 3.2. Dashboard (`/dashboard`)
