@@ -53,11 +53,26 @@ O Firestore é o banco de dados principal. As coleções mais importantes são:
 - **Controle de Acesso**: O acesso às páginas e funcionalidades é controlado pela `role` do `currentUser` (`Admin`, `Coordinator`, `Therapist`, `Receptionist`). Verificações são feitas tanto no frontend (para mostrar/ocultar UI) quanto no backend (nas Server Actions).
 - **Layout de Autenticação**: O `src/app/(auth)/layout.tsx` provê um layout simples para as páginas de login, enquanto o `src/app/(dashboard)/layout.tsx` protege as rotas do painel principal, redirecionando usuários não autenticados.
 
-### 3.2. Multi-Unidade (Tenancy)
-- O sistema é projetado para gerenciar múltiplas clínicas (unidades).
-- O `UnitSwitcher` no header permite que usuários com acesso a mais de uma unidade troquem o contexto.
-- A maioria das consultas ao Firestore é filtrada pelo `selectedUnitId` para garantir o isolamento dos dados.
-- Uma `unitId` especial, "central", é usada para recursos globais (como planos de saúde aplicáveis a todas as unidades).
+### 3.2. Dashboard (`/dashboard`)
+
+O Dashboard é a página inicial do sistema e serve como um painel de controle rápido, apresentando os indicadores mais relevantes com base na função do usuário logado.
+
+-   **Visão Geral e KPIs por Função:** A principal característica do Dashboard é a sua capacidade de se adaptar ao usuário.
+    -   **Para Terapeutas:** O foco é no desempenho individual. Os cards de estatísticas (KPIs) exibem:
+        -   `Meus Agendamentos de Hoje`: Uma contagem de sessões que o terapeuta tem no dia atual.
+        -   `Meus Atendimentos no Mês`: Uma contagem de sessões realizadas pelo terapeuta no mês corrente.
+        -   `Meus Pacientes Ativos`: O número de pacientes únicos com status "Ativo" que estão sob os cuidados diretos do terapeuta.
+    -   **Para Admins, Coordenadores e Recepcionistas:** A visão é macro, focada na operação da unidade selecionada. Os KPIs são:
+        -   `Pacientes Ativos`: O número total de pacientes com status "Ativo" na unidade.
+        -   `Agendamentos para Hoje`: O número total de agendamentos na unidade para o dia atual.
+        -   `Terapeutas na Unidade`: A contagem de usuários com a função "Therapist" associados à unidade selecionada.
+
+-   **Gráfico de Atendimentos por Disciplina:** Este gráfico de barras oferece uma visão geral dos serviços mais utilizados na clínica. Ele processa todos os `appointments` do último mês para a unidade selecionada e os agrupa pelo `serviceName`, exibindo a contagem total de atendimentos para cada serviço.
+
+-   **Lista de Próximos Agendamentos:** Para manter o usuário informado, este componente filtra os `appointments` para exibir os 5 próximos compromissos.
+    -   **Para Terapeutas:** Mostra apenas os seus próprios agendamentos futuros.
+    -   **Para Outras Funções:** Mostra todos os agendamentos futuros da unidade.
+    -   Cada item exibe o avatar e o nome do paciente, o nome do profissional e a data/hora do agendamento, permitindo uma visualização rápida da agenda futura.
 
 ### 3.3. Gestão de Pacientes
 
@@ -72,11 +87,11 @@ Este módulo é central para o sistema e foi projetado com um foco rigoroso na i
         -   **Se o paciente não é encontrado:** Somente após a busca não retornar resultados, o sistema habilita o formulário para a criação de um novo paciente, garantindo que não haja duplicatas.
 
 -   **Detalhes do Paciente (`/patients/[id]`):** Esta é a visão 360º do paciente, organizada em abas para facilitar o acesso às informações:
-    -   **Evolução:** Um feed cronológico de todos os registros de evolução.
-    -   **Plano Terapêutico:** Visualiza e gerencia o Plano Terapêutico Individual (PTI), incluindo metas de longo prazo e objetivos de curto prazo com critérios de maestria.
-    -   **Documentos:** Permite o upload e a visualização de arquivos associados ao paciente, como exames e relatórios.
-    -   **Familiares:** Gerencia uma lista de contatos e familiares.
-    -   **Perfil Completo:** Exibe todos os dados cadastrais do paciente em um só lugar.
+    -   **Evolução:** Um feed cronológico de todos os registros de evolução (`evolutionRecords`). Permite a criação de novos registros, que podem ser baseados em modelos (templates) para agilizar o preenchimento.
+    -   **Plano Terapêutico:** Visualiza e gerencia o Plano Terapêutico Individual (PTI), incluindo metas de longo prazo e objetivos de curto prazo com critérios de maestria. Cada objetivo pode ter seu progresso rastreado e visualizado através de um gráfico.
+    -   **Documentos:** Permite o upload e a visualização de arquivos associados ao paciente (como exames e relatórios), que são armazenados na subcoleção `documents`.
+    -   **Familiares:** Gerencia uma lista de contatos e familiares (`familyMembers`), com informações como nome, parentesco e telefone.
+    -   **Perfil Completo:** Exibe todos os dados cadastrais do paciente (informações pessoais, de contato, filiação e clínicas) em um só lugar para fácil consulta.
 
 -   **Mesclagem de Pacientes (`/merge-patients`):** Uma ferramenta administrativa poderosa e crítica, projetada para corrigir erros de duplicação.
     -   **Funcionalidade:** Permite que um administrador selecione dois registros de pacientes duplicados (um "principal" a ser mantido e um "secundário" a ser excluído).
@@ -111,3 +126,4 @@ Este módulo é central para o sistema e foi projetado com um foco rigoroso na i
 - **Gestão de Usuários e Unidades**: Páginas `/users` e `/units` permitem que Admins gerenciem o sistema.
 - **Logs**: A página `/logs` exibe um feed de auditoria de todas as ações importantes, gravadas na coleção `logs` pela função `createLog`.
 - **Notificações**: Admins podem enviar notificações para todos os usuários, por função, por unidade ou para usuários específicos. As notificações não lidas são exibidas no header.
+- **Multi-Unidade (Tenancy)**: O sistema é projetado para gerenciar múltiplas clínicas (unidades). O `UnitSwitcher` no header permite que usuários com acesso a mais de uma unidade troquem o contexto. A maioria das consultas ao Firestore é filtrada pelo `selectedUnitId` para garantir o isolamento dos dados. Uma `unitId` especial, "central", é usada para recursos globais (como planos de saúde aplicáveis a todas as unidades).
