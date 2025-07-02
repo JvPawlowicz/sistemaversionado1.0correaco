@@ -140,12 +140,41 @@ Este módulo é central para o sistema e foi projetado com um foco rigoroso na i
 - **Plano Terapêutico Individual (PTI)**: Gerenciado na aba "Plano Terapêutico" do paciente. Os dados são complexos e aninhados, e salvos diretamente no documento do `patient`. Inclui metas e objetivos de curto prazo com critérios de maestria.
 - **Progresso de Objetivos**: As evoluções podem ser vinculadas a objetivos específicos do PTI. Os dados de progresso (ex: % de acerto, frequência) são salvos junto com o registro de evolução. O gráfico de progresso na tela do PTI visualiza esses dados.
 
-### 3.6. Relatórios e Análises
-- A página `/analysis` é a central de BI do sistema.
-- **Hidratação**: Esta página realiza cálculos complexos baseados em datas. Para evitar erros de hidratação do Next.js, toda a lógica de cálculo foi movida para `useEffect`, garantindo que seja executada apenas no lado do cliente.
-- **Gráficos**: Utiliza `recharts` e um wrapper customizado (`ChartContainer`) para exibir os dados.
+### 3.6. Análise e Relatórios (`/analysis`)
+Este módulo serve como a central de Business Intelligence (BI) da clínica, permitindo que coordenadores e administradores explorem os dados, identifiquem tendências e gerem relatórios detalhados.
 
-### 3.7. Administração do Sistema
+-   **Arquitetura e Hidratação:** A página realiza cálculos complexos com base em períodos. Para evitar erros de hidratação do Next.js (diferenças entre o conteúdo gerado no servidor e o renderizado no cliente), toda a lógica de cálculo de dados e manipulação de datas foi movida para um hook `useEffect`. Isso garante que as operações sejam executadas apenas no navegador do cliente, garantindo estabilidade.
+
+-   **Funcionalidades por Aba:**
+    -   **Visão Geral e KPIs:** Apresenta indicadores chave de desempenho, como taxa de ocupação e de faltas, e um gráfico de pizza com a distribuição geral dos status dos agendamentos (realizado, faltou, etc.) nos últimos 30 dias.
+    -   **Relatório de Agendamentos:** Uma ferramenta poderosa que permite filtrar todos os agendamentos por um intervalo de datas, paciente, profissional, serviço, plano de saúde e status. Os resultados são exibidos em uma tabela e podem ser exportados para um documento **PDF**.
+    -   **Relatório de Evoluções:** Similar ao de agendamentos, permite gerar relatórios de todos os registros de evolução com base em período, paciente e profissional. Também oferece exportação para PDF.
+    -   **Análise Demográfica:** Fornece uma visão aprofundada do perfil dos pacientes da unidade, com gráficos de barra e de pizza exibindo a distribuição por faixa etária, gênero, estado civil, plano de saúde e uma lista com os 10 diagnósticos mais comuns.
+
+### 3.7. Desempenho da Equipe (`/team-performance`)
+Esta página é dedicada a analisar a produtividade e os resultados dos profissionais da clínica, fornecendo aos coordenadores e administradores uma visão clara do desempenho da equipe.
+
+-   **Análise por Período:** Permite filtrar os dados por um intervalo de datas para analisar o desempenho em períodos específicos (ex: último mês, último trimestre).
+-   **Métricas por Profissional:** Exibe uma tabela consolidada com as seguintes métricas para cada terapeuta na unidade:
+    -   **Atendimentos Realizados:** Contagem total de agendamentos com status "Realizado".
+    -   **Taxa de Ocupação:** A porcentagem de agendamentos (não cancelados) que foram efetivamente realizados.
+    -   **Taxa de Faltas:** A porcentagem de agendamentos (não cancelados) em que o paciente faltou.
+    -   **Evoluções Registradas:** O número total de registros de evolução criados pelo profissional no período, um indicador de documentação clínica em dia.
+
+### 3.8. Planejamento e Disponibilidade (`/planning`)
+Este módulo é crucial para a organização da agenda da clínica e é dividido em duas funcionalidades principais, acessíveis a coordenadores e administradores.
+
+-   **Disponibilidade de Profissionais:**
+    -   Permite configurar os horários de trabalho **recorrentes** para cada profissional em cada dia da semana.
+    -   É possível definir diferentes tipos de horário: `Livre` (para agendamentos de pacientes), `Planejamento` e `Supervisão`.
+    -   Esses horários são usados para renderizar o fundo da agenda nas visualizações de Dia e Semana, mostrando claramente os períodos de trabalho de cada um e bloqueando agendamentos em horários de planejamento ou supervisão.
+
+-   **Bloqueios Gerais:**
+    -   Permite criar bloqueios de tempo **únicos e não recorrentes** na agenda, como feriados, reuniões de equipe, eventos ou treinamentos.
+    -   Um bloqueio pode ser aplicado a **toda a unidade** ou a **profissionais específicos**.
+    -   Esses bloqueios têm prioridade sobre a disponibilidade normal e são exibidos de forma destacada na agenda, impedindo a criação de agendamentos nesses horários.
+
+### 3.9. Administração do Sistema
 - **Gestão de Usuários e Unidades**: Páginas `/users` e `/units` permitem que Admins gerenciem o sistema.
 - **Logs**: A página `/logs` exibe um feed de auditoria de todas as ações importantes, gravadas na coleção `logs` pela função `createLog`.
 - **Notificações**: Admins podem enviar notificações para todos os usuários, por função, por unidade ou para usuários específicos. As notificações não lidas são exibidas no header.
