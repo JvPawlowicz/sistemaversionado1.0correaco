@@ -69,10 +69,12 @@ O Firestore é o banco de dados principal. As coleções mais importantes são:
 - **Mesclagem**: `/merge-patients` é uma ferramenta poderosa para Admins, que permite combinar dois registros de pacientes duplicados em um só, reassociando todos os agendamentos, documentos e evoluções.
 
 ### 3.4. Agenda e Agendamentos
-- **Visualizações**: A página `/schedule` oferece visualizações de Dia, Semana e Mês.
-- **Lógica de Layout**: Os componentes `DailyView` e `WeeklyView` contêm uma lógica complexa (`calculateAppointmentLayout`) para renderizar agendamentos sobrepostos lado a lado, calculando dinamicamente a largura e a posição de cada evento.
-- **Agendamentos em Grupo**: São implementados criando múltiplos documentos de `appointment`, um para cada paciente do grupo, todos compartilhando o mesmo `groupId`. A UI então agrupa esses eventos visualmente.
-- **Disponibilidade**: A agenda renderiza os horários de trabalho, planejamento e supervisão definidos em `user.availability`, além de bloqueios gerais da coleção `timeBlocks`.
+- **Visualizações**: A página `/schedule` oferece visualizações de Dia, Semana e Mês através de abas que controlam qual componente de visualização é renderizado.
+- **Lógica de Layout (Overlap)**: Esta é uma das partes mais complexas da UI. Os componentes `DailyView` e `WeeklyView` contêm uma função sofisticada (`calculateAppointmentLayout`). Esta função recebe uma lista de agendamentos para um dia específico e, se detectar que dois ou mais eventos se sobrepõem no tempo, calcula dinamicamente a `largura` e a `posição horizontal` de cada evento. Ela os organiza em "colunas virtuais" para que fiquem lado a lado, em vez de um sobre o outro, maximizando o uso do espaço visual e garantindo que todos os agendamentos sejam visíveis e clicáveis.
+- **Agendamentos em Grupo**: A funcionalidade de grupo é implementada de forma a permitir rastreamento individual. Em vez de um único documento de agendamento com múltiplos pacientes, o sistema cria vários documentos de `appointment`, um para cada paciente do grupo. A chave é que todos esses documentos compartilham o mesmo `groupId`. Isso permite que o status de cada paciente seja gerenciado individualmente (ex: um paciente compareceu, outro faltou). Na interface, a lógica dos componentes de visualização (`DailyView`, `WeeklyView`) identifica os agendamentos com o mesmo `groupId` e os renderiza como um único bloco visual para clareza, exibindo o nome do grupo e a contagem de participantes.
+- **Renderização de Disponibilidade**: A grade da agenda não é apenas um fundo em branco. Ela renderiza dinamicamente os horários de cada profissional. Isso é feito combinando duas fontes de dados:
+    1. **`user.availability`**: Um campo no documento de cada usuário que armazena seus horários recorrentes de trabalho (`Free`), planejamento (`Planning`) e supervisão (`Supervision`) para cada dia da semana.
+    2. **`timeBlocks`**: Uma coleção separada no Firestore que armazena bloqueios de tempo únicos e não recorrentes, como reuniões de equipe, feriados ou outros eventos que bloqueiam a agenda para toda a unidade ou para usuários específicos.
 
 ### 3.5. Documentação Clínica
 - **Registros de Evolução**: Armazenados na subcoleção `patients/[id]/evolutionRecords`. Podem ser criados com base em modelos de texto simples ou modelos estruturados.
