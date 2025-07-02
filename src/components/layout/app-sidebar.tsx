@@ -32,6 +32,7 @@ import {
   Shield,
   AreaChart,
   GitMerge,
+  Bot
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnit } from '@/contexts/UnitContext';
@@ -51,6 +52,7 @@ export function AppSidebar() {
     { href: '/evolutions', label: 'Evoluções Pendentes', icon: FileText, roles: ['Admin', 'Coordinator', 'Therapist'] },
     { href: '/assessments', label: 'Avaliações', icon: ClipboardCheck, roles: ['Admin', 'Coordinator', 'Therapist'] },
     { href: '/templates', label: 'Modelos', icon: NotebookText, roles: ['Admin', 'Coordinator', 'Therapist'] },
+    { href: '/ai-notes', label: 'Anotações IA', icon: Bot, roles: ['Admin', 'Coordinator', 'Therapist'] },
   ];
   const managementItems = [
     { href: '/analysis', label: 'Análise e Relatórios', icon: LineChart, roles: ['Admin', 'Coordinator'] },

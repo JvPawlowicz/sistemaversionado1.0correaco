@@ -1,1 +1,8 @@
-// Genkit functionality has been disabled.
+'use server';
+
+import { genkit } from 'genkit';
+import { googleAI } from 'genkit/plugins/googleai';
+
+export const ai = genkit({
+  plugins: [googleAI()],
+});

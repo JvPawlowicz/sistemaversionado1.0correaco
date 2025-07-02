@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@google-ai/generativelanguage": "^2.3.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -38,6 +39,7 @@
     "date-fns": "^3.6.0",
     "firebase": "^11.9.1",
     "firebase-admin": "^12.2.0",
+    "genkit": "^1.0.0",
     "immer": "^10.1.1",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
