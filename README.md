@@ -60,13 +60,32 @@ O Firestore é o banco de dados principal. As coleções mais importantes são:
 - Uma `unitId` especial, "central", é usada para recursos globais (como planos de saúde aplicáveis a todas as unidades).
 
 ### 3.3. Gestão de Pacientes
-- **Listagem**: `/patients` exibe uma tabela de pacientes filtrada por unidade.
-- **Criação**: `/patients/new` implementa um fluxo crucial de 2 passos para evitar duplicatas:
-    1. Busca global pelo nome ou CPF do paciente.
-    2. Se encontrado, permite vincular o paciente existente à unidade atual (`linkPatientToUnitAction`).
-    3. Se não encontrado, exibe o formulário de criação.
-- **Detalhes do Paciente**: `/patients/[id]` é uma visão detalhada com abas, onde todas as informações clínicas e administrativas do paciente são gerenciadas (evoluções, plano terapêutico, documentos, etc.).
-- **Mesclagem**: `/merge-patients` é uma ferramenta poderosa para Admins, que permite combinar dois registros de pacientes duplicados em um só, reassociando todos os agendamentos, documentos e evoluções.
+
+Este módulo é central para o sistema e foi projetado com um foco rigoroso na integridade dos dados e na prevenção de duplicatas em um ambiente multi-unidade.
+
+-   **Listagem (`/patients`):** A tela principal exibe uma tabela de todos os pacientes associados à unidade selecionada. A tabela é paginada e permite buscas rápidas por nome ou CPF. Também inclui filtros por plano de saúde. Para administradores, a tela exibe uma **sugestão de otimização**, alertando sobre pacientes com nomes idênticos que são candidatos à mesclagem.
+
+-   **Fluxo de Criação Anti-Duplicidade (`/patients/new`):** A criação de um novo paciente é um processo deliberado de duas etapas para garantir a integridade dos dados em toda a rede de clínicas:
+    1.  **Busca Global:** O primeiro passo obriga o usuário a realizar uma busca global pelo nome ou CPF do paciente. Esta busca (`searchPatientsGloballyAction`) verifica **todas as unidades** para ver se o paciente já existe no sistema.
+    2.  **Vinculação ou Criação:**
+        -   **Se o paciente é encontrado:** O sistema exibe o perfil existente e informa em quais unidades ele já está cadastrado. O usuário pode então usar a ação `linkPatientToUnitAction` para simplesmente **vincular** o paciente existente à unidade atual, sem criar um novo registro. Isso mantém um prontuário único para o paciente em toda a organização.
+        -   **Se o paciente não é encontrado:** Somente após a busca não retornar resultados, o sistema habilita o formulário para a criação de um novo paciente, garantindo que não haja duplicatas.
+
+-   **Detalhes do Paciente (`/patients/[id]`):** Esta é a visão 360º do paciente, organizada em abas para facilitar o acesso às informações:
+    -   **Evolução:** Um feed cronológico de todos os registros de evolução.
+    -   **Plano Terapêutico:** Visualiza e gerencia o Plano Terapêutico Individual (PTI), incluindo metas de longo prazo e objetivos de curto prazo com critérios de maestria.
+    -   **Documentos:** Permite o upload e a visualização de arquivos associados ao paciente, como exames e relatórios.
+    -   **Familiares:** Gerencia uma lista de contatos e familiares.
+    -   **Perfil Completo:** Exibe todos os dados cadastrais do paciente em um só lugar.
+
+-   **Mesclagem de Pacientes (`/merge-patients`):** Uma ferramenta administrativa poderosa e crítica, projetada para corrigir erros de duplicação.
+    -   **Funcionalidade:** Permite que um administrador selecione dois registros de pacientes duplicados (um "principal" a ser mantido e um "secundário" a ser excluído).
+    -   **Processo Atômico:** Ao confirmar, a `mergePatientsAction` executa um processo em lote (batch) no Firestore que:
+        1.  Transfere todos os registros associados (agendamentos, evoluções, documentos, etc.) do paciente secundário para o principal.
+        2.  Atualiza os campos do paciente principal com informações do secundário, caso os campos do principal estejam vazios.
+        3.  Remove o paciente secundário da lista de participantes em grupos de terapia.
+        4.  Exclui permanentemente o registro do paciente secundário.
+    -   **Ação Irreversível:** A interface destaca que esta é uma ação permanente e que deve ser usada com extrema cautela para manter a integridade do histórico do paciente.
 
 ### 3.4. Agenda e Agendamentos
 - **Visualizações**: A página `/schedule` oferece visualizações de Dia, Semana e Mês através de abas que controlam qual componente de visualização é renderizado.
