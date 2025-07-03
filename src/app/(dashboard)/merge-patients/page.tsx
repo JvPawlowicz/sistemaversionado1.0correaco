@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useActionState, useState, useEffect } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useState, useEffect } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePatient } from '@/contexts/PatientContext';
@@ -106,7 +106,7 @@ export default function MergePatientsPage() {
 
   const [primaryPatientId, setPrimaryPatientId] = useState<string | null>(null);
   const [secondaryPatientId, setSecondaryPatientId] = useState<string | null>(null);
-  const [state, formAction] = useActionState(mergePatientsAction, initialState);
+  const [state, formAction] = useFormState(mergePatientsAction, initialState);
 
   React.useEffect(() => {
     if (state.success) {

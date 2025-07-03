@@ -1,7 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,7 +70,7 @@ const formatDetailsString = (values: Record<string, any>, fields: TemplateField[
 };
 
 export function NewEvolutionRecordDialog({ isOpen, onOpenChange, patient, onRecordAdded }: NewEvolutionRecordDialogProps) {
-  const [state, formAction] = useActionState(createEvolutionRecordAction, initialState);
+  const [state, formAction] = useFormState(createEvolutionRecordAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const { currentUser } = useAuth();

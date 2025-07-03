@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useActionState, useEffect, useMemo, useRef } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useMemo, useRef } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 
 import {
   Dialog,
@@ -69,8 +69,8 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
   const { currentUser } = useAuth();
   
   const [view, setView] = React.useState<'actions' | 'evolution' | 'edit'>('actions');
-  const [evolutionState, evolutionFormAction] = useActionState(completeAppointmentWithEvolutionAction, evolutionInitialState);
-  const [editState, editFormAction] = useActionState(updateAppointmentAction, evolutionInitialState);
+  const [evolutionState, evolutionFormAction] = useFormState(completeAppointmentWithEvolutionAction, evolutionInitialState);
+  const [editState, editFormAction] = useFormState(updateAppointmentAction, evolutionInitialState);
   
   const evolutionFormRef = useRef<HTMLFormElement>(null);
   const editFormRef = useRef<HTMLFormElement>(null);

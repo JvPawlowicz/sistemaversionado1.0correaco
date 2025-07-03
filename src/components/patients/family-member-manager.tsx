@@ -1,7 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import type { FamilyMember } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,7 +47,7 @@ export function FamilyMemberManager({ patientId, familyMembers, isLoading, onFam
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const [addState, formAction] = useActionState(addFamilyMemberAction.bind(null, patientId), addInitialState);
+  const [addState, formAction] = useFormState(addFamilyMemberAction.bind(null, patientId), addInitialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

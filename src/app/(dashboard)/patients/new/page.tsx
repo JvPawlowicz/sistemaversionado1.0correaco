@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useActionState, useEffect, useRef } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useRef } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Loader2, Search, UserPlus, HeartPulse, Link as LinkIcon, Building, CircleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,7 @@ export default function NewPatientPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const [createState, createFormAction] = useActionState(createPatientAction, createInitialState);
+  const [createState, createFormAction] = useFormState(createPatientAction, createInitialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   React.useEffect(() => {

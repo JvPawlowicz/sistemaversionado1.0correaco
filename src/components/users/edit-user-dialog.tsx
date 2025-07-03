@@ -1,7 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import {
   Dialog,
   DialogContent,
@@ -51,7 +51,7 @@ function SubmitButton() {
 }
 
 export function EditUserDialog({ isOpen, onOpenChange, user }: EditUserDialogProps) {
-  const [state, formAction] = useActionState(updateUserAction, initialState);
+  const [state, formAction] = useFormState(updateUserAction, initialState);
   const { toast } = useToast();
   const { units, loading: unitsLoading } = useUnit();
   const { fetchUsers } = useUser();

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useFormStatus } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,7 +37,7 @@ function SubmitButton({ isEditing }: { isEditing: boolean }) {
 export function TemplateDialog({ isOpen, onOpenChange, template }: TemplateDialogProps) {
   const isEditing = !!template;
   const action = isEditing ? updateEvolutionTemplateAction : createEvolutionTemplateAction;
-  const [state, formAction] = React.useActionState(action, initialState);
+  const [state, formAction] = useFormState(action, initialState);
 
   const { toast } = useToast();
   const formRef = React.useRef<HTMLFormElement>(null);

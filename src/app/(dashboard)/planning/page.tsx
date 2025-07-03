@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,7 +48,7 @@ export default function PlanningPage() {
   const { units, selectedUnitId } = useUnit();
   const professionals = users.filter(u => u.role === 'Therapist' || u.role === 'Coordinator');
   
-  const [state, formAction] = useActionState(createTimeBlockAction, initialState);
+  const [state, formAction] = useFormState(createTimeBlockAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [date, setDate] = useState<Date | undefined>();

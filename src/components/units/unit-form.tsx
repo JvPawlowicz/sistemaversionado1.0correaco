@@ -1,10 +1,10 @@
 'use client';
 
-import { useActionState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useFormStatus } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -47,7 +47,7 @@ function SubmitButton() {
 }
 
 export function UnitForm({ unit, onUnitUpdated }: { unit: Unit, onUnitUpdated: () => void }) {
-  const [state, formAction] = useActionState(updateUnitAction, initialState);
+  const [state, formAction] = useFormState(updateUnitAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState, useMemo } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +45,7 @@ function SubmitButton() {
 }
 
 export function EditPatientDialog({ isOpen, onOpenChange, patient, onPatientUpdated }: EditPatientDialogProps) {
-  const [state, formAction] = useActionState(updatePatientDetailsAction, initialState);
+  const [state, formAction] = useFormState(updatePatientDetailsAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const { units, loading: unitsLoading } = useUnit();

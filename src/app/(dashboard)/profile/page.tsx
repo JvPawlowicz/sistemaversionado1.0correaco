@@ -10,8 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, CircleAlert, AlertCircle, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { updateUserProfessionalDetailsAction, updateUserAvatarAction } from '@/lib/actions/user';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
@@ -67,10 +66,10 @@ export default function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
   const { toast } = useToast();
   
-  const [professionalState, professionalFormAction] = useActionState(updateUserProfessionalDetailsAction, professionalInitialState);
+  const [professionalState, professionalFormAction] = useFormState(updateUserProfessionalDetailsAction, professionalInitialState);
   const professionalFormRef = React.useRef<HTMLFormElement>(null);
 
-  const [avatarState, avatarFormAction] = useActionState(updateUserAvatarAction, avatarInitialState);
+  const [avatarState, avatarFormAction] = useFormState(updateUserAvatarAction, avatarInitialState);
 
   React.useEffect(() => {
     if (currentUser) {
