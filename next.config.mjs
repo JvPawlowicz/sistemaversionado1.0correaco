@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Expose the Firebase web app config to the browser
-  env: {
-    NEXT_PUBLIC_FIREBASE_CONFIG: process.env.FIREBASE_WEBAPP_CONFIG,
-  },
   images: {
     remotePatterns: [
       {
@@ -13,11 +9,11 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
-      },
+      }
     ],
   },
-  experimental: {
-    instrumentationHook: true,
+  env: {
+    NEXT_PUBLIC_FIREBASE_CONFIG: process.env.FIREBASE_WEBAPP_CONFIG,
   },
 };
 
