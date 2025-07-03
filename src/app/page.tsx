@@ -1,40 +1,35 @@
-
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Logo } from '@/components/icons';
 import {
   Calendar,
   FileText,
-  ClipboardCheck,
-  LineChart,
-  Target,
-  Users,
-  Building,
-  Twitter,
-  Instagram,
-  Linkedin,
+  Star,
+  ArrowRight
 } from 'lucide-react';
+import Image from 'next/image';
 
 export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center">
-          <Link href="#" className="mr-6 flex items-center space-x-2">
+          <Link href="/" className="mr-6 flex items-center space-x-2">
             <Logo className="h-6 w-6" />
             <span className="font-bold">Equidade+</span>
           </Link>
           <nav className="hidden flex-1 items-center gap-6 text-sm md:flex">
-            <Link href="#features" className="text-muted-foreground transition-colors hover:text-foreground">
+            <Link href="/#features" className="text-muted-foreground transition-colors hover:text-foreground">
               Funcionalidades
             </Link>
-            <Link href="#for-whom" className="text-muted-foreground transition-colors hover:text-foreground">
-              Para Quem É?
+            <Link href="/#testimonials" className="text-muted-foreground transition-colors hover:text-foreground">
+              Depoimentos
             </Link>
-            <Link href="#contact" className="text-muted-foreground transition-colors hover:text-foreground">
-              Contato
+            <Link href="/#pricing" className="text-muted-foreground transition-colors hover:text-foreground">
+              Preços
             </Link>
           </nav>
           <div className="flex flex-1 items-center justify-end space-x-4">
@@ -47,133 +42,199 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section id="hero" className="relative w-full py-20 md:py-32 lg:py-40">
-           <div
-            className="absolute inset-0 bg-cover bg-center opacity-10 dark:opacity-20"
-            style={{ backgroundImage: "url('https://placehold.co/1920x1080.png')" }}
-            data-ai-hint="abstract background"
-          />
-          <div className="container relative text-center">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              A Gestão Clínica que Entende o Cuidado Multidisciplinar.
-            </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground md:text-xl">
-              Centralize agendamentos, planos terapêuticos e evoluções em um só lugar. Uma plataforma projetada para as necessidades de clínicas com foco em neurodivergência.
-            </p>
-            <div className="mt-10">
-              <Button size="lg" asChild>
-                <Link href="/login">Acessar a Plataforma</Link>
-              </Button>
+        <section id="hero" className="w-full py-20 md:py-32 lg:py-40">
+          <div className="container grid grid-cols-1 items-center gap-8 text-center lg:grid-cols-2 lg:text-left">
+            <div className="space-y-6">
+              <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
+                A Gestão Clínica que Entende o Cuidado Multidisciplinar.
+              </h1>
+              <p className="mx-auto max-w-3xl text-lg text-muted-foreground md:text-xl lg:mx-0">
+                Centralize agendamentos, planos terapêuticos e evoluções em um só lugar. Uma plataforma projetada para as necessidades de clínicas com foco em neurodivergência.
+              </p>
+              <div className="flex flex-col gap-4 sm:flex-row justify-center lg:justify-start">
+                <Button size="lg" asChild>
+                  <Link href="/login">Começar Agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/#features">Ver Funcionalidades</Link>
+                </Button>
+              </div>
+            </div>
+            <div className="relative mx-auto w-full max-w-2xl">
+                <Image
+                    src="https://placehold.co/1200x800.png"
+                    width={1200}
+                    height={800}
+                    alt="Dashboard da Plataforma Equidade+"
+                    className="rounded-xl shadow-2xl"
+                    data-ai-hint="dashboard analytics"
+                />
             </div>
           </div>
         </section>
 
         {/* Features Section */}
         <section id="features" className="w-full bg-muted py-20 md:py-24">
-          <div className="container">
+          <div className="container space-y-16">
             <div className="mx-auto max-w-3xl text-center">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
                 Tudo o que você precisa para uma gestão integrada.
               </h2>
+              <p className="mt-4 text-lg text-muted-foreground">
+                Deixe a burocracia de lado e foque no que realmente importa: o cuidado e a evolução dos seus pacientes.
+              </p>
             </div>
-            <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="items-center">
-                  <div className="rounded-full bg-primary/10 p-4 text-primary">
-                    <Calendar className="h-8 w-8" />
-                  </div>
-                  <CardTitle>Agenda Inteligente</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center text-muted-foreground">
-                  Gestão de horários individuais, em grupo, com controle de recursos e integração de convênios.
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="items-center">
-                   <div className="rounded-full bg-primary/10 p-4 text-primary">
-                    <FileText className="h-8 w-8" />
-                  </div>
-                  <CardTitle>PTI e Evoluções</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center text-muted-foreground">
-                  Crie Planos Terapêuticos dinâmicos e vincule-os às evoluções diárias de forma simples.
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="items-center">
-                   <div className="rounded-full bg-primary/10 p-4 text-primary">
-                    <ClipboardCheck className="h-8 w-8" />
-                  </div>
-                  <CardTitle>Avaliações Padronizadas</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center text-muted-foreground">
-                  Aplique protocolos e avaliações com cálculo de resultados para agilizar o diagnóstico.
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="items-center">
-                   <div className="rounded-full bg-primary/10 p-4 text-primary">
-                    <LineChart className="h-8 w-8" />
-                  </div>
-                  <CardTitle>Relatórios e Análise</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center text-muted-foreground">
-                  Tome decisões baseadas em dados com dashboards e relatórios de desempenho da clínica e equipe.
-                </CardContent>
-              </Card>
+            {/* Feature 1 */}
+            <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-16">
+              <div className="space-y-4">
+                <div className="inline-block rounded-lg bg-primary/10 p-3 text-primary">
+                  <Calendar className="h-8 w-8" />
+                </div>
+                <h3 className="text-2xl font-bold">Agenda Inteligente e Flexível</h3>
+                <p className="text-muted-foreground">
+                  Organize os horários de múltiplos profissionais com facilidade. Crie agendamentos individuais ou em grupo, gerencie salas e equipamentos, e integre com planos de saúde para faturamento automático.
+                </p>
+                <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
+                  <li>Visualizações por dia, semana e mês.</li>
+                  <li>Lógica de sobreposição para múltiplos eventos.</li>
+                  <li>Bloqueios de horários para reuniões e feriados.</li>
+                </ul>
+              </div>
+              <Image
+                src="https://placehold.co/800x600.png"
+                width={800}
+                height={600}
+                alt="Agenda Inteligente"
+                className="rounded-xl shadow-lg"
+                data-ai-hint="calendar schedule"
+              />
+            </div>
+            {/* Feature 2 */}
+            <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-16">
+                 <Image
+                    src="https://placehold.co/800x600.png"
+                    width={800}
+                    height={600}
+                    alt="Plano Terapêutico Individual"
+                    className="rounded-xl shadow-lg lg:order-first"
+                    data-ai-hint="therapist notes"
+                />
+              <div className="space-y-4">
+                <div className="inline-block rounded-lg bg-primary/10 p-3 text-primary">
+                  <FileText className="h-8 w-8" />
+                </div>
+                <h3 className="text-2xl font-bold">Plano Terapêutico Individual (PTI) e Evoluções</h3>
+                <p className="text-muted-foreground">
+                  Crie planos de tratamento personalizados com metas de longo prazo e objetivos de curto prazo. Vincule cada evolução de sessão diretamente aos objetivos, registrando o progresso de forma clara e visual.
+                </p>
+                <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
+                  <li>Defina critérios de maestria para cada objetivo.</li>
+                  <li>Visualize o progresso com gráficos automáticos.</li>
+                  <li>Use modelos para agilizar a criação de registros.</li>
+                </ul>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* For Whom Section */}
-        <section id="for-whom" className="w-full py-20 md:py-24">
+        {/* Testimonials Section */}
+        <section id="testimonials" className="w-full py-20 md:py-24">
           <div className="container">
             <div className="mx-auto max-w-3xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                Uma Plataforma Pensada para Toda a Equipe
-              </h2>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Amado por Clínicas em Todo o Brasil</h2>
+              <p className="mt-4 text-lg text-muted-foreground">
+                Veja o que nossos parceiros estão dizendo sobre a transformação que o Equidade+ trouxe para suas operações.
+              </p>
             </div>
-            <div className="mt-12 grid gap-8 md:grid-cols-1 lg:grid-cols-3">
-              <Card className="flex flex-col items-center text-center">
-                <CardHeader>
-                  <Building className="h-10 w-10 text-primary" />
-                  <CardTitle>Para Gestores</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 text-muted-foreground">
-                  Tenha uma visão 360º da sua operação, com relatórios financeiros, de produtividade e gestão centralizada de unidades e usuários.
+            <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex space-x-1">
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                  </div>
+                  <blockquote className="mt-4 text-lg font-semibold leading-relaxed">
+                    “O Equidade+ revolucionou nossa gestão. A economia de tempo com documentação nos permitiu focar 100% nos pacientes. A visão integrada da agenda e dos planos terapêuticos é fantástica.”
+                  </blockquote>
                 </CardContent>
+                <CardHeader className="flex-row items-center gap-4">
+                  <Avatar>
+                    <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="woman portrait" />
+                    <AvatarFallback>AD</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-base">Ana da Silva</CardTitle>
+                    <CardDescription>Coordenadora da Clínica Crescer</CardDescription>
+                  </div>
+                </CardHeader>
               </Card>
-              <Card className="flex flex-col items-center text-center">
-                <CardHeader>
-                  <Target className="h-10 w-10 text-primary" />
-                  <CardTitle>Para Terapeutas</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 text-muted-foreground">
-                  Foque no atendimento. Documente evoluções, acompanhe metas do PTI e aplique avaliações de forma rápida e intuitiva.
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex space-x-1">
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                  </div>
+                  <blockquote className="mt-4 text-lg font-semibold leading-relaxed">
+                    “Como terapeuta, ter acesso rápido ao PTI e registrar a evolução na mesma tela é um divisor de águas. Os gráficos de progresso ajudam muito nas conversas com os pais.”
+                  </blockquote>
                 </CardContent>
+                <CardHeader className="flex-row items-center gap-4">
+                   <Avatar>
+                    <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="man portrait" />
+                    <AvatarFallback>JP</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-base">João Pereira</CardTitle>
+                    <CardDescription>Fisioterapeuta</CardDescription>
+                  </div>
+                </CardHeader>
               </Card>
-              <Card className="flex flex-col items-center text-center">
-                <CardHeader>
-                  <Users className="h-10 w-10 text-primary" />
-                  <CardTitle>Para a Recepção</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 text-muted-foreground">
-                  Organize a agenda de todos os profissionais, gerencie o fluxo de pacientes e centralize as informações de cadastro e convênios.
+               <Card>
+                <CardContent className="pt-6">
+                  <div className="flex space-x-1">
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                  </div>
+                  <blockquote className="mt-4 text-lg font-semibold leading-relaxed">
+                    “A organização da agenda de todos os terapeutas ficou muito mais clara. Consigo gerenciar o fluxo da recepção de forma eficiente e sem conflitos de horários. Recomendo!”
+                  </blockquote>
                 </CardContent>
+                <CardHeader className="flex-row items-center gap-4">
+                  <Avatar>
+                    <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="woman professional" />
+                    <AvatarFallback>CS</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-base">Carla Souza</CardTitle>
+                    <CardDescription>Recepcionista</CardDescription>
+                  </div>
+                </CardHeader>
               </Card>
             </div>
           </div>
         </section>
 
         {/* Final CTA Section */}
-        <section id="cta" className="w-full bg-primary/5 py-20">
+        <section id="pricing" className="w-full bg-muted py-20">
           <div className="container text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Pronto para transformar a gestão da sua clínica?
             </h2>
+             <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+              Junte-se a dezenas de clínicas que já estão otimizando seu tempo e melhorando a qualidade do cuidado.
+            </p>
             <div className="mt-8">
               <Button size="lg" asChild>
-                <Link href="/login">Acessar a Plataforma</Link>
+                <Link href="/login">Começar Agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
             </div>
           </div>
@@ -181,25 +242,41 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer id="contact" className="border-t bg-muted/50">
-        <div className="container py-8">
-          <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <div className="flex items-center gap-2">
-              <Logo className="h-6 w-6" />
-              <span className="font-bold">Equidade+</span>
+      <footer className="border-t">
+        <div className="container py-12">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            <div className="col-span-2 space-y-4 md:col-span-1">
+              <Link href="/" className="flex items-center space-x-2">
+                <Logo className="h-8 w-8" />
+                <span className="text-xl font-bold">Equidade+</span>
+              </Link>
+              <p className="text-sm text-muted-foreground">Potencializando o cuidado multidisciplinar.</p>
             </div>
-            <div className="flex items-center gap-4">
-              <Link href="#" className="text-muted-foreground hover:text-foreground"><Twitter /></Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground"><Instagram /></Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground"><Linkedin /></Link>
+            <div>
+              <h4 className="font-semibold">Produto</h4>
+              <ul className="mt-4 space-y-2 text-sm">
+                <li><Link href="/#features" className="text-muted-foreground hover:text-foreground">Funcionalidades</Link></li>
+                <li><Link href="/#pricing" className="text-muted-foreground hover:text-foreground">Preços</Link></li>
+                <li><Link href="/login" className="text-muted-foreground hover:text-foreground">Entrar</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold">Empresa</h4>
+              <ul className="mt-4 space-y-2 text-sm">
+                <li><Link href="/" className="text-muted-foreground hover:text-foreground">Sobre Nós</Link></li>
+                <li><Link href="/" className="text-muted-foreground hover:text-foreground">Contato</Link></li>
+              </ul>
+            </div>
+             <div>
+              <h4 className="font-semibold">Legal</h4>
+              <ul className="mt-4 space-y-2 text-sm">
+                <li><Link href="/" className="text-muted-foreground hover:text-foreground">Termos de Serviço</Link></li>
+                <li><Link href="/" className="text-muted-foreground hover:text-foreground">Política de Privacidade</Link></li>
+              </ul>
             </div>
           </div>
-          <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t pt-4 text-sm text-muted-foreground md:flex-row">
-            <p>&copy; {new Date().getFullYear()} Equidade+. Todos os direitos reservados.</p>
-            <div className="flex gap-4">
-              <Link href="#">Termos de Serviço</Link>
-              <Link href="#">Política de Privacidade</Link>
-            </div>
+          <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
+            &copy; 2024 Equidade+. Todos os direitos reservados.
           </div>
         </div>
       </footer>
