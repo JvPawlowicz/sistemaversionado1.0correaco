@@ -26,7 +26,7 @@ if (admin.apps.length > 0) {
 } else {
     // Provide a warning during development if the admin SDK is not initialized.
     // This will appear in the server-side logs (your terminal).
-    console.warn("Firebase Admin SDK not initialized. Server-side Firebase features like user creation will not work. Please check your .env file and service account credentials.");
+    console.warn("Firebase Admin SDK not initialized. Server-side Firebase features will not work. Please check your service account credentials.");
 }
 
 

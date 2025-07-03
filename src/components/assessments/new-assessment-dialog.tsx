@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useFormStatus } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, CircleAlert, ArrowLeft, ArrowRight, User, FileText } from 'lucide-react';
@@ -38,7 +38,7 @@ function SubmitButton() {
 }
 
 export function NewAssessmentDialog({ isOpen, onOpenChange }: NewAssessmentDialogProps) {
-  const [state, formAction] = React.useActionState(createAssessmentAction, initialState);
+  const [state, formAction] = useFormState(createAssessmentAction, initialState);
   const { toast } = useToast();
   const formRef = React.useRef<HTMLFormElement>(null);
   

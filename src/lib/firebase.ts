@@ -5,16 +5,16 @@ import { getStorage, type Storage } from 'firebase/storage';
 
 let firebaseConfig: any = null;
 
-// Try parsing the config from the environment variable provided by Next.js/App Hosting
+// In a deployed Firebase App Hosting environment, NEXT_PUBLIC_FIREBASE_CONFIG is automatically provided.
 if (process.env.NEXT_PUBLIC_FIREBASE_CONFIG) {
     try {
         firebaseConfig = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
     } catch (e) {
-        console.error("Failed to parse NEXT_PUBLIC_FIREBASE_CONFIG. It might be malformed.", e);
+        console.error("Failed to parse NEXT_PUBLIC_FIREBASE_CONFIG.", e);
     }
 }
 
-// If parsing fails or the variable is not set, fall back to individual env vars for local dev
+// For local development, it falls back to individual environment variables.
 if (!firebaseConfig) {
     firebaseConfig = {
         apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -26,13 +26,11 @@ if (!firebaseConfig) {
     };
 }
 
-
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 let storage: Storage | null = null;
 
-// Check if we have a minimal viable configuration.
 const hasFirebaseConfig = firebaseConfig?.apiKey && firebaseConfig?.projectId;
 
 if (hasFirebaseConfig) {
@@ -45,7 +43,6 @@ if (hasFirebaseConfig) {
     console.error("Failed to initialize Firebase. Please check your configuration.", e);
   }
 } else {
-    // This warning will be shown in the browser console
     console.warn("Firebase client-side configuration is missing or incomplete. Please add your config to the .env file or check your build environment variables.");
 }
 

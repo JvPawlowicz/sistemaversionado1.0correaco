@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useFormStatus } from 'react-dom';
-import { useActionState, useEffect, useRef } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
+import { useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -40,7 +40,7 @@ function SubmitButton() {
 }
 
 export function NewHealthPlanDialog({ isOpen, onOpenChange, onPlanAdded }: NewHealthPlanDialogProps) {
-  const [state, formAction] = useActionState(createHealthPlanAction, initialState);
+  const [state, formAction] = useFormState(createHealthPlanAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const { units, loading: unitsLoading } = useUnit();
