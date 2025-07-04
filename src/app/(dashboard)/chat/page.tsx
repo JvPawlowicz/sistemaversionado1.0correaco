@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -42,6 +41,11 @@ export default function ChatPage() {
   React.useEffect(() => {
     if (!currentUser) return;
     setLoadingThreads(true);
+    if (!db) {
+        console.error("Erro: Instância do Firestore (db) é nula. Não é possível carregar threads do chat.");
+        setLoadingThreads(false);
+        return;
+    }
     const threadsRef = collection(db, 'chatThreads');
     const q = query(
       threadsRef,
@@ -73,6 +77,11 @@ export default function ChatPage() {
       return;
     }
     setLoadingMessages(true);
+    if (!db) {
+        console.error("Erro: Instância do Firestore (db) é nula. Não é possível carregar mensagens.");
+        setLoadingMessages(false);
+        return;
+    }
     const messagesRef = collection(db, 'chatThreads', activeThreadId, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
@@ -87,6 +96,10 @@ export default function ChatPage() {
 
   const handleCreateOrSelectThread = async (otherUser: User) => {
     if (!currentUser || currentUser.id === otherUser.id) return;
+    if (!db) {
+        console.error("Erro: Instância do Firestore (db) é nula.");
+        return;
+    }
 
     const participantIds = [currentUser.id, otherUser.id].sort();
     
@@ -122,6 +135,10 @@ export default function ChatPage() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeThreadId || !currentUser) return;
+    if (!db) {
+        console.error("Erro: Instância do Firestore (db) é nula.");
+        return;
+    }
     
     setIsSending(true);
     const messagesRef = collection(db, 'chatThreads', activeThreadId, 'messages');
