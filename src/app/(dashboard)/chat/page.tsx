@@ -258,7 +258,7 @@ export default function ChatPage() {
                     <div className="flex flex-col items-center justify-center h-full text-center p-4 bg-muted/30">
                         <MessageSquare className="h-16 w-16 text-muted-foreground" />
                         <h3 className="mt-4 text-lg font-semibold">Selecione uma conversa</h3>
-                        <p className="mt-1 text-muted-foreground">Ou clique no ícone '+' acima para iniciar um novo chat.</p>
+                        <p className="mt-1 text-muted-foreground">Ou clique no ícone &apos;+&apos; acima para iniciar um novo chat.</p>
                     </div>
                 )}
             </div>

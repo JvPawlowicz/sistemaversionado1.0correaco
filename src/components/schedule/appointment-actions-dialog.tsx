@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -17,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment } from '@/lib/types';
-import { Calendar, Clock, User, Home, CheckCircle, XCircle, AlertCircle, Trash2, Stethoscope, ArrowLeft, Loader2, Shield, Edit, RotateCcw } from 'lucide-react';
+import { Calendar, Clock, User, Home, CheckCircle, XCircle, CircleAlert, Trash2, Stethoscope, ArrowLeft, Loader2, Shield, Edit, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -245,7 +246,7 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
                         </AlertDialogContent>
                     </AlertDialog>
                     <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleUpdateStatus('Cancelado')} disabled={isFinalized}>
-                        <AlertCircle className="mr-2 h-4 w-4" />
+                        <CircleAlert className="mr-2 h-4 w-4" />
                         Cancelar Agendamento
                     </Button>
                 </div>
@@ -267,7 +268,7 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
             <div className="space-y-4 py-4">
               {evolutionState.message && !evolutionState.success && !evolutionState.errors && (
                   <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                      <AlertCircle className="h-4 w-4" />
+                      <CircleAlert className="h-4 w-4" />
                       <p>{evolutionState.message}</p>
                   </div>
               )}
