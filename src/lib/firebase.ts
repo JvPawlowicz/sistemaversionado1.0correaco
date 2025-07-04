@@ -3,28 +3,30 @@ import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type Storage } from 'firebase/storage';
 
-let firebaseConfig: any = null;
+// This configuration object will be populated by environment variables.
+let firebaseConfig: any = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
 
-// In a deployed Firebase App Hosting environment, NEXT_PUBLIC_FIREBASE_CONFIG is automatically provided.
+// In a deployed Firebase App Hosting environment (or Vercel),
+// a single environment variable `NEXT_PUBLIC_FIREBASE_CONFIG` is provided.
+// This logic checks for it and overrides the individual variables if it exists.
 if (process.env.NEXT_PUBLIC_FIREBASE_CONFIG) {
     try {
-        firebaseConfig = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
+        const parsedConfig = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
+        if (parsedConfig && parsedConfig.projectId) {
+            firebaseConfig = parsedConfig;
+        }
     } catch (e) {
         console.error("Failed to parse NEXT_PUBLIC_FIREBASE_CONFIG.", e);
     }
 }
 
-// For local development, it falls back to individual environment variables.
-if (!firebaseConfig) {
-    firebaseConfig = {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    };
-}
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;

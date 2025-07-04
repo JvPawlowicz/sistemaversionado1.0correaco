@@ -242,7 +242,7 @@ export type TemplateField = {
 export type EvolutionTemplate = {
   id: string;
   title: string;
-  content: TemplateField[] | string; // Support for both old and new format
+  content: TemplateField[];
   userId: string;
   createdAt?: any;
 };

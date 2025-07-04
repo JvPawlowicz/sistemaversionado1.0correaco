@@ -95,12 +95,6 @@ export async function updateEvolutionTemplateAction(prevState: any, formData: Fo
   }
 
   try {
-    // Optional: Add a check to ensure the user owns the template they are editing
-    // const doc = await db.collection('evolutionTemplates').doc(templateId).get();
-    // if (!doc.exists || doc.data()?.userId !== userId) {
-    //   return { success: false, message: 'Você não tem permissão para editar este modelo.', errors: null };
-    // }
-
     await db.collection('evolutionTemplates').doc(templateId).update({
       title,
       content: parsedContent,
