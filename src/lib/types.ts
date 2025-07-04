@@ -126,6 +126,7 @@ export type Appointment = {
   professionalName: string;
   serviceId: string;
   serviceName: string;
+  discipline?: string;
   time: string;
   endTime: string;
   date: string; // ISO String 'YYYY-MM-DD'
