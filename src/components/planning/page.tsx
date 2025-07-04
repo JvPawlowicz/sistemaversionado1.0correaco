@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -11,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useUser } from '@/contexts/UserContext';
-import { Loader2, Plus, SlidersHorizontal, UserCheck, CircleAlert, ChevronsUpDown, Check } from 'lucide-react';
+import { Loader2, Plus, SlidersHorizontal, UserCheck, CircleAlert, ChevronsUpDown, Check, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { createTimeBlockAction } from '@/lib/actions/schedule';
 import { useUnit } from '@/contexts/UnitContext';
@@ -23,7 +22,7 @@ import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, Command
 import { Badge } from '@/components/ui/badge';
 import { cn, getDisplayAvatarUrl } from '@/lib/utils';
 import { ManageAvailabilityDialog } from '@/components/planning/manage-availability-dialog';
-import type { User } from '@/lib/types';
+import type { User, Availability } from '@/lib/types';
 
 
 const initialState = {
@@ -41,6 +40,24 @@ function SubmitButton() {
       Criar Bloqueio
     </Button>
   );
+}
+
+const timeToMinutes = (time: string) => {
+  if (!time) return 0;
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+const calculateTotalHours = (availability: Availability[]) => {
+    if (!availability) return 0;
+    const totalMinutes = availability
+        .filter(slot => slot.type === 'Free')
+        .reduce((acc, slot) => {
+            const start = timeToMinutes(slot.startTime);
+            const end = timeToMinutes(slot.endTime);
+            return acc + (end - start);
+        }, 0);
+    return (totalMinutes / 60).toFixed(1);
 }
 
 export default function PlanningPage() {
@@ -113,15 +130,15 @@ export default function PlanningPage() {
         </p>
       </div>
 
-       <Tabs defaultValue="blocks">
+       <Tabs defaultValue="availability">
           <TabsList className="grid w-full grid-cols-2">
-             <TabsTrigger value="blocks">
-              <SlidersHorizontal className="mr-2" />
-              Bloqueios Gerais
-            </TabsTrigger>
             <TabsTrigger value="availability">
               <UserCheck className="mr-2" />
               Disponibilidade de Profissionais
+            </TabsTrigger>
+             <TabsTrigger value="blocks">
+              <SlidersHorizontal className="mr-2" />
+              Bloqueios Gerais
             </TabsTrigger>
           </TabsList>
 
@@ -139,21 +156,29 @@ export default function PlanningPage() {
                     <Skeleton className="h-14 w-full" />
                     <Skeleton className="h-14 w-full" />
                   </div>
-                ) : professionals.map(pro => (
-                  <div key={pro.id} className="flex items-center justify-between rounded-md border p-4">
-                      <div className="flex items-center gap-4">
-                          <Avatar>
-                              <AvatarImage src={getDisplayAvatarUrl(pro.avatarUrl)} alt={pro.name} data-ai-hint="person portrait" />
-                              <AvatarFallback>{getInitials(pro.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                              <p className="font-semibold">{pro.name}</p>
-                              <p className="text-sm text-muted-foreground">{pro.role}</p>
+                ) : professionals.map(pro => {
+                    const totalHours = calculateTotalHours(pro.availability || []);
+                    return (
+                      <div key={pro.id} className="flex items-center justify-between rounded-md border p-4">
+                          <div className="flex items-center gap-4">
+                              <Avatar>
+                                  <AvatarImage src={getDisplayAvatarUrl(pro.avatarUrl)} alt={pro.name} data-ai-hint="person portrait" />
+                                  <AvatarFallback>{getInitials(pro.name)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                  <p className="font-semibold">{pro.name}</p>
+                                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                      <span>{pro.role}</span>
+                                      <span className="text-xs">&bull;</span>
+                                      <Clock className="h-3 w-3" />
+                                      <span>{totalHours}h livres / semana</span>
+                                  </p>
+                              </div>
                           </div>
+                          <Button variant="outline" onClick={() => handleManageAvailability(pro)}>Gerenciar Horários</Button>
                       </div>
-                      <Button variant="outline" onClick={() => handleManageAvailability(pro)}>Gerenciar Horários</Button>
-                  </div>
-                ))}
+                    )
+                })}
               </CardContent>
             </Card>
           </TabsContent>
