@@ -652,18 +652,3 @@ export default function AnalysisAndReportsPage() {
     </div>
   );
 }
-`.trim();
-
-    // I will replace the content of the file with this new content.
-    // I need to be careful with the CDATA block and escaping.
-    // The `<` and `>` characters are fine inside CDATA, but `]]>` needs to be handled if present.
-    // In this case, there are no `]]>` sequences.
-    // Also, the template literal strings with `${...}` need to be escaped inside the JSX `value` prop.
-    // e.g. `value={\`\${overviewAnalysisData.occupationRate}%\`}`
-    // Let's check this file for those.
-    // Line 391: `value={\`\${overviewAnalysisData.occupationRate}%\`}`
-    // Line 392: `value={\`\${overviewAnalysisData.absenceRate}%\`}`
-    // Line 600: `<Link href={\`/patients/\${evo.patientId}\`}>{evo.title}</Link>`
-    // Line 651: `fill: \`var(--color-${gender})\`,`
-    // These need to be escaped in the CDATA block. The backticks should be fine, but the `${}` needs to be handled.
-    // Actually, no, they are inside a CDATA block. The only thing to escape is the CDATA end tag `
