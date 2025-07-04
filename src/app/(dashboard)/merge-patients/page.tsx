@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormState } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePatient } from '@/contexts/PatientContext';
@@ -28,7 +28,7 @@ const initialState = {
 };
 
 function SubmitButton() {
-  const { pending } = useFormStatus();
+  const { pending } = useFormState();
   return (
     <Button type="submit" disabled={pending} variant="destructive">
       {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

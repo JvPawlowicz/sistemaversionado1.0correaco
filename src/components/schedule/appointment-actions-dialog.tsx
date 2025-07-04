@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useEffect, useMemo, useRef } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormState } from 'react-dom';
 
 import {
   Dialog,
@@ -44,7 +44,7 @@ const evolutionInitialState = {
 };
 
 function EvolutionSubmitButton() {
-  const { pending } = useFormStatus();
+  const { pending } = useFormState();
   return (
     <Button type="submit" disabled={pending}>
       {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -54,7 +54,7 @@ function EvolutionSubmitButton() {
 }
 
 function EditSubmitButton() {
-  const { pending } = useFormStatus();
+  const { pending } = useFormState();
   return (
     <Button type="submit" disabled={pending}>
       {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
