@@ -209,7 +209,7 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
                     </div>
                     {isFinalized && (
                         <Button variant="outline" className="w-full mt-2" onClick={() => handleUpdateStatus('Agendado')}>
-                            <RotateCcw className="mr-2 h-4 w-4" /> Reverter para "Agendado"
+                            <RotateCcw className="mr-2 h-4 w-4" /> Reverter para &quot;Agendado&quot;
                         </Button>
                     )}
                  </div>

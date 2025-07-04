@@ -119,7 +119,7 @@ export function HealthPlanManager({ unit }: HealthPlanManagerProps) {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Tem certeza que deseja remover o plano "{plan.name}"?
+                        Tem certeza que deseja remover o plano &quot;{plan.name}&quot;?
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

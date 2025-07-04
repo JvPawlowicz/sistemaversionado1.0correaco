@@ -112,7 +112,7 @@ export default function TemplatesPage() {
                         <AlertDialogHeader>
                         <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Tem certeza que deseja remover o modelo "{template.title}"?
+                            Tem certeza que deseja remover o modelo &quot;{template.title}&quot;?
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

@@ -90,7 +90,7 @@ export function ManageAvailabilityDialog({ isOpen, onOpenChange, user, onAvailab
         <DialogHeader>
           <DialogTitle>Gerenciar Disponibilidade de {user.name}</DialogTitle>
           <DialogDescription>
-            Defina os horários de trabalho, planejamento e supervisão. Horários não definidos como "Livre" serão bloqueados para agendamentos.
+            Defina os horários de trabalho, planejamento e supervisão. Horários não definidos como &quot;Livre&quot; serão bloqueados para agendamentos.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-6 max-h-[60vh] overflow-y-auto pr-4">

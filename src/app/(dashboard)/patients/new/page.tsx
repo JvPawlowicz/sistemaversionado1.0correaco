@@ -162,7 +162,7 @@ export default function NewPatientPage() {
             ) : (
                 <CardFooter className="flex-col items-center gap-4 text-center">
                     <HeartPulse className="h-10 w-10 text-muted-foreground" />
-                    <p className="text-muted-foreground">Nenhum paciente encontrado com o termo "{searchTerm}".</p>
+                    <p className="text-muted-foreground">Nenhum paciente encontrado com o termo &quot;{searchTerm}&quot;.</p>
                     <Button onClick={() => setView('create')}>
                         <UserPlus className="mr-2"/>
                         Criar Novo Paciente
