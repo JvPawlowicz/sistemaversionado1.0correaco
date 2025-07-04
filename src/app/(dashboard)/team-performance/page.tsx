@@ -59,6 +59,12 @@ export default function TeamPerformancePage() {
         return;
       }
 
+      if (!db) {
+        console.error("Firestore DB is not initialized.");
+        setLoadingEvolutions(false);
+        return;
+      }
+
       setLoadingEvolutions(true);
       const allEvolutions: EvolutionRecord[] = [];
 
