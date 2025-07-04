@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -151,7 +152,7 @@ export default function MergePatientsPage() {
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Ação Irreversível</AlertTitle>
         <AlertDescription>
-          A mesclagem de pacientes é uma ação permanente. O registro do "Paciente Duplicado" será **excluído** e todos os seus dados serão transferidos para o "Paciente Principal". Proceda com extrema cautela.
+          A mesclagem de pacientes é uma ação permanente. O registro do &quot;Paciente Duplicado&quot; será **excluído** e todos os seus dados serão transferidos para o &quot;Paciente Principal&quot;. Proceda com extrema cautela.
         </AlertDescription>
       </Alert>
 
@@ -190,7 +191,7 @@ export default function MergePatientsPage() {
           {primaryPatient && secondaryPatient && (
             <CardFooter className="flex-col items-start gap-4 border-t pt-6">
               <h3 className="font-semibold">Resumo da Mesclagem</h3>
-               <p className="text-sm text-muted-foreground">Revise os dados abaixo. Itens do "Paciente Duplicado" serão mesclados ao "Paciente Principal" se o campo correspondente no principal estiver vazio. Todos os registros associados (agendamentos, evoluções, etc.) serão transferidos.</p>
+               <p className="text-sm text-muted-foreground">Revise os dados abaixo. Itens do &quot;Paciente Duplicado&quot; serão mesclados ao &quot;Paciente Principal&quot; se o campo correspondente no principal estiver vazio. Todos os registros associados (agendamentos, evoluções, etc.) serão transferidos.</p>
               <div className="flex w-full items-start justify-center gap-4 rounded-lg p-2">
                 <PatientComparisonCard patient={primaryPatient} title="Manter Este Perfil" />
                 <div className="flex h-full flex-col justify-center pt-24">
