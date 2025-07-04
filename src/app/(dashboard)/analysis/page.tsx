@@ -509,7 +509,7 @@ export default function AnalysisAndReportsPage() {
            <div className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <StatCard title="Evoluções Registradas" value={evolutionAnalysisData.total} icon={FileSignature} description="Nos últimos 30 dias" loading={isLoading} />
-                    <StatCard title="Evoluções Pendentes" value={evolutionAnalysisData.pending} icon={ListChecks} description="Atendimentos 'Realizados' no período" loading={isLoading} />
+                    <StatCard title="Evoluções Pendentes" value={evolutionAnalysisData.pending} icon={ListChecks} description="Atendimentos &apos;Realizados&apos; no período" loading={isLoading} />
                 </div>
                 <Card>
                     <CardHeader><CardTitle>Evoluções por Profissional</CardTitle><CardDescription>Total de evoluções registradas por profissional nos últimos 30 dias.</CardDescription></CardHeader>
