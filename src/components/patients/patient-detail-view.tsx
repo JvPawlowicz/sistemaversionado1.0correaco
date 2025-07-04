@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useActionState, useEffect, useRef } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useRef } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import {
   Card,
   CardContent,
@@ -85,7 +85,7 @@ export function PatientDetailView({
   const { toast } = useToast();
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
   
-  const [avatarState, avatarFormAction] = useActionState(updatePatientAvatarAction, { success: false, message: '', errors: null });
+  const [avatarState, avatarFormAction] = useFormState(updatePatientAvatarAction, { success: false, message: '', errors: null });
   const avatarFormRef = React.useRef<HTMLFormElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 

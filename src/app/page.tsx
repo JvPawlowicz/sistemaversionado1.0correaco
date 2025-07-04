@@ -157,7 +157,7 @@ export default function LandingPage() {
                     <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   </div>
                   <blockquote className="mt-4 text-lg font-semibold leading-relaxed">
-                    “O Equidade+ revolucionou nossa gestão. A economia de tempo com documentação nos permitiu focar 100% nos pacientes. A visão integrada da agenda e dos planos terapêuticos é fantástica.”
+                    &ldquo;O Equidade+ revolucionou nossa gestão. A economia de tempo com documentação nos permitiu focar 100% nos pacientes. A visão integrada da agenda e dos planos terapêuticos é fantástica.&rdquo;
                   </blockquote>
                 </CardContent>
                 <CardHeader className="flex-row items-center gap-4">
@@ -181,7 +181,7 @@ export default function LandingPage() {
                     <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   </div>
                   <blockquote className="mt-4 text-lg font-semibold leading-relaxed">
-                    “Como terapeuta, ter acesso rápido ao PTI e registrar a evolução na mesma tela é um divisor de águas. Os gráficos de progresso ajudam muito nas conversas com os pais.”
+                    &ldquo;Como terapeuta, ter acesso rápido ao PTI e registrar a evolução na mesma tela é um divisor de águas. Os gráficos de progresso ajudam muito nas conversas com os pais.&rdquo;
                   </blockquote>
                 </CardContent>
                 <CardHeader className="flex-row items-center gap-4">
@@ -205,7 +205,7 @@ export default function LandingPage() {
                     <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   </div>
                   <blockquote className="mt-4 text-lg font-semibold leading-relaxed">
-                    “A organização da agenda de todos os terapeutas ficou muito mais clara. Consigo gerenciar o fluxo da recepção de forma eficiente e sem conflitos de horários. Recomendo!”
+                    &ldquo;A organização da agenda de todos os terapeutas ficou muito mais clara. Consigo gerenciar o fluxo da recepção de forma eficiente e sem conflitos de horários. Recomendo!&rdquo;
                   </blockquote>
                 </CardContent>
                 <CardHeader className="flex-row items-center gap-4">
