@@ -1,8 +1,7 @@
+
 'use client';
 
 import * as React from 'react';
-import { useEffect, useRef } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
 import {
   Card,
   CardContent,
@@ -32,15 +31,6 @@ import { EditPatientDialog } from './edit-patient-dialog';
 import { FamilyMemberManager } from './family-member-manager';
 import { TreatmentPlanView } from './treatment-plan-view';
 import { getDisplayAvatarUrl, cn } from '@/lib/utils';
-
-function AvatarFormStatus() {
-    const { pending } = useFormStatus();
-    return pending ? (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-            <Loader2 className="h-8 w-8 text-white animate-spin" />
-        </div>
-    ) : null;
-}
 
 export function PatientDetailView({
   patient,
@@ -84,30 +74,31 @@ export function PatientDetailView({
   const { fetchPatients } = usePatient();
   const { toast } = useToast();
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
-  
-  const [avatarState, avatarFormAction] = useFormState(updatePatientAvatarAction, { success: false, message: '', errors: null });
+  const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
+
   const avatarFormRef = React.useRef<HTMLFormElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const canEdit = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
-
-  useEffect(() => {
-    if (avatarState.success) {
-      toast({ title: 'Sucesso!', description: avatarState.message });
-      onPatientUpdated(); 
-    } else if (avatarState.message && !avatarState.errors) {
-      toast({ variant: 'destructive', title: 'Erro no Upload', description: avatarState.message });
-    }
-  }, [avatarState, toast, onPatientUpdated]);
 
   const handleAvatarClick = () => {
     if (!canEdit) return;
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      avatarFormRef.current?.requestSubmit();
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0] && avatarFormRef.current) {
+      setIsUploadingAvatar(true);
+      const formData = new FormData(avatarFormRef.current);
+      const result = await updatePatientAvatarAction(null, formData);
+      setIsUploadingAvatar(false);
+
+      if (result.success) {
+        toast({ title: 'Sucesso!', description: result.message });
+        onPatientUpdated();
+      } else {
+        toast({ variant: 'destructive', title: 'Erro no Upload', description: result.message });
+      }
     }
   };
 
@@ -176,7 +167,7 @@ export function PatientDetailView({
       <div className="space-y-6">
         <Card>
           <CardHeader className="flex flex-col items-start gap-4 sm:flex-row">
-            <form ref={avatarFormRef} action={avatarFormAction} className="relative flex-shrink-0">
+            <form ref={avatarFormRef} className="relative flex-shrink-0">
                 <input type="hidden" name="patientId" value={patient.id} />
                 <input
                     type="file"
@@ -194,7 +185,11 @@ export function PatientDetailView({
                     <AvatarImage src={getDisplayAvatarUrl(patient.avatarUrl)} alt={patient.name} data-ai-hint="person portrait" />
                     <AvatarFallback className="text-3xl">{getInitials(patient.name)}</AvatarFallback>
                 </Avatar>
-                <AvatarFormStatus />
+                {isUploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                        <Loader2 className="h-8 w-8 text-white animate-spin" />
+                    </div>
+                )}
             </form>
             <div className="flex-1">
               <CardTitle className="text-3xl">{patient.name}</CardTitle>

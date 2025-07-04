@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -7,10 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, CircleAlert, AlertCircle, Upload } from 'lucide-react';
+import { Loader2, CircleAlert, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { useFormState, useFormStatus } from 'react-dom';
 import { updateUserProfessionalDetailsAction, updateUserAvatarAction } from '@/lib/actions/user';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,88 +23,25 @@ const roleNames: Record<string, string> = {
   Coordinator: 'Coordenador',
 };
 
-const professionalInitialState = {
-  success: false,
-  message: '',
-  errors: null,
-};
-
-function ProfessionalSubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      Salvar Dados Profissionais
-    </Button>
-  );
-}
-
-const avatarInitialState = {
-  success: false,
-  message: '',
-  errors: null,
-};
-
-function AvatarSubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} className="flex-1">
-      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      {pending ? 'Enviando...' : 'Salvar'}
-    </Button>
-  );
-}
-
 export default function ProfilePage() {
   const { currentUser, loading, updateUserName, refetchCurrentUser } = useAuth();
   const [isNameUpdating, setIsNameUpdating] = React.useState(false);
   const [name, setName] = React.useState(currentUser?.name || '');
-
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const avatarFormRef = React.useRef<HTMLFormElement>(null);
-  const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
-  const { toast } = useToast();
   
-  const [professionalState, professionalFormAction] = useFormState(updateUserProfessionalDetailsAction, professionalInitialState);
+  const [isAvatarUploading, setIsAvatarUploading] = React.useState(false);
+  const avatarFormRef = React.useRef<HTMLFormElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const [isProfessionalUpdating, setIsProfessionalUpdating] = React.useState(false);
   const professionalFormRef = React.useRef<HTMLFormElement>(null);
 
-  const [avatarState, avatarFormAction] = useFormState(updateUserAvatarAction, avatarInitialState);
-
+  const { toast } = useToast();
+  
   React.useEffect(() => {
     if (currentUser) {
       setName(currentUser.name);
     }
   }, [currentUser]);
-
-  React.useEffect(() => {
-    if (professionalState.success) {
-        toast({ title: 'Sucesso!', description: professionalState.message });
-        refetchCurrentUser();
-    } else if (professionalState.message && !professionalState.errors) {
-        toast({ variant: 'destructive', title: 'Erro', description: professionalState.message });
-    }
-  }, [professionalState, toast, refetchCurrentUser]);
-
-  React.useEffect(() => {
-    if (avatarState.success) {
-      toast({ title: 'Sucesso!', description: avatarState.message });
-      refetchCurrentUser();
-      setAvatarFile(null);
-      setAvatarPreview(null);
-      avatarFormRef.current?.reset();
-    } else if (avatarState.message) {
-      toast({ variant: 'destructive', title: 'Erro no Upload', description: avatarState.message });
-    }
-  }, [avatarState, toast, refetchCurrentUser]);
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
-    }
-  };
 
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +49,38 @@ export default function ProfilePage() {
     await updateUserName(name);
     setIsNameUpdating(false);
   };
+  
+  const handleProfessionalFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsProfessionalUpdating(true);
+    const formData = new FormData(event.currentTarget);
+    const result = await updateUserProfessionalDetailsAction(null, formData);
+    setIsProfessionalUpdating(false);
+
+    if (result.success) {
+      toast({ title: 'Sucesso!', description: result.message });
+      refetchCurrentUser();
+    } else {
+      toast({ variant: 'destructive', title: 'Erro', description: result.message });
+    }
+  };
+  
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0] && avatarFormRef.current) {
+        setIsAvatarUploading(true);
+        const formData = new FormData(avatarFormRef.current);
+        const result = await updateUserAvatarAction(null, formData);
+        setIsAvatarUploading(false);
+
+        if (result.success) {
+            toast({ title: 'Sucesso!', description: result.message });
+            refetchCurrentUser();
+        } else {
+            toast({ variant: 'destructive', title: 'Erro no Upload', description: result.message });
+        }
+    }
+  };
+
 
   if (loading || !currentUser) {
     return (
@@ -153,7 +122,7 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
           <Card className="flex flex-col items-center p-6 text-center">
-            <form action={avatarFormAction} ref={avatarFormRef}>
+            <form ref={avatarFormRef}>
               <input type="hidden" name="userId" value={currentUser.id} />
               <input 
                 type="file" 
@@ -163,22 +132,23 @@ export default function ProfilePage() {
                 className="hidden" 
                 accept="image/png, image/jpeg, image/webp" 
               />
-              <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src={avatarPreview || getDisplayAvatarUrl(currentUser.avatarUrl)} alt={currentUser.name} />
+              <Avatar className="h-24 w-24 mb-4 relative">
+                <AvatarImage src={getDisplayAvatarUrl(currentUser.avatarUrl)} alt={currentUser.name} />
                 <AvatarFallback className="text-3xl">{getInitials(currentUser.name)}</AvatarFallback>
+                {isAvatarUploading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                        <Loader2 className="h-8 w-8 text-white animate-spin" />
+                    </div>
+                )}
               </Avatar>
               <h2 className="text-xl font-semibold">{currentUser.name}</h2>
               <p className="text-muted-foreground">{currentUser.email}</p>
               <p className="text-sm text-muted-foreground mt-1">{roleNames[currentUser.role] || currentUser.role}</p>
               <div className="flex w-full mt-4 gap-2">
-                <Button type="button" onClick={() => fileInputRef.current?.click()} className="flex-1">
-                  Escolher Foto
+                <Button type="button" onClick={() => fileInputRef.current?.click()} className="flex-1" disabled={isAvatarUploading}>
+                  {isAvatarUploading ? 'Enviando...' : 'Escolher Foto'}
                 </Button>
-                {avatarFile && <AvatarSubmitButton />}
               </div>
-              {avatarState.message && !avatarState.success && (
-                <p className="text-xs text-destructive mt-2">{avatarState.message}</p>
-              )}
             </form>
           </Card>
         </div>
@@ -207,7 +177,7 @@ export default function ProfilePage() {
 
            {isProfessional && (
             <Card>
-                <form action={professionalFormAction} ref={professionalFormRef}>
+                <form onSubmit={handleProfessionalFormSubmit} ref={professionalFormRef}>
                     <input type="hidden" name="userId" value={currentUser.id} />
                     <CardHeader>
                         <CardTitle>Informações Profissionais</CardTitle>
@@ -229,12 +199,10 @@ export default function ProfilePage() {
                           <div className="space-y-2">
                              <Label htmlFor="professionalCouncil">Conselho</Label>
                              <Input id="professionalCouncil" name="professionalCouncil" defaultValue={currentUser.professionalCouncil || ''} placeholder="Ex: CREFITO, CRP" />
-                             {professionalState.errors?.professionalCouncil && <p className="text-xs text-destructive mt-1">{professionalState.errors.professionalCouncil[0]}</p>}
                           </div>
                            <div className="space-y-2">
                              <Label htmlFor="councilNumber">Número do Conselho</Label>
                              <Input id="councilNumber" name="councilNumber" defaultValue={currentUser.councilNumber || ''} />
-                              {professionalState.errors?.councilNumber && <p className="text-xs text-destructive mt-1">{professionalState.errors.councilNumber[0]}</p>}
                           </div>
                        </div>
                        <div className="space-y-2">
@@ -244,7 +212,10 @@ export default function ProfilePage() {
                        </div>
                     </CardContent>
                     <CardFooter className="border-t px-6 py-4">
-                        <ProfessionalSubmitButton />
+                        <Button type="submit" disabled={isProfessionalUpdating}>
+                            {isProfessionalUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Salvar Dados Profissionais
+                        </Button>
                     </CardFooter>
                 </form>
             </Card>
