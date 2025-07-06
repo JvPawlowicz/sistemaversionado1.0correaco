@@ -420,44 +420,6 @@ export type Notification = {
 };
 
 /**
- * A conversation thread between two or more users.
- */
-export type ChatThread = {
-  /** The unique identifier for the chat thread. */
-  id: string;
-  /** An array of participant user IDs. */
-  participantIds: string[];
-  /** A map of participant IDs to their names. */
-  participantNames: { [key: string]: string };
-  /** A map of participant IDs to their avatar URLs. */
-  participantAvatars: { [key: string]: string };
-  /** The content of the last message sent in the thread. */
-  lastMessage?: string;
-  /** The name of the sender of the last message. */
-  lastMessageSender?: string;
-  /** The Firestore timestamp of the last update to the thread. */
-  lastUpdatedAt: any;
-};
-
-/**
- * A single message within a chat thread.
- */
-export type ChatMessage = {
-  /** The unique identifier for the message. */
-  id: string;
-  /** The ID of the thread this message belongs to. */
-  threadId: string;
-  /** The ID of the user who sent the message. */
-  senderId: string;
-  /** The name of the user who sent the message. */
-  senderName: string;
-  /** The text content of the message. */
-  content: string;
-  /** The Firestore timestamp of when the message was sent. */
-  createdAt: any;
-};
-
-/**
  * A single field within a structured evolution template.
  */
 export type TemplateField = {
