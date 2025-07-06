@@ -75,9 +75,8 @@ export function UnitDetailView({
                          <Image
                             src={unit.photoUrl || 'https://placehold.co/400x400.png'}
                             alt={unit.name}
-                            layout="fill"
-                            objectFit="cover"
-                            className="rounded-lg border"
+                            fill
+                            className="rounded-lg border object-cover"
                             data-ai-hint="clinic building"
                         />
                     </div>

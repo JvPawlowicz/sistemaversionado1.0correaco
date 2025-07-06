@@ -163,7 +163,7 @@ export default function LandingPage() {
                 </CardContent>
                 <CardHeader className="flex-row items-center gap-4">
                   <Avatar>
-                    <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="woman portrait" />
+                    <AvatarImage src="https://placehold.co/100x100.png" alt="Ana da Silva" data-ai-hint="woman portrait" />
                     <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
                   <div>
@@ -187,7 +187,7 @@ export default function LandingPage() {
                 </CardContent>
                 <CardHeader className="flex-row items-center gap-4">
                    <Avatar>
-                    <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="man portrait" />
+                    <AvatarImage src="https://placehold.co/100x100.png" alt="João Pereira" data-ai-hint="man portrait" />
                     <AvatarFallback>JP</AvatarFallback>
                   </Avatar>
                   <div>
@@ -211,7 +211,7 @@ export default function LandingPage() {
                 </CardContent>
                 <CardHeader className="flex-row items-center gap-4">
                   <Avatar>
-                    <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="woman professional" />
+                    <AvatarImage src="https://placehold.co/100x100.png" alt="Carla Souza" data-ai-hint="woman professional" />
                     <AvatarFallback>CS</AvatarFallback>
                   </Avatar>
                   <div>

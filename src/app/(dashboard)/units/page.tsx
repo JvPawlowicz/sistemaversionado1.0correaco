@@ -79,9 +79,8 @@ export default function UnitsPage() {
                   <Image
                     src={unit.photoUrl || 'https://placehold.co/600x400.png'}
                     alt={unit.name}
-                    layout="fill"
-                    objectFit="cover"
-                    className="rounded-t-lg"
+                    fill
+                    className="rounded-t-lg object-cover"
                     data-ai-hint="clinic building"
                   />
                 </div>

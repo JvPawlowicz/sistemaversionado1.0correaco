@@ -217,7 +217,7 @@ export default function ChatPage() {
                                 return (
                                 <button key={thread.id} onClick={() => setActiveThreadId(thread.id)} className={cn("w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors", activeThreadId === thread.id ? 'bg-secondary' : 'hover:bg-secondary/50')}>
                                     <Avatar>
-                                        <AvatarImage src={getDisplayAvatarUrl(otherAvatar)} />
+                                        <AvatarImage src={getDisplayAvatarUrl(otherAvatar)} alt={otherName} />
                                         <AvatarFallback>{getInitials(otherName)}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 overflow-hidden">
@@ -236,7 +236,7 @@ export default function ChatPage() {
                     <>
                         <CardHeader className="flex-row items-center gap-3 border-b">
                            <Avatar>
-                                <AvatarImage src={getDisplayAvatarUrl(activeThread.participantAvatars[activeThread.participantIds.find(id => id !== currentUser?.id)!])} />
+                                <AvatarImage src={getDisplayAvatarUrl(activeThread.participantAvatars[activeThread.participantIds.find(id => id !== currentUser?.id)!])} alt={activeThread.participantNames[activeThread.participantIds.find(id => id !== currentUser?.id)!]} />
                                 <AvatarFallback>{getInitials(activeThread.participantNames[activeThread.participantIds.find(id => id !== currentUser?.id)!])}</AvatarFallback>
                             </Avatar>
                             <CardTitle>{activeThread.participantNames[activeThread.participantIds.find(id => id !== currentUser?.id)!]}</CardTitle>
@@ -248,7 +248,7 @@ export default function ChatPage() {
                                     <div key={msg.id} className={cn('flex items-end gap-2', msg.senderId === currentUser?.id ? 'justify-end' : 'justify-start')}>
                                         {msg.senderId !== currentUser?.id && (
                                             <Avatar className="h-8 w-8">
-                                                <AvatarImage src={getDisplayAvatarUrl(activeThread.participantAvatars[msg.senderId])} />
+                                                <AvatarImage src={getDisplayAvatarUrl(activeThread.participantAvatars[msg.senderId])} alt={msg.senderName} />
                                                 <AvatarFallback>{getInitials(msg.senderName)}</AvatarFallback>
                                             </Avatar>
                                         )}
