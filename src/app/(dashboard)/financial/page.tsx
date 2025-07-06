@@ -1,5 +1,5 @@
 import { permanentRedirect } from 'next/navigation';
 
-export default function FinancialPage() {
+export default function FinancialRedirectPage() {
   permanentRedirect('/analysis');
 }

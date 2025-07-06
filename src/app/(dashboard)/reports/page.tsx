@@ -1,5 +1,5 @@
 import { permanentRedirect } from 'next/navigation';
 
-export default function ReportsPage() {
+export default function ReportsRedirectPage() {
   permanentRedirect('/analysis');
 }
