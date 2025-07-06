@@ -1,5 +1,4 @@
-import { permanentRedirect } from 'next/navigation';
-
+// This page is deprecated and redirects are handled in next.config.js
 export default function ReportsRedirectPage() {
-  permanentRedirect('/analysis');
+  return null;
 }
