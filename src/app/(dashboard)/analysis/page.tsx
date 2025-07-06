@@ -420,7 +420,7 @@ export default function AnalysisAndReportsPage() {
     const allUnitPlans = units.flatMap(u => u.healthPlans || []);
     const uniquePlans = Array.from(new Map(allUnitPlans.map(p => [p.id, p])).values());
 
-    uniquePlans.forEach((plan, index) => {
+    uniquePlans.forEach((plan) => {
       config[plan.name] = {
         label: plan.name,
         color: plan.color,
