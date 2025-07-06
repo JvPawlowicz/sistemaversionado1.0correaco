@@ -6,11 +6,9 @@ import { PlusCircle } from 'lucide-react';
 import { useAssessment } from '@/contexts/AssessmentContext';
 import { NewAssessmentDialog } from '@/components/assessments/new-assessment-dialog';
 import { AssessmentTable } from '@/components/assessments/assessment-table';
-import { useAuth } from '@/contexts/AuthContext';
 
 export default function AssessmentsPage() {
   const { assessments, loading, error } = useAssessment();
-  const { currentUser } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
   return (
