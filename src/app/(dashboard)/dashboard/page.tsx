@@ -58,23 +58,20 @@ export default function DashboardPage() {
   const { currentUser } = useAuth();
   const { selectedUnitId } = useUnit();
   
-  const [upcomingAppointments, setUpcomingAppointments] = React.useState<Appointment[]>([]);
-  const [stats, setStats] = React.useState({
-    todaysAppointmentsTotal: 0,
-    myTodaysAppointments: 0,
-    myMonthlyAppointments: 0,
-    totalActivePatients: 0,
-    totalTherapists: 0,
-    myActivePatientsCount: 0,
-  });
-
   const loading = patientsLoading || scheduleLoading || usersLoading;
-  
-  // Defer all date-sensitive and data-dependent calculations to useEffect to avoid hydration mismatch
-  React.useEffect(() => {
-    if (loading || !currentUser) return;
-    
-    // Date calculations
+
+  const stats = React.useMemo(() => {
+    if (loading || !currentUser) {
+      return {
+        todaysAppointmentsTotal: 0,
+        myTodaysAppointments: 0,
+        myMonthlyAppointments: 0,
+        totalActivePatients: 0,
+        totalTherapists: 0,
+        myActivePatientsCount: 0,
+      };
+    }
+
     const today = new Date();
     const monthStart = startOfMonth(today);
     const monthEnd = endOfMonth(today);
@@ -91,21 +88,23 @@ export default function DashboardPage() {
     const myTodaysAppointments = myAppointments.filter(a => isToday(new Date(a.date + 'T00:00:00'))).length;
     const myMonthlyAppointments = myAppointments.filter(a => isWithinInterval(new Date(a.date + 'T00:00:00'), { start: monthStart, end: monthEnd })).length;
 
-    // Set all stats at once
-    setStats({
+    return {
       todaysAppointmentsTotal,
       myTodaysAppointments,
       myMonthlyAppointments,
       totalActivePatients,
       totalTherapists,
       myActivePatientsCount,
-    });
-    
-    // Upcoming appointments logic
+    };
+  }, [appointments, patients, users, currentUser, loading, selectedUnitId]);
+
+  const upcomingAppointments = React.useMemo(() => {
+    if (loading || !currentUser) return [];
+
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const filtered = appointments
+    return appointments
       .filter(a => {
         try {
             const appointmentDate = parseISO(`${a.date}T${a.time}:00`);
@@ -121,10 +120,7 @@ export default function DashboardPage() {
         return compareAsc(dateA, dateB);
       })
       .slice(0, 5);
-      
-      setUpcomingAppointments(filtered);
-
-  }, [appointments, patients, users, currentUser, loading, selectedUnitId]);
+  }, [appointments, currentUser, loading]);
 
   const renderContentForRole = () => {
     if (currentUser?.role === 'Therapist') {
