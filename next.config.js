@@ -4,17 +4,7 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: '/financial',
-        destination: '/analysis',
-        permanent: true,
-      },
-      {
         source: '/financial/:path*',
-        destination: '/analysis',
-        permanent: true,
-      },
-      {
-        source: '/reports',
         destination: '/analysis',
         permanent: true,
       },
