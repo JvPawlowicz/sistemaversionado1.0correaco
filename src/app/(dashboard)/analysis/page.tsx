@@ -108,32 +108,6 @@ export default function AnalysisAndReportsPage() {
     patientId: '',
     author: '',
   });
-  
-  // State for calculated data to avoid hydration mismatch
-  const [overviewAnalysisData, setOverviewAnalysisData] = React.useState({
-    total: 0,
-    realizado: 0,
-    faltou: 0,
-    agendado: 0,
-    occupationRate: '0.0',
-    absenceRate: '0.0',
-    chartData: [] as any[],
-  });
-
-  const [evolutionAnalysisData, setEvolutionAnalysisData] = React.useState({
-      total: 0,
-      pending: 0,
-      chartData: [] as any[],
-  });
-
-  const [demographicsData, setDemographicsData] = React.useState({
-    ageData: [] as any[],
-    genderData: [] as any[],
-    diagnosisData: [] as any[],
-    maritalStatusData: [] as any[],
-    healthPlanData: [] as any[],
-  });
-
 
   React.useEffect(() => {
     // This runs only on the client after mount, avoiding hydration mismatch
@@ -196,9 +170,8 @@ export default function AnalysisAndReportsPage() {
     fetchAllEvolutions();
   }, [patients, patientsLoading]);
 
-  // --- Calculations useEffect ---
-  React.useEffect(() => {
-    // Overview Data Calculation
+  // --- Calculations useMemo hooks ---
+  const overviewAnalysisData = React.useMemo(() => {
     const overviewEndDate = new Date();
     const overviewStartDate = startOfDay(subDays(overviewEndDate, 30));
 
@@ -216,17 +189,17 @@ export default function AnalysisAndReportsPage() {
     const occupationRate = possibleSlots > 0 ? (realizado / possibleSlots * 100).toFixed(1) : '0.0';
     const absenceRate = possibleSlots > 0 ? (faltou / possibleSlots * 100).toFixed(1) : '0.0';
 
-    const overviewChartData = [
+    const chartData = [
         { status: 'realizado', count: realizado, fill: 'var(--color-realizado)' },
         { status: 'agendado', count: agendado, fill: 'var(--color-agendado)' },
         { status: 'faltou', count: faltou, fill: 'var(--color-faltou)' },
         { status: 'cancelado', count: cancelado, fill: 'var(--color-cancelado)' },
     ].filter(item => item.count > 0);
 
-    setOverviewAnalysisData({ total, realizado, faltou, agendado, occupationRate, absenceRate, chartData: overviewChartData });
+    return { total, realizado, faltou, agendado, occupationRate, absenceRate, chartData };
+  }, [appointments]);
 
-
-    // Evolution Data Calculation
+  const evolutionAnalysisData = React.useMemo(() => {
     const evolutionEndDate = new Date();
     const evolutionStartDate = startOfDay(subDays(evolutionEndDate, 30));
 
@@ -247,77 +220,79 @@ export default function AnalysisAndReportsPage() {
 
     const evolutionChartData = Object.entries(evolutionsByAuthor).map(([author, count]) => ({ author, count }));
 
-    setEvolutionAnalysisData({ total: evolutionsInPeriod.length, pending: pendingCount, chartData: evolutionChartData });
+    return { total: evolutionsInPeriod.length, pending: pendingCount, chartData: evolutionChartData };
+  }, [evolutions, appointments]);
 
-    // --- Demographics Logic ---
-    if (patients && patients.length > 0) {
-      const ageGroups: { [key: string]: number } = { '0-3': 0, '4-7': 0, '8-12': 0, '13-17': 0, '18+': 0, 'N/A': 0 };
-      patients.forEach(p => {
-        if (p.dob) {
-          try {
-            const age = differenceInYears(new Date(), new Date(p.dob));
-            if (age <= 3) ageGroups['0-3']++;
-            else if (age <= 7) ageGroups['4-7']++;
-            else if (age <= 12) ageGroups['8-12']++;
-            else if (age <= 17) ageGroups['13-17']++;
-            else ageGroups['18+']++;
-          } catch (e) {
-            ageGroups['N/A']++;
-          }
-        } else {
-          ageGroups['N/A']++;
-        }
-      });
-      const ageData = Object.entries(ageGroups).map(([group, count]) => ({ group, count }));
-
-      const genderCounts = patients.reduce((acc, p) => {
-        const key = p.gender ? p.gender.toLowerCase() : 'naoinformado';
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const genderData = Object.entries(genderCounts).map(([gender, count]) => ({
-        status: gender,
-        count,
-        fill: `var(--color-${gender})`,
-      }));
-
-      const diagnosisCounts = patients.reduce((acc, p) => {
-        if (p.diagnosis) {
-          const diagnoses = p.diagnosis.split(',').map(d => d.trim().toLowerCase());
-          diagnoses.forEach(diag => {
-            if (diag) {
-              acc[diag] = (acc[diag] || 0) + 1;
-            }
-          });
-        }
-        return acc;
-      }, {} as Record<string, number>);
-
-      const diagnosisData = Object.entries(diagnosisCounts)
-        .sort(([, countA], [, countB]) => countB - countA)
-        .slice(0, 10)
-        .map(([diagnosis, count]) => ({ diagnosis, count }));
-        
-      const maritalStatusCounts = patients.reduce((acc, p) => {
-          const status = (p.maritalStatus || 'Não Informado').trim();
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-      }, {} as Record<string, number>);
-      const maritalStatusData = Object.entries(maritalStatusCounts).map(([status, count]) => ({ status, count }));
-
-      const healthPlanCounts = patients.reduce((acc, p) => {
-          const planName = (p.healthPlanName || 'Particular').trim();
-          acc[planName] = (acc[planName] || 0) + 1;
-          return acc;
-      }, {} as Record<string, number>);
-
-      const healthPlanData = Object.entries(healthPlanCounts).map(([plan, count]) => ({ plan, count }));
-
-      setDemographicsData({ ageData, genderData, diagnosisData, maritalStatusData, healthPlanData });
+  const demographicsData = React.useMemo(() => {
+    if (!patients || patients.length === 0) {
+      return { ageData: [], genderData: [], diagnosisData: [], maritalStatusData: [], healthPlanData: [] };
     }
 
-  }, [appointments, evolutions, patients]);
+    const ageGroups: { [key: string]: number } = { '0-3': 0, '4-7': 0, '8-12': 0, '13-17': 0, '18+': 0, 'N/A': 0 };
+    patients.forEach(p => {
+      if (p.dob) {
+        try {
+          const age = differenceInYears(new Date(), new Date(p.dob));
+          if (age <= 3) ageGroups['0-3']++;
+          else if (age <= 7) ageGroups['4-7']++;
+          else if (age <= 12) ageGroups['8-12']++;
+          else if (age <= 17) ageGroups['13-17']++;
+          else ageGroups['18+']++;
+        } catch (e) {
+          ageGroups['N/A']++;
+        }
+      } else {
+        ageGroups['N/A']++;
+      }
+    });
+    const ageData = Object.entries(ageGroups).map(([group, count]) => ({ group, count }));
+
+    const genderCounts = patients.reduce((acc, p) => {
+      const key = p.gender ? p.gender.toLowerCase() : 'naoinformado';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const genderData = Object.entries(genderCounts).map(([gender, count]) => ({
+      status: gender,
+      count,
+      fill: `var(--color-${gender})`,
+    }));
+
+    const diagnosisCounts = patients.reduce((acc, p) => {
+      if (p.diagnosis) {
+        const diagnoses = p.diagnosis.split(',').map(d => d.trim().toLowerCase());
+        diagnoses.forEach(diag => {
+          if (diag) {
+            acc[diag] = (acc[diag] || 0) + 1;
+          }
+        });
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    const diagnosisData = Object.entries(diagnosisCounts)
+      .sort(([, countA], [, countB]) => countB - countA)
+      .slice(0, 10)
+      .map(([diagnosis, count]) => ({ diagnosis, count }));
+      
+    const maritalStatusCounts = patients.reduce((acc, p) => {
+        const status = (p.maritalStatus || 'Não Informado').trim();
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    const maritalStatusData = Object.entries(maritalStatusCounts).map(([status, count]) => ({ status, count }));
+
+    const healthPlanCounts = patients.reduce((acc, p) => {
+        const planName = (p.healthPlanName || 'Particular').trim();
+        acc[planName] = (acc[planName] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const healthPlanData = Object.entries(healthPlanCounts).map(([plan, count]) => ({ plan, count }));
+
+    return { ageData, genderData, diagnosisData, maritalStatusData, healthPlanData };
+  }, [patients]);
 
 
   // --- Appointments Report Logic ---
