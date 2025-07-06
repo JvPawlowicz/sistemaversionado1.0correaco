@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
 import {
   Card,
   CardContent,
@@ -32,24 +31,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const initialState = {
-  success: false,
-  message: '',
-  errors: null,
-};
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      Salvar Notificação
-    </Button>
-  );
-}
-
 export default function NotificationsPage() {
-  const [state, formAction] = useFormState(createNotificationAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const { currentUser, loading: authLoading } = useAuth();
@@ -62,18 +44,32 @@ export default function NotificationsPage() {
   const [targetType, setTargetType] = useState('ALL');
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isUserPopoverOpen, setIsUserPopoverOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (state.success) {
-      toast({ title: 'Sucesso!', description: state.message });
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setFormError(null);
+
+    const formData = new FormData(event.currentTarget);
+    const result = await createNotificationAction(null, formData);
+    
+    setIsSubmitting(false);
+
+    if (result.success) {
+      toast({ title: 'Sucesso!', description: result.message });
       fetchNotifications();
       formRef.current?.reset();
       setTargetType('ALL');
       setSelectedUserIds([]);
-    } else if (state.message && !state.errors) {
-      toast({ variant: 'destructive', title: 'Erro', description: state.message });
+    } else if (result.message) {
+      setFormError(result.message);
+      if(!result.errors) {
+        toast({ variant: 'destructive', title: 'Erro', description: result.message });
+      }
     }
-  }, [state, toast, fetchNotifications]);
+  };
 
   if (authLoading) {
     return <div>Carregando...</div>;
@@ -111,7 +107,7 @@ export default function NotificationsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <form ref={formRef} action={formAction}>
+        <form ref={formRef} onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
               <CardTitle>Nova Notificação</CardTitle>
@@ -120,21 +116,19 @@ export default function NotificationsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {state.message && !state.success && !state.errors && (
+              {formError && (
                   <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                       <CircleAlert className="h-4 w-4" />
-                      <p>{state.message}</p>
+                      <p>{formError}</p>
                   </div>
               )}
               <div className="space-y-2">
                 <Label htmlFor="title">Título</Label>
                 <Input id="title" name="title" required />
-                {state.errors?.title && <p className="text-xs text-destructive mt-1">{state.errors.title[0]}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="content">Conteúdo</Label>
                 <Textarea id="content" name="content" required rows={5} />
-                {state.errors?.content && <p className="text-xs text-destructive mt-1">{state.errors.content[0]}</p>}
               </div>
 
               <div className="space-y-4 rounded-md border p-4">
@@ -217,7 +211,10 @@ export default function NotificationsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <SubmitButton />
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar Notificação
+              </Button>
             </CardFooter>
           </Card>
         </form>

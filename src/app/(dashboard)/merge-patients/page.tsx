@@ -1,9 +1,7 @@
-
 'use client';
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePatient } from '@/contexts/PatientContext';
@@ -82,23 +80,6 @@ function PatientComparisonCard({ patient, title }: { patient: Patient; title: st
   );
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} variant="destructive">
-      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      Confirmar e Mesclar Pacientes
-    </Button>
-  );
-}
-
-const initialState = {
-  success: false,
-  message: '',
-  errors: null,
-};
-
-
 export default function MergePatientsPage() {
   const { currentUser } = useAuth();
   const { patients: allPatients, loading: patientsLoading, fetchPatients } = usePatient();
@@ -107,18 +88,23 @@ export default function MergePatientsPage() {
 
   const [primaryPatientId, setPrimaryPatientId] = useState<string | null>(null);
   const [secondaryPatientId, setSecondaryPatientId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [state, formAction] = useFormState(mergePatientsAction, initialState);
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    const formData = new FormData(event.currentTarget);
+    const result = await mergePatientsAction(null, formData);
+    setIsSubmitting(false);
 
-  useEffect(() => {
-    if (state.success) {
-      toast({ title: 'Sucesso!', description: state.message });
+    if (result.success) {
+      toast({ title: 'Sucesso!', description: result.message });
       fetchPatients();
       router.push('/patients');
-    } else if (state.message) {
-      toast({ variant: 'destructive', title: 'Erro na Mesclagem', description: state.message });
+    } else if (result.message) {
+      toast({ variant: 'destructive', title: 'Erro na Mesclagem', description: result.message });
     }
-  }, [state, toast, fetchPatients, router]);
+  };
 
 
   if (currentUser?.role !== 'Admin') {
@@ -158,7 +144,7 @@ export default function MergePatientsPage() {
         </AlertDescription>
       </Alert>
 
-      <form action={formAction}>
+      <form onSubmit={handleFormSubmit}>
         <Card>
           <CardHeader>
             <CardTitle>Passo 1: Selecionar Pacientes</CardTitle>
@@ -214,7 +200,10 @@ export default function MergePatientsPage() {
               </CardDescription>
             </CardHeader>
             <CardFooter>
-                <SubmitButton />
+                <Button type="submit" disabled={isSubmitting} variant="destructive">
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Confirmar e Mesclar Pacientes
+                </Button>
             </CardFooter>
           </Card>
         )}
