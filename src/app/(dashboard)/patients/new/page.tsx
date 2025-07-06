@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -137,7 +136,7 @@ export default function NewPatientPage() {
                                 <div key={patient.id} className="flex items-center justify-between rounded-lg border p-4">
                                     <div className="flex items-center gap-4">
                                         <Avatar>
-                                            <AvatarImage src={getDisplayAvatarUrl(patient.avatarUrl)} />
+                                            <AvatarImage src={getDisplayAvatarUrl(patient.avatarUrl)} alt={patient.name} />
                                             <AvatarFallback>{getInitials(patient.name)}</AvatarFallback>
                                         </Avatar>
                                         <div>
