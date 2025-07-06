@@ -1,4 +1,4 @@
-// This page is deprecated and redirects are handled in next.config.js
-export default function ReportsRedirectPage() {
+// This page is deprecated and redirects are handled by middleware.
+export default function ReportsPage() {
   return null;
 }
