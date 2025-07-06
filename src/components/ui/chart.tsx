@@ -321,7 +321,7 @@ const ChartPie = React.forwardRef<
   React.ComponentProps<typeof RechartsPrimitive.Pie>
 >(({ ...props }, ref) => {
     return (
-      <RechartsPrimitive.Pie {...props} ref={ref} />
+      <RechartsPrimitive.Pie {...props} ref={ref as any} />
     )
 })
 ChartPie.displayName = "ChartPie"
