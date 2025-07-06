@@ -179,3 +179,37 @@ Este módulo é crucial para a organização da agenda da clínica e é dividido
 - **Logs**: A página `/logs` exibe um feed de auditoria de todas as ações importantes, gravadas na coleção `logs` pela função `createLog`.
 - **Notificações**: Admins podem enviar notificações para todos os usuários, por função, por unidade ou para usuários específicos. As notificações não lidas são exibidas no header.
 - **Multi-Unidade (Tenancy)**: O sistema é projetado para gerenciar múltiplas clínicas (unidades). O `UnitSwitcher` no header permite que usuários com acesso a mais de uma unidade troquem o contexto. A maioria das consultas ao Firestore é filtrada pelo `selectedUnitId` para garantir o isolamento dos dados. Uma `unitId` especial, "central", é usada para recursos globais (como planos de saúde aplicáveis a todas as unidades).
+
+## 4. Práticas e Fluxo de Desenvolvimento
+
+Para garantir a qualidade e a estabilidade do código, adotamos as seguintes práticas de desenvolvimento:
+
+### 4.1. Verificação de Qualidade Local
+
+Antes de enviar qualquer código para o repositório (`git commit`), é crucial validar o código localmente. Para isso, instalamos um **gateway de qualidade** que executa automaticamente verificações de linting.
+
+- **`Husky` e `lint-staged`**: Essas ferramentas garantem que o comando `eslint --fix` seja executado em todos os arquivos modificados. Isso corrige automaticamente problemas de formatação e aponta erros de linting, impedindo que código de baixa qualidade seja commitado.
+
+### 4.2. Comandos Essenciais para o Desenvolvedor
+
+Antes de um `git push`, todo desenvolvedor deve executar os seguintes comandos para garantir que o código está pronto para integração:
+
+1.  **Verificar Linting:**
+    ```bash
+    npm run lint
+    ```
+    Este comando verifica se há problemas de estilo ou de código que não seguem as boas práticas definidas.
+
+2.  **Verificar Tipagem (TypeScript):**
+    ```bash
+    npm run typecheck
+    ```
+    Este comando executa o compilador TypeScript (`tsc`) sem gerar arquivos (`--noEmit`) para garantir que não há erros de tipo em todo o projeto. É um passo crucial para evitar erros de runtime.
+
+3.  **Realizar Build de Produção Local:**
+    ```bash
+    npm run build
+    ```
+    Este comando simula o processo de build que ocorre no ambiente de deploy. É a verificação final e mais importante, pois pode capturar erros de tipagem, de dependências e de configuração que outros comandos podem não detectar. **Um build bem-sucedido localmente aumenta drasticamente a chance de um deploy bem-sucedido.**
+
+Seguir este fluxo de trabalho minimiza a chance de falhas no pipeline de CI/CD e garante uma base de código mais saudável e manutenível.
