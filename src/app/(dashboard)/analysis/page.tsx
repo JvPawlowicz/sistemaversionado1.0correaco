@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Clock, Activity, Download, SlidersHorizontal, Trash, FileSignature, ListChecks, Shield } from 'lucide-react';
+import { TrendingUp, TrendingDown, Clock, Activity, Download, SlidersHorizontal, Trash, FileSignature, ListChecks } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { subDays, isWithinInterval, startOfDay, addDays, isAfter, isBefore, isEqual, format, differenceInYears } from 'date-fns';
