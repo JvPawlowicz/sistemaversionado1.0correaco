@@ -12,8 +12,8 @@ const fontSans = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Equidade+',
-  description: 'Sistema de Gestão Equidade+',
+  title: 'Synapse+',
+  description: 'Sistema de Gestão Synapse+',
 };
 
 export default function RootLayout({

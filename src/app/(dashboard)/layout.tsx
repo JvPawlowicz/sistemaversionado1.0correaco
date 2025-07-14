@@ -62,7 +62,7 @@ export default function DashboardLayout({
                           {children}
                         </main>
                         <footer className="border-t p-4 text-center text-sm text-muted-foreground">
-                            Desenvolvido por: JVGP- João Pawlowicz
+                            Desenvolvido por: JVGP- João Pawlowicz para Synapse+
                         </footer>
                       </SidebarInset>
                     </SidebarProvider>

@@ -1,6 +1,6 @@
-# Guia de Contribuição - Equidade+
+# Guia de Contribuição - Synapse+
 
-Bem-vindo(a) ao desenvolvimento do Equidade+! Para garantir a qualidade e a consistência do código, por favor, siga estas diretrizes.
+Bem-vindo(a) ao desenvolvimento do Synapse+! Para garantir a qualidade e a consistência do código, por favor, siga estas diretrizes.
 
 ## Fluxo de Trabalho de Desenvolvimento
 

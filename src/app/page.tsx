@@ -20,7 +20,7 @@ export default function LandingPage() {
         <div className="container flex h-14 items-center">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Logo className="h-6 w-6" />
-            <span className="font-bold">Equidade+</span>
+            <span className="font-bold">Synapse+</span>
           </Link>
           <nav className="hidden flex-1 items-center gap-6 text-sm md:flex">
             <Link href="/#features" className="text-muted-foreground transition-colors hover:text-foreground">
@@ -66,7 +66,7 @@ export default function LandingPage() {
                     src="https://placehold.co/1200x800.png"
                     width={1200}
                     height={800}
-                    alt="Dashboard da Plataforma Equidade+"
+                    alt="Dashboard da Plataforma Synapse+"
                     className="rounded-xl shadow-2xl"
                     data-ai-hint="dashboard analytics"
                 />
@@ -144,7 +144,7 @@ export default function LandingPage() {
             <div className="mx-auto max-w-3xl text-center">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Amado por Clínicas em Todo o Brasil</h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                Veja o que nossos parceiros estão dizendo sobre a transformação que o Equidade+ trouxe para suas operações.
+                Veja o que nossos parceiros estão dizendo sobre a transformação que o Synapse+ trouxe para suas operações.
               </p>
             </div>
             <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -158,7 +158,7 @@ export default function LandingPage() {
                     <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   </div>
                   <blockquote className="mt-4 text-lg font-semibold leading-relaxed">
-                    &ldquo;O Equidade+ revolucionou nossa gestão. A economia de tempo com documentação nos permitiu focar 100% nos pacientes. A visão integrada da agenda e dos planos terapêuticos é fantástica.&rdquo;
+                    &ldquo;O Synapse+ revolucionou nossa gestão. A economia de tempo com documentação nos permitiu focar 100% nos pacientes. A visão integrada da agenda e dos planos terapêuticos é fantástica.&rdquo;
                   </blockquote>
                 </CardContent>
                 <CardHeader className="flex-row items-center gap-4">
@@ -249,7 +249,7 @@ export default function LandingPage() {
             <div className="col-span-2 space-y-4 md:col-span-1">
               <Link href="/" className="flex items-center space-x-2">
                 <Logo className="h-8 w-8" />
-                <span className="text-xl font-bold">Equidade+</span>
+                <span className="text-xl font-bold">Synapse+</span>
               </Link>
               <p className="text-sm text-muted-foreground">Potencializando o cuidado multidisciplinar.</p>
             </div>
@@ -277,7 +277,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
-            &copy; 2024 Equidade+. Todos os direitos reservados.
+            &copy; 2024 Synapse+. Todos os direitos reservados.
           </div>
         </div>
       </footer>

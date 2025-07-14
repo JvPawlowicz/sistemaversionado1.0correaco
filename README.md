@@ -1,6 +1,6 @@
-# Visão Geral da Arquitetura e Funcionalidades do Sistema Equidade+
+# Visão Geral da Arquitetura e Funcionalidades do Sistema Synapse+
 
-Este documento serve como um guia técnico abrangente para o sistema de gestão de clínicas Equidade+. Ele é destinado a desenvolvedores (humanos ou IA) para entender a arquitetura, os modelos de dados e a lógica de negócios da aplicação.
+Este documento serve como um guia técnico abrangente para o sistema de gestão de clínicas Synapse+. Ele é destinado a desenvolvedores (humanos ou IA) para entender a arquitetura, os modelos de dados e a lógica de negócios da aplicação.
 
 ## 1. Stack de Tecnologia
 
