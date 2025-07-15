@@ -215,3 +215,4 @@ Antes de um `git push`, todo desenvolvedor deve executar os seguintes comandos p
 Seguir este fluxo de trabalho minimiza a chance de falhas no pipeline de CI/CD e garante uma base de código mais saudável e manutenível.
 # sistemaversionado1.0correaco
 # ClinicFlow
+# ClinicFlow
