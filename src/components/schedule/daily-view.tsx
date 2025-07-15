@@ -158,12 +158,7 @@ export function DailyView({ appointments, timeBlocks, currentDate, setCurrentDat
   const handleToday = () => setCurrentDate(new Date());
 
   const handleAppointmentClick = (appointment: Appointment) => {
-    if (appointment.groupId) {
-        const specificAppointment = appointments.find(a => a.groupId === appointment.groupId && a.patientId === currentUser?.id) || appointments.find(a => a.groupId === appointment.groupId);
-        setSelectedAppointment(specificAppointment || appointment);
-    } else {
-        setSelectedAppointment(appointment);
-    }
+    setSelectedAppointment(appointment);
     setIsActionsDialogOpen(true);
   };
   
