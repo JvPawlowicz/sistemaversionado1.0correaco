@@ -213,3 +213,4 @@ Antes de um `git push`, todo desenvolvedor deve executar os seguintes comandos p
     Este comando simula o processo de build que ocorre no ambiente de deploy. É a verificação final e mais importante, pois pode capturar erros de tipagem, de dependências e de configuração que outros comandos podem não detectar. **Um build bem-sucedido localmente aumenta drasticamente a chance de um deploy bem-sucedido.**
 
 Seguir este fluxo de trabalho minimiza a chance de falhas no pipeline de CI/CD e garante uma base de código mais saudável e manutenível.
+# sistemaversionado1.0correaco
