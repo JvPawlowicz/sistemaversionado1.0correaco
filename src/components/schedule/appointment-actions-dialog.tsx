@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -82,18 +81,26 @@ export function AppointmentActionsDialog({ isOpen, onOpenChange, appointment }: 
   const [serviceId, setServiceId] = React.useState('');
   const [professionalName, setProfessionalName] = React.useState('');
 
-  // Reset view when appointment changes or dialog opens
+  const resetDialogState = React.useCallback(() => {
+    setView('actions');
+    if (appointment) {
+      setServiceId(appointment.serviceId);
+      setProfessionalName(appointment.professionalName);
+    } else {
+        setServiceId('');
+        setProfessionalName('');
+    }
+    if (evolutionFormRef.current) evolutionFormRef.current.reset();
+    if (editFormRef.current) editFormRef.current.reset();
+  }, [appointment]);
+
+
+  // Reset view when appointment changes or dialog opens/closes
   useEffect(() => {
     if (isOpen) {
-      setView('actions');
-      if (appointment) {
-        setServiceId(appointment.serviceId);
-        setProfessionalName(appointment.professionalName);
-      }
-      if (evolutionFormRef.current) evolutionFormRef.current.reset();
-      if (editFormRef.current) editFormRef.current.reset();
+      resetDialogState();
     }
-  }, [isOpen, appointment]);
+  }, [isOpen, resetDialogState]);
 
   // Handle successful form submissions
   useEffect(() => {

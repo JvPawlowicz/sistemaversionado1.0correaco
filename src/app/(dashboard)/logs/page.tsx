@@ -1,10 +1,9 @@
-
 'use client';
 
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, ShieldAlert } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, orderBy, where, Timestamp } from 'firebase/firestore';
 import type { Log } from '@/lib/types';
@@ -12,12 +11,18 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { useUnit } from '@/contexts/UnitContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LogsPage() {
   const [logs, setLogs] = React.useState<Log[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState('');
   const { selectedUnitId } = useUnit();
+  const { currentUser, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   React.useEffect(() => {
     if (!db) {
@@ -50,6 +55,37 @@ export default function LogsPage() {
         log.details.toLowerCase().includes(searchTerm.toLowerCase())
     )
   });
+
+  const isLoading = authLoading || loading;
+
+  if (isLoading) {
+     return (
+        <div className="space-y-6">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-10 w-[300px]" />
+            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+            </div>
+        </div>
+    );
+  }
+
+  if (currentUser?.role !== 'Admin') {
+    return (
+        <Card className="mt-8">
+            <CardHeader className="items-center text-center">
+                <ShieldAlert className="h-12 w-12 text-destructive" />
+                <CardTitle className="text-2xl">Acesso Negado</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+                <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
+                <Button onClick={() => router.push('/dashboard')} className="mt-4">Voltar para o Painel</Button>
+            </CardContent>
+        </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -90,7 +126,7 @@ export default function LogsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {loading ? (
+                        {isLoading ? (
                             <TableRow><TableCell colSpan={4} className="h-24 text-center"><Loader2 className="animate-spin mx-auto"/></TableCell></TableRow>
                         ) : filteredLogs.length > 0 ? (
                             filteredLogs.map(log => (

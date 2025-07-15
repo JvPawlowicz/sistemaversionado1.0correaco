@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -15,21 +14,11 @@ import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import type { EvolutionRecord } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getDisplayAvatarUrl } from '@/lib/utils';
+import { ScheduleProvider } from '@/contexts/ScheduleContext';
+import { UserProvider } from '@/contexts/UserContext';
 
-interface PerformanceData {
-  userId: string;
-  name: string;
-  avatarUrl: string;
-  role: string;
-  attendedAppointments: number;
-  scheduledAppointments: number;
-  noShows: number;
-  occupationRate: string;
-  noShowRate: string;
-  evolutionsCount: number;
-}
 
-export default function TeamPerformancePage() {
+function TeamPerformancePageContent() {
   const { users, loading: usersLoading } = useUser();
   const { appointments, loading: scheduleLoading } = useSchedule();
   const { patients, loading: patientsLoading } = usePatient();
@@ -222,4 +211,27 @@ export default function TeamPerformancePage() {
       </Card>
     </div>
   );
+}
+
+interface PerformanceData {
+  userId: string;
+  name: string;
+  avatarUrl: string;
+  role: string;
+  attendedAppointments: number;
+  scheduledAppointments: number;
+  noShows: number;
+  occupationRate: string;
+  noShowRate: string;
+  evolutionsCount: number;
+}
+
+export default function TeamPerformancePage() {
+    return (
+        <UserProvider>
+            <ScheduleProvider>
+                <TeamPerformancePageContent />
+            </ScheduleProvider>
+        </UserProvider>
+    )
 }

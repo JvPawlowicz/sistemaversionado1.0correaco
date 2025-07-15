@@ -87,6 +87,10 @@ export default function NewPatientPage() {
     }
     setIsLinking(false);
   };
+  
+  const handleProceedToCreate = () => {
+    setView('create');
+  }
 
   const getInitials = (name: string) => {
     const names = name.split(' ');
@@ -155,7 +159,7 @@ export default function NewPatientPage() {
                             )
                         })}
                     </div>
-                     <Button variant="outline" className="mt-4" onClick={() => setView('create')}>
+                     <Button variant="outline" className="mt-4" onClick={handleProceedToCreate}>
                         Nenhum destes? Criar Novo Paciente
                     </Button>
                 </CardFooter>
@@ -163,7 +167,7 @@ export default function NewPatientPage() {
                 <CardFooter className="flex-col items-center gap-4 text-center">
                     <HeartPulse className="h-10 w-10 text-muted-foreground" />
                     <p className="text-muted-foreground">Nenhum paciente encontrado com o termo &quot;{searchTerm}&quot;.</p>
-                    <Button onClick={() => setView('create')}>
+                    <Button onClick={handleProceedToCreate}>
                         <UserPlus className="mr-2"/>
                         Criar Novo Paciente
                     </Button>

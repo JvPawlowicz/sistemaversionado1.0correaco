@@ -11,8 +11,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { deleteEvolutionTemplateAction, seedDefaultTemplatesAction } from '@/lib/actions/template';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { TemplateProvider } from '@/contexts/TemplateContext';
 
-export default function TemplatesPage() {
+function TemplatesPageContent() {
   const { templates, loading, fetchTemplates } = useTemplate();
   const { toast } = useToast();
   const { currentUser } = useAuth();
@@ -142,4 +143,12 @@ export default function TemplatesPage() {
       </div>
     </>
   );
+}
+
+export default function TemplatesPage() {
+    return (
+        <TemplateProvider>
+            <TemplatesPageContent />
+        </TemplateProvider>
+    )
 }

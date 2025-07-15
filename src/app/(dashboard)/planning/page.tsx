@@ -1,19 +1,20 @@
-
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserCheck, SlidersHorizontal, ShieldAlert } from 'lucide-react';
+import { UserCheck, SlidersHorizontal, ShieldAlert, Loader2 } from 'lucide-react';
 import { AvailabilityManager } from '@/components/planning/availability-manager';
 import { TimeBlockManager } from '@/components/planning/time-block-manager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { UserProvider } from '@/contexts/UserContext';
+import { ScheduleProvider } from '@/contexts/ScheduleContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
-export default function PlanningPage() {
+function PlanningPageContent() {
   const [isClient, setIsClient] = useState(false);
   const { currentUser, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -21,15 +22,30 @@ export default function PlanningPage() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const isLoading = authLoading || !isClient;
+
+  if (isLoading) {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-9 w-96" />
+            <Skeleton className="h-6 w-80" />
+            <Skeleton className="h-10 w-full" />
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-40 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
   
   // Protect route for non-admins/coordinators
-  useEffect(() => {
-    if (!authLoading && currentUser && !['Admin', 'Coordinator'].includes(currentUser.role)) {
-      router.push('/dashboard');
-    }
-  }, [currentUser, authLoading, router]);
-
-  if (authLoading || !currentUser || !['Admin', 'Coordinator'].includes(currentUser.role)) {
+  if (!currentUser || !['Admin', 'Coordinator'].includes(currentUser.role)) {
      return (
         <Card className="mt-8">
             <CardHeader className="items-center text-center">
@@ -42,10 +58,6 @@ export default function PlanningPage() {
             </CardContent>
         </Card>
     );
-  }
-
-  if (!isClient) {
-    return null; // or a skeleton loader
   }
 
   return (
@@ -100,4 +112,15 @@ export default function PlanningPage() {
        </Tabs>
     </div>
   );
+}
+
+
+export default function PlanningPage() {
+    return (
+        <UserProvider>
+            <ScheduleProvider>
+                <PlanningPageContent />
+            </ScheduleProvider>
+        </UserProvider>
+    )
 }

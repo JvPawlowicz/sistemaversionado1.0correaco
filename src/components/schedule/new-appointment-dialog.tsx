@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -77,25 +76,26 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     return users.filter(user => selectedService.professionalIds.includes(user.id));
   }, [users, selectedService]);
 
-  React.useEffect(() => {
-    if (isOpen) {
-      // Set date only when dialog opens to avoid hydration issues
-      setDate(format(new Date(), 'yyyy-MM-dd'));
-    }
-  }, [isOpen]);
-
-  const resetForm = () => {
+  const resetForm = React.useCallback(() => {
     setScheduleType('individual');
     setPatientId('');
     setGroupId('');
     setServiceId('');
     setProfessionalName(currentUser?.role === 'Therapist' ? currentUser.name : '');
-    setDate('');
+    setDate(format(new Date(), 'yyyy-MM-dd'));
     setTime('09:00');
     setEndTime('10:00');
     setRoom('');
     setRepeat(false);
-  };
+    setIsSaving(false);
+    setIsPatientPopoverOpen(false);
+  }, [currentUser]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      resetForm();
+    }
+  }, [isOpen, resetForm]);
   
   React.useEffect(() => {
     setServiceId('');
@@ -164,17 +164,13 @@ export function NewAppointmentDialog({ isOpen, onOpenChange }: NewAppointmentDia
     await addAppointment(data);
     setIsSaving(false);
     onOpenChange(false);
-    resetForm();
   };
 
   const isLoading = usersLoading || unitsLoading || patientsLoading || groupsLoading;
   const canEditProfessional = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator' || currentUser?.role === 'Receptionist';
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) resetForm();
-      onOpenChange(open);
-    }}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>

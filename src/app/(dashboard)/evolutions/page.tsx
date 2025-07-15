@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -8,12 +7,12 @@ import { Search, Loader2, Edit } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isAfter, isEqual } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { usePatient } from '@/contexts/PatientContext';
 import type { EvolutionRecord, Appointment } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { NewEvolutionRecordDialog } from '@/components/patients/new-evolution-record-dialog';
@@ -21,9 +20,9 @@ import { createPendingEvolutionRemindersAction } from '@/lib/actions/notificatio
 
 
 export default function EvolutionsPage() {
-  const { appointments, loading: scheduleLoading } = useSchedule();
+  const { appointments, loading: scheduleLoading, fetchScheduleData } = useSchedule();
   const { patients, loading: patientsLoading } = usePatient();
-  const [evolutions, setEvolutions] = React.useState<EvolutionRecord[]>([]);
+  const [evolutionsByPatient, setEvolutionsByPatient] = React.useState<Map<string, EvolutionRecord[]>>(new Map());
   const [loadingEvolutions, setLoadingEvolutions] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedAppointments, setSelectedAppointments] = React.useState<string[]>([]);
@@ -34,9 +33,14 @@ export default function EvolutionsPage() {
   const [isSendingReminders, setIsSendingReminders] = React.useState(false);
   
   const loading = scheduleLoading || patientsLoading || loadingEvolutions;
+  
+  const attendedAppointments = React.useMemo(() => {
+    return appointments.filter(app => app.status === 'Realizado');
+  }, [appointments]);
 
-  const fetchAllEvolutions = React.useCallback(async () => {
-    if (patientsLoading || patients.length === 0) {
+
+  const fetchEvolutionsForAttended = React.useCallback(async () => {
+    if (patientsLoading || attendedAppointments.length === 0) {
         setLoadingEvolutions(false);
         return;
     }
@@ -46,59 +50,57 @@ export default function EvolutionsPage() {
         setLoadingEvolutions(false);
         return;
     }
-
     setLoadingEvolutions(true);
-    const allEvolutions: EvolutionRecord[] = [];
-
+    const patientIdsToFetch = [...new Set(attendedAppointments.map(app => app.patientId))];
+    const newEvolutionsMap = new Map<string, EvolutionRecord[]>();
+    
     try {
-        for (const patient of patients) {
-            const recordsCollectionRef = collection(db, 'patients', patient.id, 'evolutionRecords');
-            const q = query(recordsCollectionRef, orderBy('createdAt', 'desc'));
+        // Fetch evolutions only for patients who had attended appointments.
+        const evolutionPromises = patientIdsToFetch.map(async (patientId) => {
+            const recordsCollectionRef = collection(db, 'patients', patientId, 'evolutionRecords');
+            const q = query(recordsCollectionRef);
             const querySnapshot = await getDocs(q);
             const fetchedRecords = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 return {
                     id: doc.id,
                     ...(data as Omit<EvolutionRecord, 'id'>),
-                    patientName: patient.name,
-                    patientId: patient.id,
                 };
             });
-            allEvolutions.push(...fetchedRecords);
-        }
-        setEvolutions(allEvolutions);
+            newEvolutionsMap.set(patientId, fetchedRecords);
+        });
+
+        await Promise.all(evolutionPromises);
+        setEvolutionsByPatient(newEvolutionsMap);
     } catch (error) {
-        console.error("Error fetching all evolution records: ", error);
+        console.error("Error fetching evolution records: ", error);
     } finally {
         setLoadingEvolutions(false);
     }
-  }, [patients, patientsLoading]);
+  }, [attendedAppointments, patientsLoading]);
 
   React.useEffect(() => {
-    fetchAllEvolutions();
-  }, [fetchAllEvolutions]);
+    fetchEvolutionsForAttended();
+  }, [fetchEvolutionsForAttended]);
 
 
   const pendingEvolutions = React.useMemo(() => {
-    const appointmentsToConsider = appointments.filter(app => app.status === 'Realizado');
-
-    const appointmentsWithPendingEvolution = appointmentsToConsider.filter(app => {
-      // Find an evolution for the same patient on or after the appointment date.
+    return attendedAppointments.filter(app => {
+      const patientEvolutions = evolutionsByPatient.get(app.patientId) || [];
       const appointmentDateTime = parseISO(`${app.date}T${app.time}`);
-      const evolutionForAppointment = evolutions.find(evo =>
-        evo.patientId === app.patientId &&
-        evo.createdAt && evo.createdAt.toDate() >= appointmentDateTime
+      
+      const hasEvolutionAfter = patientEvolutions.some(evo => 
+        evo.createdAt && (isAfter(evo.createdAt.toDate(), appointmentDateTime) || isEqual(evo.createdAt.toDate(), appointmentDateTime))
       );
-      return !evolutionForAppointment;
-    });
-    
-    return appointmentsWithPendingEvolution
-      .filter(app => 
+      
+      return !hasEvolutionAfter;
+    })
+    .filter(app => 
         app.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         app.professionalName.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [appointments, evolutions, searchTerm]);
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [attendedAppointments, evolutionsByPatient, searchTerm]);
   
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
     if (checked === true) {
@@ -153,8 +155,9 @@ export default function EvolutionsPage() {
     setIsRecordDialogOpen(true);
   };
   
-  const handleRecordAdded = () => {
-    fetchAllEvolutions(); 
+  const handleRecordAdded = async () => {
+    await fetchEvolutionsForAttended();
+    await fetchScheduleData();
   };
 
   const selectedPatientForDialog = React.useMemo(() => {
