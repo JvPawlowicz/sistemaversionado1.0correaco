@@ -45,7 +45,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
-    "firebase": "^11.5.0",
+    "firebase": "^10.12.2",
     "firebase-admin": "^12.2.0",
     "genkit": "^1.14.0",
     "immer": "^10.1.1",
