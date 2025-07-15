@@ -5,12 +5,13 @@ import { getStorage, type Storage } from 'firebase/storage';
 
 // Your web app's Firebase configuration is loaded from environment variables
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+  apiKey: "AIzaSyC8-Z_3Qc5Pdl6H9_AzJn5-oNYLlVx2NuY",
+  authDomain: "clinicflow-5e4g7.firebaseapp.com",
+  databaseURL: "https://clinicflow-5e4g7-default-rtdb.firebaseio.com",
+  projectId: "clinicflow-5e4g7",
+  storageBucket: "clinicflow-5e4g7.firebasestorage.app",
+  messagingSenderId: "850332513266",
+  appId: "1:850332513266:web:142266b1561fbafc76716b"
 };
 
 let app: FirebaseApp | null = null;

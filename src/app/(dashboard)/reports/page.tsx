@@ -1,1 +1,1 @@
-// This file is intentionally left empty and will be removed.
+// This file is being deleted.

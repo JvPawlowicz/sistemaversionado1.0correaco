@@ -11,21 +11,9 @@ const nextConfig = {
       },
     ],
   },
-  async redirects() {
-    return [
-      {
-        source: '/financial/:path*',
-        destination: '/analysis',
-        permanent: true,
-      },
-      {
-        source: '/reports/:path*',
-        destination: '/analysis',
-        permanent: true,
-      },
-    ]
-  },
 };
 
 module.exports = nextConfig;
+
+
 
