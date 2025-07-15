@@ -5,17 +5,44 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserCheck, SlidersHorizontal } from 'lucide-react';
+import { UserCheck, SlidersHorizontal, ShieldAlert } from 'lucide-react';
 import { AvailabilityManager } from '@/components/planning/availability-manager';
 import { TimeBlockManager } from '@/components/planning/time-block-manager';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 
 export default function PlanningPage() {
   const [isClient, setIsClient] = useState(false);
+  const { currentUser, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  // Protect route for non-admins/coordinators
+  useEffect(() => {
+    if (!authLoading && currentUser && !['Admin', 'Coordinator'].includes(currentUser.role)) {
+      router.push('/dashboard');
+    }
+  }, [currentUser, authLoading, router]);
+
+  if (authLoading || !currentUser || !['Admin', 'Coordinator'].includes(currentUser.role)) {
+     return (
+        <Card className="mt-8">
+            <CardHeader className="items-center text-center">
+                <ShieldAlert className="h-12 w-12 text-destructive" />
+                <CardTitle className="text-2xl">Acesso Negado</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+                <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
+                <Button onClick={() => router.push('/dashboard')} className="mt-4">Voltar para o Painel</Button>
+            </CardContent>
+        </Card>
+    );
+  }
 
   if (!isClient) {
     return null; // or a skeleton loader
@@ -74,4 +101,3 @@ export default function PlanningPage() {
     </div>
   );
 }
-

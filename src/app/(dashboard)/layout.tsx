@@ -6,15 +6,12 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, ReactNode } from 'react';
-import { PatientProvider } from '@/contexts/PatientContext';
-import { ScheduleProvider } from '@/contexts/ScheduleContext';
 import { Loader2 } from 'lucide-react';
-import { UserProvider } from '@/contexts/UserContext';
 import { UnitProvider } from '@/contexts/UnitContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
-import { TherapyGroupProvider } from '@/contexts/TherapyGroupContext';
 import { TemplateProvider } from '@/contexts/TemplateContext';
 import { AssessmentProvider } from '@/contexts/AssessmentContext';
+import { PatientProvider } from '@/contexts/PatientContext';
 
 export default function DashboardLayout({
   children,
@@ -47,32 +44,26 @@ export default function DashboardLayout({
 
   return (
     <UnitProvider>
-      <UserProvider>
-        <PatientProvider>
-          <ScheduleProvider>
-            <TherapyGroupProvider>
-              <NotificationProvider>
-                <TemplateProvider>
-                  <AssessmentProvider>
-                    <SidebarProvider>
-                      <AppSidebar />
-                      <SidebarInset>
-                        <Header />
-                        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                          {children}
-                        </main>
-                        <footer className="border-t p-4 text-center text-sm text-muted-foreground">
-                            Desenvolvido por: JVGP- João Pawlowicz para Synapse+
-                        </footer>
-                      </SidebarInset>
-                    </SidebarProvider>
-                  </AssessmentProvider>
-                </TemplateProvider>
-              </NotificationProvider>
-            </TherapyGroupProvider>
-          </ScheduleProvider>
-        </PatientProvider>
-      </UserProvider>
+      <PatientProvider>
+        <NotificationProvider>
+          <TemplateProvider>
+            <AssessmentProvider>
+              <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset>
+                  <Header />
+                  <main className="flex-1 p-4 sm:p-6 lg:p-8">
+                    {children}
+                  </main>
+                  <footer className="border-t p-4 text-center text-sm text-muted-foreground">
+                      Desenvolvido por: JVGP- João Pawlowicz para Synapse+
+                  </footer>
+                </SidebarInset>
+              </SidebarProvider>
+            </AssessmentProvider>
+          </TemplateProvider>
+        </NotificationProvider>
+      </PatientProvider>
     </UnitProvider>
   );
 }
