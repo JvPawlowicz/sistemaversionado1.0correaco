@@ -8,7 +8,7 @@ import { Search, Loader2, Edit } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format, startOfDay } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { usePatient } from '@/contexts/PatientContext';
 import type { EvolutionRecord, Appointment } from '@/lib/types';
@@ -84,10 +84,10 @@ export default function EvolutionsPage() {
 
     const appointmentsWithPendingEvolution = appointmentsToConsider.filter(app => {
       // Find an evolution for the same patient on or after the appointment date.
-      // This is a business logic decision. A more precise link would require storing appointmentId in the evolution.
+      const appointmentDateTime = parseISO(`${app.date}T${app.time}`);
       const evolutionForAppointment = evolutions.find(evo =>
         evo.patientId === app.patientId &&
-        evo.createdAt && startOfDay(evo.createdAt.toDate()) >= startOfDay(new Date(app.date + 'T00:00:00'))
+        evo.createdAt && evo.createdAt.toDate() >= appointmentDateTime
       );
       return !evolutionForAppointment;
     });
