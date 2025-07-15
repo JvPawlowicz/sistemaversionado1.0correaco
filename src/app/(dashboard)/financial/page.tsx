@@ -1,7 +1,1 @@
-'use server';
-
-import { redirect } from 'next/navigation';
-
-export default async function FinancialPage() {
-  redirect('/analysis');
-}
+// This file is intentionally left empty and will be removed.

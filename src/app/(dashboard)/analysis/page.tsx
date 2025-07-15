@@ -114,13 +114,13 @@ export default function AnalysisAndReportsPage() {
     // This runs only on the client after mount, avoiding hydration mismatch
     setAppointmentFilters(prev => ({
       ...prev,
-      startDate: addDays(new Date(), -30),
-      endDate: new Date(),
+      startDate: startOfDay(addDays(new Date(), -30)),
+      endDate: startOfDay(new Date()),
     }));
     setEvolutionFilters(prev => ({
       ...prev,
-      startDate: addDays(new Date(), -30),
-      endDate: new Date(),
+      startDate: startOfDay(addDays(new Date(), -30)),
+      endDate: startOfDay(new Date()),
     }));
   }, []);
 

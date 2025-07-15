@@ -27,7 +27,7 @@ describe('LoginPage', () => {
     );
 
     // Check for the main title and description
-    expect(screen.getByText('Equidade+')).toBeInTheDocument();
+    expect(screen.getByText('Synapse+')).toBeInTheDocument();
     expect(screen.getByText('Acesse sua conta para gerenciar a plataforma')).toBeInTheDocument();
     
     // Check for form labels and inputs
